@@ -1,12 +1,5 @@
 #!/usr/bin/make -f
 
-# Lintian flagged a missing hardening-no-bindnow on
-# some libraries.
-# IRC discussion about why +bindnow isn't default if it's a
-# lintian warning/error:
-# https://irclogs.ubuntu.com/2018/05/10/%23ubuntu-devel.html#t14:32
-# Let's start with +all (instead of just +bindnow) and if that
-# is inappropriate we can switch to +bindnow
 export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
