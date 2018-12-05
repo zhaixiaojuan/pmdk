@@ -18,6 +18,7 @@ libpmemobj.so.1 libpmemobj1 #MINVER#
  pmemobj_ctl_exec@LIBPMEMOBJ_1.0 1.4
  pmemobj_ctl_get@LIBPMEMOBJ_1.0 1.4
  pmemobj_ctl_set@LIBPMEMOBJ_1.0 1.4
+ pmemobj_defer_free@LIBPMEMOBJ_1.0 1.5
  pmemobj_direct@LIBPMEMOBJ_1.0 1.4
  pmemobj_drain@LIBPMEMOBJ_1.0 1.4
  pmemobj_errormsg@LIBPMEMOBJ_1.0 1.4
@@ -28,8 +29,11 @@ libpmemobj.so.1 libpmemobj1 #MINVER#
  pmemobj_list_insert_new@LIBPMEMOBJ_1.0 1.4
  pmemobj_list_move@LIBPMEMOBJ_1.0 1.4
  pmemobj_list_remove@LIBPMEMOBJ_1.0 1.4
+ pmemobj_memcpy@LIBPMEMOBJ_1.0 1.5
  pmemobj_memcpy_persist@LIBPMEMOBJ_1.0 1.4
  pmemobj_memset_persist@LIBPMEMOBJ_1.0 1.4
+ pmemobj_memmove@LIBPMEMOBJ_1.0 1.5
+ pmemobj_memset@LIBPMEMOBJ_1.0 1.5
  pmemobj_mutex_lock@LIBPMEMOBJ_1.0 1.4
  pmemobj_mutex_timedlock@LIBPMEMOBJ_1.0 1.4
  pmemobj_mutex_trylock@LIBPMEMOBJ_1.0 1.4
@@ -80,8 +84,11 @@ libpmemobj.so.1 libpmemobj1 #MINVER#
  pmemobj_tx_zalloc@LIBPMEMOBJ_1.0 1.4
  pmemobj_tx_zrealloc@LIBPMEMOBJ_1.0 1.4
  pmemobj_type_num@LIBPMEMOBJ_1.0 1.4
+ pmemobj_volatile@LIBPMEMOBJ_1.0 1.5
  pmemobj_wcsdup@LIBPMEMOBJ_1.0 1.4
  pmemobj_xalloc@LIBPMEMOBJ_1.0 1.4
+ pmemobj_xflush@LIBPMEMOBJ_1.0 1.5
+ pmemobj_xpersist@LIBPMEMOBJ_1.0 1.5
  pmemobj_xreserve@LIBPMEMOBJ_1.0 1.4
  pmemobj_zalloc@LIBPMEMOBJ_1.0 1.4
  pmemobj_zrealloc@LIBPMEMOBJ_1.0 1.4
