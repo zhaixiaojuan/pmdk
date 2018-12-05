@@ -21,7 +21,7 @@ override_dh_install:
 	dh_install
 
 override_dh_installexamples:
-	dh_installexamples --exclude=.gitignore
+	dh_installexamples --exclude=.gitignore --exclude=.vcxproj
 
 override_dh_auto_test:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
