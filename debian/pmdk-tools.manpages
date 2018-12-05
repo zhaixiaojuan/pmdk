@@ -1,0 +1,4 @@
+doc/generated/pmempool-*.1
+doc/generated/pmempool.1
+doc/generated/rpmemd.1
+doc/generated/daxio.1

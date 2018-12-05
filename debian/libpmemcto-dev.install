@@ -1,0 +1,4 @@
+usr/include/libpmemcto.h
+usr/lib/*/libpmemcto.a
+usr/lib/*/libpmemcto.so
+usr/lib/*/pkgconfig/libpmemcto.pc

@@ -1,0 +1,10 @@
+doc/generated/d_ro.3
+doc/generated/d_rw.3
+doc/generated/direct_*.3
+doc/generated/oid_*.3
+doc/generated/pmemobj*.3
+doc/generated/pobj_*.3
+doc/generated/toid.3
+doc/generated/toid_*.3
+doc/generated/tx_*.3
+doc/generated/libpmemobj.7

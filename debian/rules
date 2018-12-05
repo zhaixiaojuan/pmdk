@@ -1,0 +1,70 @@
+#!/usr/bin/make -f
+
+# Lintian flagged a missing hardening-no-bindnow on
+# some libraries.
+# IRC discussion about why +bindnow isn't default if it's a
+# lintian warning/error:
+# https://irclogs.ubuntu.com/2018/05/10/%23ubuntu-devel.html#t14:32
+# Let's start with +all (instead of just +bindnow) and if that
+# is inappropriate we can switch to +bindnow
+export DEB_BUILD_MAINT_OPTIONS = hardening=+all
+
+DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
+DEB_UPSTREAM_VERSION = $(shell dpkg-parsechangelog -S version | cut -d - -f 1 | cut -d : -f 2)
+# We don't need a Build-Depends on systemd because of this
+# because it's only used to decide whether the tests should be run or not.
+# Any value other than "lxc" will let the tests run.
+VIRT = $(shell systemd-detect-virt 2>/dev/null)
+ifeq (,$(VIRT))
+VIRT = unknown
+endif
+
+%:
+	# see https://bugs.launchpad.net/ubuntu/+bug/1752378/comments/28
+	# and https://bugs.launchpad.net/ubuntu/+bug/1752378/comments/32
+	# The upstream fix at https://github.com/pmem/pmdk/commit/5cbd2be4ae1ae7541da5975c9071fa36b53cd835
+	# isn't enough
+	echo $(DEB_UPSTREAM_VERSION) > .version
+	dh $@ --with bash-completion
+
+override_dh_auto_build:
+	dh_auto_build  -- prefix=/usr libdir=/usr/lib/$(DEB_HOST_MULTIARCH) sysconfdir=/etc bashcompdir=/usr/share/bash-completion/completions NORPATH=1 CPP_DOC_DIR=libpmemobj-doc/html
+
+override_dh_auto_install:
+	dh_auto_install -- prefix=/usr libdir=/usr/lib/$(DEB_HOST_MULTIARCH) sysconfdir=/etc bashcompdir=/usr/share/bash-completion/completions NORPATH=1 CPP_DOC_DIR=libpmemobj-doc/html
+
+override_dh_install:
+	echo =======================
+	find
+	echo =======================
+	mkdir -p debian/tmp/usr/share/pmdk/
+	cp utils/pmdk.magic debian/tmp/usr/share/pmdk/
+	dh_install
+
+override_dh_installexamples:
+	dh_installexamples --exclude=.gitignore
+
+override_dh_auto_test:
+ifeq ($(VIRT),lxc)
+	# these tests do not yet work in a lxd container, see
+	# https://bugs.launchpad.net/ubuntu/+bug/1752378/comments/73
+	@echo "$(VIRT) environment detected, skipping unit tests"
+else
+ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
+	# build the test configuration file. Tips from:
+	# https://bugs.launchpad.net/ubuntu/+bug/1752378/comments/72
+	# see src/test/testconfig.sh.example for a fully commented file
+	echo "PMEM_FS_DIR=/tmp" > src/test/testconfig.sh
+	echo "PMEM_FS_DIR_FORCE_PMEM=1" >> src/test/testconfig.sh
+	echo "TEST_BUILD=\"debug nondebug\"" >> src/test/testconfig.sh
+	# To display execution time of each test
+	echo "TM=1" >> src/test/testconfig.sh
+	+$(MAKE) check
+endif
+endif
+
+override_dh_auto_clean:
+	# Remove .version file we created at the start of the build, and test
+	# config we created in override_dh_auto_test:
+	rm -f .version src/test/testconfig.sh
+	dh_auto_clean
