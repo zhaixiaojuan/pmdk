@@ -28,6 +28,7 @@ endif
 	dh $@ --with bash-completion
 
 override_dh_auto_build:
+	+$(MAKE) doc
 	dh_auto_build  -- prefix=/usr libdir=/usr/lib/$(DEB_HOST_MULTIARCH) sysconfdir=/etc bashcompdir=/usr/share/bash-completion/completions NORPATH=1 CPP_DOC_DIR=libpmemobj-doc/html
 
 override_dh_auto_install:
