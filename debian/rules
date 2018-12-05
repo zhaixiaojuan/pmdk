@@ -40,13 +40,14 @@ ifeq ($(VIRT),lxc)
 	@echo "$(VIRT) environment detected, skipping unit tests"
 else
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
-	# build the test configuration file. Tips from:
-	# https://bugs.launchpad.net/ubuntu/+bug/1752378/comments/72
-	# see src/test/testconfig.sh.example for a fully commented file
+	# Use fake pmem; we really want tmpfs if possible.
+	# No non-pmem dir, as real syncs there are slow.
 	echo "PMEM_FS_DIR=/tmp" > src/test/testconfig.sh
+	# Use cache flushes instead of msync().
 	echo "PMEM_FS_DIR_FORCE_PMEM=1" >> src/test/testconfig.sh
+	# Don't try static libs.
 	echo "TEST_BUILD=\"debug nondebug\"" >> src/test/testconfig.sh
-	# To display execution time of each test
+	# Display execution time of each test
 	echo "TM=1" >> src/test/testconfig.sh
 	+$(MAKE) check
 endif
