@@ -13,11 +13,6 @@ VIRT = unknown
 endif
 
 %:
-	# see https://bugs.launchpad.net/ubuntu/+bug/1752378/comments/28
-	# and https://bugs.launchpad.net/ubuntu/+bug/1752378/comments/32
-	# The upstream fix at https://github.com/pmem/pmdk/commit/5cbd2be4ae1ae7541da5975c9071fa36b53cd835
-	# isn't enough
-	echo $(DEB_UPSTREAM_VERSION) > .version
 	dh $@ --with bash-completion
 
 override_dh_auto_build:
