@@ -163,6 +163,7 @@ OTHER_TESTS = \
 	compat_incompat_features\
 	ctl_prefault\
 	ctl_cow\
+	doc_man\
 	getopt\
 	magic\
 	mmap\
