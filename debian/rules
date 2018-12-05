@@ -16,9 +16,6 @@ override_dh_auto_install:
 	dh_auto_install -- prefix=/usr libdir=/usr/lib/$(DEB_HOST_MULTIARCH) sysconfdir=/etc bashcompdir=/usr/share/bash-completion/completions NORPATH=1
 
 override_dh_install:
-	echo =======================
-	find
-	echo =======================
 	mkdir -p debian/tmp/usr/share/pmdk/
 	cp utils/pmdk.magic debian/tmp/usr/share/pmdk/
 	dh_install
