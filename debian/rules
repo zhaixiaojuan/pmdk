@@ -51,9 +51,3 @@ ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 	+$(MAKE) check
 endif
 endif
-
-override_dh_auto_clean:
-	# Remove .version file we created at the start of the build, and test
-	# config we created in override_dh_auto_test:
-	rm -f .version src/test/testconfig.sh
-	dh_auto_clean
