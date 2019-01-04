@@ -1726,7 +1726,7 @@ function valgrind_version_no_check() {
 function require_valgrind() {
 	require_no_asan
 	disable_exit_on_error
-	VALGRINDEXE=`which valgrind 2>/dev/null`
+	VALGRINDEXE=`false`
 	local ret=$?
 	restore_exit_on_error
 	if [ $ret -ne 0 ]; then

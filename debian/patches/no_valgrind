@@ -1,0 +1,20 @@
+Description: disable valgrind tests
+ There's currently no easy way to globally disable valgrind tests when
+ it's actually installed.  Not a problem on buildds, but CI test machines
+ can have it installed, and B-Conflicts are nasty.  So let's sabotage
+ autodetection for now.
+Author: Adam Borowski <kilobyte@angband.pl>
+Bug: https://github.com/pmem/issues/issues/993
+Bug-Debian: https://bugs.debian.org/918023
+
+--- pmdk-1.5.orig/src/test/unittest/unittest.sh
++++ pmdk-1.5/src/test/unittest/unittest.sh
+@@ -1726,7 +1726,7 @@ function valgrind_version_no_check() {
+ function require_valgrind() {
+ 	require_no_asan
+ 	disable_exit_on_error
+-	VALGRINDEXE=`which valgrind 2>/dev/null`
++	VALGRINDEXE=`false`
+ 	local ret=$?
+ 	restore_exit_on_error
+ 	if [ $ret -ne 0 ]; then
