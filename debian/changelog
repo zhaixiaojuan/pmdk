@@ -1,3 +1,9 @@
+pmdk (1.5-2) unstable; urgency=medium
+
+  * Don't B-Depend on valgrind, it can't handle glibc 2.28 yet.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Fri, 04 Jan 2019 14:05:10 +0100
+
 pmdk (1.5-1) unstable; urgency=medium
 
   * Initial release.  Closes: #913889
