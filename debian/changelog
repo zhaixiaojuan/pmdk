@@ -1,3 +1,9 @@
+pmdk (1.5-3) unstable; urgency=medium
+
+  * Make the build reproducible.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 07 Jan 2019 15:26:53 +0100
+
 pmdk (1.5-2) unstable; urgency=medium
 
   * Don't B-Depend on valgrind, it can't handle glibc 2.28 yet.
