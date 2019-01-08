@@ -1,3 +1,9 @@
+pmdk (1.5-4) unstable; urgency=medium
+
+  * Use UTC for SOURCE_DATE_EPOCH.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Tue, 08 Jan 2019 13:42:12 +0100
+
 pmdk (1.5-3) unstable; urgency=medium
 
   * Make the build reproducible.
