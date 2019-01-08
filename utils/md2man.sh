@@ -82,7 +82,7 @@ if [ "$WEB" == 1 ]; then
 	m4 $OPTS macros.man $filename | sed -n -e '/---/,$p' > $outfile
 else
 	if [ -n "$SOURCE_DATE_EPOCH" ]; then
-		force_date="--date=@$SOURCE_DATE_EPOCH"
+		force_date="-u --date=@$SOURCE_DATE_EPOCH"
 	fi
 	dt=$(date +"%F" $force_date)
 	m4 $OPTS macros.man $filename | sed -n -e '/# NAME #/,$p' |\
