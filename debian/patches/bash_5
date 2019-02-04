@@ -1,0 +1,42 @@
+--- pmdk-1.5.orig/src/test/rpmemd_config/TEST2
++++ pmdk-1.5/src/test/rpmemd_config/TEST2
+@@ -55,7 +55,7 @@ INVALID_FLAG=invalid
+ INVALID_ENUM=Invalid
+ 
+ function check_config {
+-	echo -e $1 > $CONFIG
++	echo -e "$1" > $CONFIG
+ 	expect_normal_exit $RPMEMD -c $CONFIG 1>> $OUT_TEMP 2>&1
+ 	expect_normal_exit $RPMEMD --config $CONFIG 1>> $OUT_TEMP 2>&1
+ }
+--- pmdk-1.5.orig/src/test/rpmemd_config/TEST4
++++ pmdk-1.5/src/test/rpmemd_config/TEST4
+@@ -59,7 +59,7 @@ function check_user_home_dir {
+ 	expect_normal_exit $RPMEMD -c $EMPTY_CONFIG print_HOME_env
+ 	cat $LOG >> $LOG_TEMP
+ 
+-	expect_normal_exit $RPMEMD -c $EMPTY_CONFIG --poolset-dir=$HOME_STR print_HOME_env
++	expect_normal_exit $RPMEMD -c $EMPTY_CONFIG --poolset-dir="$HOME_STR" print_HOME_env
+ 	cat $LOG >> $LOG_TEMP
+ 
+ 	expect_normal_exit $RPMEMD -c $EMPTY_CONFIG --poolset-dir=prefix$HOME_STR print_HOME_env
+--- pmdk-1.5.orig/src/test/rpmemd_config/stdout2.log.match
++++ pmdk-1.5/src/test/rpmemd_config/stdout2.log.match
+@@ -3,13 +3,13 @@ Invalid config file line at $(*):1
+ Invalid config file line at $(*):1
+ ; invalid comment format
+ Invalid config file line at $(*):1
+-dir= 		 		# invalid dir path
++dir=  		  		# invalid dir path
+ Invalid config file line at $(*):1
+-dir= 		 		# invalid dir path
++dir=  		  		# invalid dir path
+ Invalid config file line at $(*):1
+-log-file= 		 		 # invalid log-file path
++log-file=  		  		 # invalid log-file path
+ Invalid config file line at $(*):1
+-log-file= 		 		 # invalid log-file path
++log-file=  		  		 # invalid log-file path
+ Invalid config file line at $(*):1
+ log-level=Invalid # invalid log-level
+ Invalid config file line at $(*):1
