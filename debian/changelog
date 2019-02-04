@@ -1,3 +1,9 @@
+pmdk (1.5-5) unstable; urgency=medium
+
+  * Fix one, and paper over another, tests failing with bash 5.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 04 Feb 2019 20:06:36 +0100
+
 pmdk (1.5-4) unstable; urgency=medium
 
   * Use UTC for SOURCE_DATE_EPOCH.
