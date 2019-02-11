@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2016-2018, Intel Corporation
+# Copyright 2016-2019, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -69,7 +69,7 @@ if [[ -z "$TEST_BUILD" ]]; then
 	TEST_BUILD=all
 fi
 
-imageName=pmem/pmdk:${OS}-${OS_VER}
+imageName=pmem/pmdk:1.5-${OS}-${OS_VER}
 containerName=pmdk-${OS}-${OS_VER}
 
 if [[ $MAKE_PKG -eq 0 ]] ; then command="./run-build.sh"; fi
@@ -108,7 +108,6 @@ docker run --rm --privileged=true --name=$containerName -ti \
 	--env EXPERIMENTAL=$EXPERIMENTAL \
 	--env BUILD_PACKAGE_CHECK=$BUILD_PACKAGE_CHECK \
 	--env SCRIPTSDIR=$SCRIPTSDIR \
-	--env CLANG_FORMAT=clang-format-3.8 \
 	--env TRAVIS=$TRAVIS \
 	--env TRAVIS_COMMIT_RANGE=$TRAVIS_COMMIT_RANGE \
 	--env TRAVIS_COMMIT=$TRAVIS_COMMIT \

@@ -65,8 +65,8 @@ $(error Cannot evaluate version)
 endif
 
 ifeq ($(CLANG_FORMAT),)
-ifeq ($(shell command -v clang-format-3.8 > /dev/null && echo y || echo n), y)
-export CLANG_FORMAT ?= clang-format-3.8
+ifeq ($(shell command -v clang-format-6.0 > /dev/null && echo y || echo n), y)
+export CLANG_FORMAT ?= clang-format-6.0
 else
 export CLANG_FORMAT ?= clang-format
 endif
@@ -87,6 +87,12 @@ osdep = $(1)_$(shell echo $(OS_KERNEL_NAME) | tr "[:upper:]" "[:lower:]")$(2)
 get_arch = $(shell $(CC) -dumpmachine | awk -F'[/-]' '{print $$1}')
 ifeq ($(ARCH),)
 export ARCH := $(call get_arch)
+endif
+ifeq ($(ARCH),amd64)
+override ARCH := x86_64
+endif
+ifeq ($(ARCH),arm64)
+override ARCH := aarch64
 endif
 
 ifeq ($(PKG_CONFIG_CHECKED),)

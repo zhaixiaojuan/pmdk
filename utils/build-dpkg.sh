@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2014-2018, Intel Corporation
+# Copyright 2014-2019, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -277,7 +277,7 @@ Package: daxio
 Section: misc
 Architecture: any
 Priority: optional
-Depends: libpmem (=\${binary:Version}), libndctl (>= $NDCTL_MIN_VERSION), libdaxctl (>= $NDCTL_MIN_VERSION), \${shlibs:Depends}, \${misc:Depends}
+Depends: libpmem (=\${binary:Version}), \${shlibs:Depends}, \${misc:Depends}
 Description: daxio utility
  The daxio utility performs I/O on Device DAX devices or zero
  a Device DAX device.  Since the standard I/O APIs (read/write) cannot be used
@@ -297,7 +297,10 @@ override_dh_auto_test:
 	if [ -f $TEST_CONFIG_FILE ]; then\
 		cp $TEST_CONFIG_FILE src/test/testconfig.sh;\
 	else\
-	        cp src/test/testconfig.sh.example src/test/testconfig.sh;\
+		echo 'PMEM_FS_DIR=/tmp' > src/test/testconfig.sh; \
+		echo 'PMEM_FS_DIR_FORCE_PMEM=1' >> src/test/testconfig.sh; \
+		echo 'TEST_BUILD=\"debug nondebug\"' >> src/test/testconfig.sh; \
+		echo 'TEST_FS=\"pmem any none\"' >> src/test/testconfig.sh; \
 	fi
 	make pcheck ${PCHECK_OPTS}
 "

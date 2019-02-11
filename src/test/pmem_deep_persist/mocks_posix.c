@@ -31,71 +31,44 @@
  */
 
 /*
- * badblock_windows.c - implementation of the windows bad block API
+ * mocks_posix.c -- redefinitions of open/write functions (Posix implementation)
  */
 
-#include "out.h"
-#include "os_badblock.h"
+#include "util.h"
+#include "os.h"
+#include "unittest.h"
 
 /*
- * os_badblocks_check_file -- check if the file contains bad blocks
- *
- * Return value:
- * -1 : an error
- *  0 : no bad blocks
- *  1 : bad blocks detected
+ * open -- open mock because of  Dev DAX without deep_flush
+ * sysfs file, eg. DAX on emulated pmem
  */
-int
-os_badblocks_check_file(const char *file)
-{
-	LOG(3, "file %s", file);
+FUNC_MOCK(os_open, int, const char *path, int flags, ...)
+FUNC_MOCK_RUN_DEFAULT {
+	if (strstr(path, "/sys/bus/nd/devices/region") &&
+			strstr(path, "/deep_flush")) {
+		UT_OUT("mocked open, path %s", path);
+		if (access(path, R_OK))
+			return 999;
+	}
 
-	return 0;
+	va_list ap;
+	va_start(ap, flags);
+	int mode = va_arg(ap, int);
+	va_end(ap);
+
+	return _FUNC_REAL(os_open)(path, flags, mode);
 }
+FUNC_MOCK_END
 
 /*
- * os_badblocks_count -- returns number of bad blocks in the file
- *                       or -1 in case of an error
+ * write  -- write mock
  */
-long
-os_badblocks_count(const char *file)
-{
-	LOG(3, "file %s", file);
-
-	return 0;
+FUNC_MOCK(write, int, int fd, const void *buffer, size_t count)
+FUNC_MOCK_RUN_DEFAULT {
+	if (fd == 999) {
+		UT_OUT("mocked write, path %d", fd);
+		return 1;
+	}
+	return _FUNC_REAL(write)(fd, buffer, count);
 }
-
-/*
- * os_badblocks_get -- returns list of bad blocks in the file
- */
-int
-os_badblocks_get(const char *file, struct badblocks *bbs)
-{
-	LOG(3, "file %s", file);
-
-	return 0;
-}
-
-/*
- * os_badblocks_clear -- clears the given bad blocks in a file
- *                       (regular file or dax device)
- */
-int
-os_badblocks_clear(const char *file, struct badblocks *bbs)
-{
-	LOG(3, "file %s badblocks %p", file, bbs);
-
-	return 0;
-}
-
-/*
- * os_badblocks_clear_all -- clears all bad blocks in a file
- *                           (regular file or dax device)
- */
-int
-os_badblocks_clear_all(const char *file)
-{
-	LOG(3, "file %s", file);
-
-	return 0;
-}
+FUNC_MOCK_END
