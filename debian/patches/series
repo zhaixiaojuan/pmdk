@@ -1,5 +1,2 @@
 do-not-build-examples.patch
-man-hyphen-not-en-dash.patch
 no_valgrind
-reproducible_docs
-bash_5
