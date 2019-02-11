@@ -11,7 +11,7 @@ Build-Depends: bash-completion,
                libndctl-dev (>= 60.1),
                pandoc,
                pkg-config,
-#              valgrind -- disabled because #918023
+               valgrind,
 Standards-Version: 4.3.0
 Homepage: http://pmem.io/pmdk/
 Vcs-Git: https://github.com/kilobyte/pmdk -b debian
