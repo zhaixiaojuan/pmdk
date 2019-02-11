@@ -1,3 +1,12 @@
+pmdk (1.5.1~rc2-1) experimental; urgency=medium
+
+  * New upstream pre-release.
+  * Drop upstreamed patches.
+  * Re-enable valgrind tests.
+  * Fix broken .pc for librpmem.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 11 Feb 2019 16:14:47 +0100
+
 pmdk (1.5-5) unstable; urgency=medium
 
   * Fix one, and paper over another, tests failing with bash 5.
