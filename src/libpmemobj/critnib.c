@@ -222,6 +222,8 @@ critnib_new(void)
 
 	util_mutex_init(&c->mutex);
 
+	printf("CRITNIB %016lx: new\n", (uintptr_t)c);
+
 	return c;
 }
 
@@ -249,6 +251,8 @@ delete_node(struct critnib_node *__restrict n)
 void
 critnib_delete(struct critnib *c)
 {
+	printf("CRITNIB %016lx: delete\n", (uintptr_t)c);
+
 	if (c->root)
 		delete_node(c->root);
 
@@ -357,6 +361,9 @@ critnib_insert(struct critnib *c, uint64_t key, void *value)
 {
 	util_mutex_lock(&c->mutex);
 
+	printf("CRITNIB %016lx: insert %016lx %016lx\n", (uintptr_t)c, key,
+		(uintptr_t)value);
+
 	struct critnib_leaf *k = alloc_leaf(c);
 	if (!k) {
 		util_mutex_unlock(&c->mutex);
@@ -442,6 +449,8 @@ void *
 critnib_remove(struct critnib *c, uint64_t key)
 {
 	util_mutex_lock(&c->mutex);
+
+	printf("CRITNIB %016lx: remove %016lx\n", (uintptr_t)c, key);
 
 	struct critnib_node *n = c->root;
 	if (!n) {
