@@ -1,0 +1,127 @@
+Description: Mention the -debug package split
+ In Debian systems, the special debug libraries (with extra assertions,
+ checks and logging, not suitable for production) are placed in a separate
+ binary package with the "-debug" suffix. These are only meant to be
+ installed when specific troubleshooting is required. Instructions for this
+ troubleshooting are included in the library manpages, and we add a note
+ explaining that the respective -debug package should be installed.
+Author: Andreas Hasenack <andreas@canonical.com>
+Forwarded: no
+Last-Update: 2019-05-10
+---
+This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
+--- a/doc/libpmem/libpmem.7.md
++++ b/doc/libpmem/libpmem.7.md
+@@ -261,6 +261,10 @@
+ and causing the specified address to be used as a hint about where to
+ place the mapping.
+ 
++>NOTE:
++On Ubuntu systems, this extra debug version of the library is
++shipped in the respective **-debug** Debian package and placed in
++the **/usr/lib/$ARCH/pmdk_dbg/** directory.
+ 
+ # DEBUGGING AND ERROR HANDLING #
+ 
+@@ -320,6 +324,10 @@
+ the log file is created. If **PMEM_LOG_FILE** is not set, output is
+ written to *stderr*.
+ 
++>NOTE:
++On Ubuntu systems, this extra debug version of the library is
++shipped in the respective **-debug** Debian package and placed in
++the **/usr/lib/$ARCH/pmdk_dbg/** directory.
+ 
+ # EXAMPLE #
+ 
+--- a/doc/libpmemblk/libpmemblk.7.md
++++ b/doc/libpmemblk/libpmemblk.7.md
+@@ -257,6 +257,10 @@
+ See also **libpmem**(7) for information on other environment variables
+ that may affect **libpmemblk** behavior.
+ 
++>NOTE:
++On Ubuntu systems, this extra debug version of the library is
++shipped in the respective **-debug** Debian package and placed in
++the **/usr/lib/$ARCH/pmdk_dbg/** directory.
+ 
+ # EXAMPLE #
+ 
+--- a/doc/libpmemlog/libpmemlog.7.md
++++ b/doc/libpmemlog/libpmemlog.7.md
+@@ -256,6 +256,10 @@
+ See also **libpmem**(7) for information about other environment
+ variables affecting **libpmemlog** behavior.
+ 
++>NOTE:
++On Ubuntu systems, this extra debug version of the library is
++shipped in the respective **-debug** Debian package and placed in
++the **/usr/lib/$ARCH/pmdk_dbg/** directory.
+ 
+ # EXAMPLE #
+ 
+--- a/doc/libpmemobj/libpmemobj.7.md
++++ b/doc/libpmemobj/libpmemobj.7.md
+@@ -258,6 +258,10 @@
+ See also **libpmem**(7) to get information
+ about other environment variables affecting **libpmemobj** behavior.
+ 
++>NOTE:
++On Ubuntu systems, this extra debug version of the library is
++shipped in the respective **-debug** Debian package and placed in
++the **/usr/lib/$ARCH/pmdk_dbg/** directory.
+ 
+ # EXAMPLE #
+ 
+--- a/doc/libpmempool/libpmempool.7.md
++++ b/doc/libpmempool/libpmempool.7.md
+@@ -214,6 +214,10 @@
+ the log file is created. If **PMEMPOOL_LOG_FILE** is not set, output is
+ written to *stderr*.
+ 
++>NOTE:
++On Ubuntu systems, this extra debug version of the library is
++shipped in the respective **-debug** Debian package and placed in
++the **/usr/lib/$ARCH/pmdk_dbg/** directory.
+ 
+ # EXAMPLE #
+ 
+--- a/doc/librpmem/librpmem.7.md
++++ b/doc/librpmem/librpmem.7.md
+@@ -355,6 +355,10 @@
+ be appended to the file name when the log file is created. If
+ **RPMEM_LOG_FILE** is not set, logging output is written to *stderr*.
+ 
++>NOTE:
++On Ubuntu systems, this extra debug version of the library is
++shipped in the respective **-debug** Debian package and placed in
++the **/usr/lib/$ARCH/pmdk_dbg/** directory.
+ 
+ # EXAMPLE #
+ 
+--- a/doc/libvmem/libvmem.7.md
++++ b/doc/libvmem/libvmem.7.md
+@@ -235,6 +235,10 @@
+ the log file is created. If **VMEM_LOG_FILE** is not set, output is
+ written to *stderr*.
+ 
++>NOTE:
++On Ubuntu systems, this extra debug version of the library is
++shipped in the respective **-debug** Debian package and placed in
++the **/usr/lib/$ARCH/pmdk_dbg/** directory.
+ 
+ # EXAMPLE #
+ 
+--- a/doc/libvmmalloc/libvmmalloc.7.md
++++ b/doc/libvmmalloc/libvmmalloc.7.md
+@@ -255,6 +255,10 @@
+ Setting **VMMALLOC_LOG_STATS** to 1 enables logging human-readable
+ summary statistics at program termination.
+ 
++>NOTE:
++On Ubuntu systems, this extra debug version of the library is
++shipped in the respective **-debug** Debian package and placed in
++the **/usr/lib/$ARCH/pmdk_dbg/** directory.
+ 
+ # NOTES #
+ 
