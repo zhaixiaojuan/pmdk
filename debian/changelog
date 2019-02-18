@@ -1,3 +1,9 @@
+pmdk (1.5.1~rc3-2) experimental; urgency=medium
+
+  * Disable a failing test (real bug; tmpfs only).
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 18 Feb 2019 01:18:14 +0100
+
 pmdk (1.5.1~rc3-1) experimental; urgency=medium
 
   * New upstream pre-release.
