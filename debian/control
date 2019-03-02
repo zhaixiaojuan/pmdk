@@ -11,6 +11,7 @@ Build-Depends: bash-completion,
                libndctl-dev (>= 60.1),
                pandoc,
                pkg-config,
+               strace,
                valgrind,
 Standards-Version: 4.3.0
 Homepage: http://pmem.io/pmdk/
