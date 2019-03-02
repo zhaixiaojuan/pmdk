@@ -34,7 +34,5 @@ ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 	echo "TEST_BUILD=\"debug nondebug\"" >> src/test/testconfig.sh
 	# Display execution time of each test
 	echo "TM=1" >> src/test/testconfig.sh
-	# Kill a legitimately failing test (kernel bug on tmpfs).
-	rm -f src/test/obj_pool/TEST34
 	+$(MAKE) check
 endif
