@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018, Intel Corporation
+ * Copyright 2014-2019, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -598,7 +598,7 @@ pmemblk_openU(const char *path, size_t bsize)
 {
 	LOG(3, "path %s bsize %zu", path, bsize);
 
-	return blk_open_common(path, bsize, 0);
+	return blk_open_common(path, bsize, COW_at_open ? POOL_OPEN_COW : 0);
 }
 
 #ifndef _WIN32
@@ -640,13 +640,13 @@ pmemblk_close(PMEMblkpool *pbp)
 	btt_fini(pbp->bttp);
 	if (pbp->locks) {
 		for (unsigned i = 0; i < pbp->nlane; i++)
-			os_mutex_destroy(&pbp->locks[i]);
+			util_mutex_destroy(&pbp->locks[i]);
 		Free((void *)pbp->locks);
 	}
 
 #ifdef DEBUG
 	/* destroy debug lock */
-	os_mutex_destroy(&pbp->write_lock);
+	util_mutex_destroy(&pbp->write_lock);
 #endif
 
 	util_poolset_close(pbp->set, DO_NOT_DELETE_PARTS);
@@ -959,5 +959,20 @@ pmemblk_ctl_execW(PMEMblkpool *pbp, const wchar_t *name, void *arg)
 	util_free_UTF8(uname);
 
 	return ret;
+}
+#endif
+
+#if FAULT_INJECTION
+void
+pmemblk_inject_fault_at(enum pmem_allocation_type type, int nth,
+							const char *at)
+{
+	common_inject_fault_at(type, nth, at);
+}
+
+int
+pmemblk_fault_injection_enabled(void)
+{
+	return common_fault_injection_enabled();
 }
 #endif

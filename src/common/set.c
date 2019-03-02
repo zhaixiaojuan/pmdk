@@ -103,10 +103,11 @@ static void *Rpmem_handle_remote;
 int Prefault_at_open = 0;
 int Prefault_at_create = 0;
 int SDS_at_create = POOL_FEAT_INCOMPAT_DEFAULT & POOL_E_FEAT_SDS ? 1 : 0;
-
+int Fallocate_at_create = 1;
+int COW_at_open = 0;
 
 /* list of pool set option names and flags */
-static struct pool_set_option Options[] = {
+static const struct pool_set_option Options[] = {
 	{ "SINGLEHDR", OPTION_SINGLEHDR },
 #ifndef _WIN32
 	{ "NOHDRS", OPTION_NOHDRS },
@@ -297,7 +298,6 @@ err:
 }
 
 /* reserve space for size, path and some whitespace and/or comment */
-#define PARSER_MAX_LINE (PATH_MAX + 1024)
 
 enum parser_codes {
 	PARSER_CONTINUE = 0,
@@ -1298,43 +1298,6 @@ util_parse_add_remote_replica(struct pool_set **setp, char *node_addr,
 }
 
 /*
- * util_readline -- read line from stream
- */
-static char *
-util_readline(FILE *fh)
-{
-	LOG(10, "fh %p", fh);
-
-	size_t bufsize = PARSER_MAX_LINE;
-	size_t position = 0;
-	char *buffer = NULL;
-
-	do {
-		char *tmp = buffer;
-		buffer = Realloc(buffer, bufsize);
-		if (buffer == NULL) {
-			Free(tmp);
-			return NULL;
-		}
-
-		/* ensure if we can cast bufsize to int */
-		ASSERT(bufsize / 2 <= INT_MAX);
-		ASSERT((bufsize - position) >= (bufsize / 2));
-		char *s = util_fgets(buffer + position, (int)bufsize / 2, fh);
-		if (s == NULL) {
-			Free(buffer);
-			return NULL;
-		}
-
-		position = strlen(buffer);
-		bufsize *= 2;
-	} while (!feof(fh) && buffer[position - 1] != '\n');
-
-	return buffer;
-}
-
-
-/*
  * util_part_idx_by_file_name -- (internal) retrieves the part index from a
  *	name of the file that is an element of a directory poolset
  */
@@ -1813,19 +1776,21 @@ util_poolset_single(const char *path, size_t filesize, int create,
  * util_part_open -- open or create a single part file
  */
 int
-util_part_open(struct pool_set_part *part, size_t minsize, int create)
+util_part_open(struct pool_set_part *part, size_t minsize, int create_part)
 {
-	LOG(3, "part %p minsize %zu create %d", part, minsize, create);
+	LOG(3, "part %p minsize %zu create %d", part, minsize, create_part);
 
 	int exists = util_file_exists(part->path);
 	if (exists < 0)
 		return -1;
 
+	int create_file = create_part;
+
 	if (exists)
-		create = 0;
+		create_file = 0;
 
 	part->created = 0;
-	if (create) {
+	if (create_file) {
 		part->fd = util_file_create(part->path, part->filesize,
 				minsize);
 		if (part->fd == -1) {
@@ -1840,6 +1805,17 @@ util_part_open(struct pool_set_part *part, size_t minsize, int create)
 		if (part->fd == -1) {
 			LOG(2, "failed to open file: %s", part->path);
 			return -1;
+		}
+
+		if (Fallocate_at_create && create_part && !part->is_dev_dax) {
+			int ret = os_posix_fallocate(part->fd, 0,
+					(os_off_t)size);
+			if (ret != 0) {
+				errno = ret;
+				ERR("!posix_fallocate \"%s\", %zu", part->path,
+					size);
+				return -1;
+			}
 		}
 
 		/* check if filesize matches */
@@ -3913,6 +3889,38 @@ util_read_compat_features(struct pool_set *set, uint32_t *compat_features)
 }
 
 /*
+ * unlink_remote_replicas -- removes remote replicas from poolset
+ *
+ * It is necessary when COW flag is set because remote replicas
+ * cannot be mapped privately
+ */
+static int
+unlink_remote_replicas(struct pool_set *set)
+{
+	unsigned i = 0;
+	while (i < set->nreplicas) {
+		if (set->replica[i]->remote == NULL) {
+			i++;
+			continue;
+		}
+
+		util_replica_close(set, i);
+		int ret = util_replica_close_remote(set->replica[i], i,
+				DO_NOT_DELETE_PARTS);
+		if (ret != 0)
+			return ret;
+
+		size_t size = sizeof(set->replica[i]) *
+			(set->nreplicas - i - 1);
+		memmove(&set->replica[i], &set->replica[i + 1], size);
+		set->nreplicas--;
+	}
+
+	set->remote = 0;
+	return 0;
+}
+
+/*
  * util_pool_open -- open a memory pool (set or a single file)
  *
  * This routine does all the work, but takes a rdonly flag so internal
@@ -4025,6 +4033,13 @@ util_pool_open(struct pool_set **setp, const char *path, size_t minpartsize,
 
 	/* unmap all headers */
 	util_unmap_all_hdrs(set);
+
+	/* remove all remote replicas from poolset when cow */
+	if (cow && set->remote) {
+		ret = unlink_remote_replicas(set);
+		if (ret != 0)
+			goto err_replica;
+	}
 
 	return 0;
 

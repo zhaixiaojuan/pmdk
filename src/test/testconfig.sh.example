@@ -55,6 +55,11 @@ NON_PMEM_FS_DIR=/tmp
 # those devices in an array format. For most tests one device is enough, but
 # some might require more.
 #
+# For big sizes of DAX devices, some tests ran against Valgrind might fail due
+# to length of anonymous mmap and Valgrind limitations. Maximum possible length
+# is being calculated each time testconfig.sh changes. Tests which require more
+# than detected maximum possible length are skipped.
+#
 # It is required to have R/W access to these devices and at least RO access
 # to all of the following resource files (containing physical addresses)
 # of NVDIMM devices (only root can read them by default):
@@ -139,6 +144,10 @@ TM=1
 # module, so they can be considered as POTENTIALLY DANGEROUS
 # and have to be explicitly enabled.
 # Enable them ONLY IF you are sure you know what you are doing.
+#
+# As of kernel 4.20, the nfit-test module causes kernel oops whenever a devdax
+# namespace is created and then accessed for the first time. This causes several
+# of badblock-related unit tests to fail.
 #
 #ENABLE_NFIT_TESTS=y
 

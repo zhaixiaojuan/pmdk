@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018, Intel Corporation
+ * Copyright 2014-2019, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -41,8 +41,7 @@
 #include "valgrind_internal.h"
 #include "libpmem.h"
 #include "memblock.h"
-#include "ravl.h"
-#include "cuckoo.h"
+#include "critnib.h"
 #include "list.h"
 #include "mmap.h"
 #include "obj.h"
@@ -89,8 +88,8 @@ static const struct pool_attr Obj_open_attr = {
 		{0}, {0}, {0}, {0}, {0}
 };
 
-static struct cuckoo *pools_ht; /* hash table used for searching by UUID */
-static struct ravl *pools_tree; /* tree used for searching by address */
+static struct critnib *pools_ht; /* hash table used for searching by UUID */
+static struct critnib *pools_tree; /* tree used for searching by address */
 
 int _pobj_cache_invalidate;
 
@@ -226,40 +225,35 @@ err:
 }
 
 /*
- * obj_pool_cmp -- (internal) compares two PMEMobjpool pointers
- */
-static int
-obj_pool_cmp(const void *lhs, const void *rhs)
-{
-	if (lhs > rhs)
-		return 1;
-	else if (lhs < rhs)
-		return -1;
-
-	return 0;
-}
-
-/*
  * obj_pool_init -- (internal) allocate global structs holding all opened pools
  *
  * This is invoked on a first call to pmemobj_open() or pmemobj_create().
  * Memory is released in library destructor.
+ *
+ * This function needs to be threadsafe.
  */
 static void
 obj_pool_init(void)
 {
 	LOG(3, NULL);
 
-	if (pools_ht)
-		return;
+	struct critnib *c;
 
-	pools_ht = cuckoo_new();
-	if (pools_ht == NULL)
-		FATAL("!cuckoo_new");
+	if (pools_ht == NULL) {
+		c = critnib_new();
+		if (c == NULL)
+			FATAL("!critnib_new for pools_ht");
+		if (!util_bool_compare_and_swap64(&pools_ht, NULL, c))
+			critnib_delete(c);
+	}
 
-	pools_tree = ravl_new(obj_pool_cmp);
-	if (pools_tree == NULL)
-		FATAL("!ravl_new");
+	if (pools_tree == NULL) {
+		c = critnib_new();
+		if (c == NULL)
+			FATAL("!critnib_new for pools_tree");
+		if (!util_bool_compare_and_swap64(&pools_tree, NULL, c))
+			critnib_delete(c);
+	}
 }
 
 /*
@@ -277,12 +271,6 @@ pmemobj_oid(const void *addr)
 	PMEMoid oid = {pop->uuid_lo, (uintptr_t)addr - (uintptr_t)pop};
 	return oid;
 }
-
-/*
- * User may decide to map all pools with MAP_PRIVATE flag using
- * PMEMOBJ_COW environment variable.
- */
-static int Open_cow;
 
 /*
  * obj_init -- initialization of obj
@@ -307,11 +295,6 @@ obj_init(void)
 
 	COMPILE_ERROR_ON(PMEMOBJ_F_MEM_NOFLUSH != PMEM_F_MEM_NOFLUSH);
 
-#ifdef USE_COW_ENV
-	char *env = os_getenv("PMEMOBJ_COW");
-	if (env)
-		Open_cow = atoi(env);
-#endif
 
 #ifdef _WIN32
 	/* XXX - temporary implementation (see above) */
@@ -342,9 +325,9 @@ obj_fini(void)
 	LOG(3, NULL);
 
 	if (pools_ht)
-		cuckoo_delete(pools_ht);
+		critnib_delete(pools_ht);
 	if (pools_tree)
-		ravl_delete(pools_tree);
+		critnib_delete(pools_tree);
 	lane_info_destroy();
 	util_remote_fini();
 
@@ -1261,13 +1244,13 @@ obj_runtime_init(PMEMobjpool *pop, int rdonly, int boot, unsigned nlanes)
 
 		obj_pool_init();
 
-		if ((errno = cuckoo_insert(pools_ht, pop->uuid_lo, pop)) != 0) {
-			ERR("!cuckoo_insert");
-			goto err_cuckoo_insert;
+		if ((errno = critnib_insert(pools_ht, pop->uuid_lo, pop))) {
+			ERR("!critnib_insert to pools_ht");
+			goto err_critnib_insert;
 		}
 
-		if ((errno = ravl_insert(pools_tree, pop)) != 0) {
-			ERR("!ravl_insert");
+		if ((errno = critnib_insert(pools_tree, (uint64_t)pop, pop))) {
+			ERR("!critnib_insert to pools_tree");
 			goto err_tree_insert;
 		}
 	}
@@ -1287,14 +1270,12 @@ obj_runtime_init(PMEMobjpool *pop, int rdonly, int boot, unsigned nlanes)
 
 	return 0;
 
-	struct ravl_node *n;
-err_ctl:
-	n = ravl_find(pools_tree, pop, RAVL_PREDICATE_EQUAL);
+err_ctl:;
+	void *n = critnib_remove(pools_tree, (uint64_t)pop);
 	ASSERTne(n, NULL);
-	ravl_remove(pools_tree, n);
 err_tree_insert:
-	cuckoo_remove(pools_ht, pop->uuid_lo);
-err_cuckoo_insert:
+	critnib_remove(pools_ht, pop->uuid_lo);
+err_critnib_insert:
 	obj_runtime_cleanup_common(pop);
 err_boot:
 	stats_delete(pop, pop->stats);
@@ -1829,7 +1810,8 @@ pmemobj_openU(const char *path, const char *layout)
 {
 	LOG(3, "path %s layout %s", path, layout);
 
-	return obj_open_common(path, layout, Open_cow ? POOL_OPEN_COW : 0, 1);
+	return obj_open_common(path, layout,
+			COW_at_open ? POOL_OPEN_COW : 0, 1);
 }
 
 #ifndef _WIN32
@@ -1973,16 +1955,12 @@ pmemobj_close(PMEMobjpool *pop)
 
 	_pobj_cache_invalidate++;
 
-	if (cuckoo_remove(pools_ht, pop->uuid_lo) != pop) {
-		ERR("cuckoo_remove");
+	if (critnib_remove(pools_ht, pop->uuid_lo) != pop) {
+		ERR("critnib_remove for pools_ht");
 	}
 
-	struct ravl_node *n = ravl_find(pools_tree, pop, RAVL_PREDICATE_EQUAL);
-	if (n == NULL) {
-		ERR("ravl_find");
-	} else {
-		ravl_remove(pools_tree, n);
-	}
+	if (critnib_remove(pools_tree, (uint64_t)pop) != pop)
+		ERR("critnib_remove for pools_tree");
 
 #ifndef _WIN32
 
@@ -2109,7 +2087,7 @@ pmemobj_pool_by_oid(PMEMoid oid)
 	if (pools_ht == NULL)
 		return NULL;
 
-	return cuckoo_get(pools_ht, oid.pool_uuid_lo);
+	return critnib_get(pools_ht, oid.pool_uuid_lo);
 }
 
 /*
@@ -2130,12 +2108,10 @@ pmemobj_pool_by_ptr(const void *addr)
 	if (pools_tree == NULL)
 		return NULL;
 
-	struct ravl_node *n = ravl_find(pools_tree, addr,
-		RAVL_PREDICATE_LESS_EQUAL);
-	if (n == NULL)
+	pop = critnib_find_le(pools_tree, (uint64_t)addr);
+	if (pop == NULL)
 		return NULL;
 
-	pop = ravl_data(n);
 	size_t pool_size = pop->heap_offset + pop->heap_size;
 	if ((char *)addr >= (char *)pop + pool_size)
 		return NULL;
@@ -2204,7 +2180,7 @@ obj_alloc_construct(PMEMobjpool *pop, PMEMoid *oidp, size_t size,
 	int ret = palloc_operation(&pop->heap, 0,
 			oidp != NULL ? &oidp->off : NULL, size,
 			constructor_alloc, &carg, type_num, 0,
-			CLASS_ID_FROM_FLAG(flags),
+			CLASS_ID_FROM_FLAG(flags), ARENA_ID_FROM_FLAG(flags),
 			ctx);
 
 	pmalloc_operation_release(pop);
@@ -2329,7 +2305,7 @@ obj_free(PMEMobjpool *pop, PMEMoid *oidp)
 	operation_add_entry(ctx, &oidp->pool_uuid_lo, 0, ULOG_OPERATION_SET);
 
 	palloc_operation(&pop->heap, oidp->off, &oidp->off, 0, NULL, NULL,
-			0, 0, 0, ctx);
+			0, 0, 0, 0, ctx);
 
 	pmalloc_operation_release(pop);
 }
@@ -2404,7 +2380,8 @@ obj_realloc_common(PMEMobjpool *pop,
 	struct operation_context *ctx = pmalloc_operation_hold(pop);
 
 	int ret = palloc_operation(&pop->heap, oidp->off, &oidp->off,
-			size, constructor_realloc, &carg, type_num, 0, 0, ctx);
+			size, constructor_realloc, &carg, type_num,
+			0, 0, 0, ctx);
 
 	pmalloc_operation_release(pop);
 
@@ -2844,7 +2821,8 @@ obj_alloc_root(PMEMobjpool *pop, size_t size,
 	int ret = palloc_operation(&pop->heap, pop->root_offset,
 			&pop->root_offset, size,
 			constructor_zrealloc_root, &carg,
-			POBJ_ROOT_TYPE_NUM, OBJ_INTERNAL_OBJECT_MASK, 0, ctx);
+			POBJ_ROOT_TYPE_NUM, OBJ_INTERNAL_OBJECT_MASK,
+			0, 0, ctx);
 
 	pmalloc_operation_release(pop);
 
@@ -2992,7 +2970,7 @@ pmemobj_reserve(PMEMobjpool *pop, struct pobj_action *act,
 	PMEMoid oid = OID_NULL;
 
 	if (palloc_reserve(&pop->heap, size, NULL, NULL, type_num,
-		0, 0, act) != 0) {
+		0, 0, 0, act) != 0) {
 		PMEMOBJ_API_END();
 		return oid;
 	}
@@ -3032,7 +3010,8 @@ pmemobj_xreserve(PMEMobjpool *pop, struct pobj_action *act,
 	carg.arg = NULL;
 
 	if (palloc_reserve(&pop->heap, size, constructor_alloc, &carg,
-		type_num, 0, CLASS_ID_FROM_FLAG(flags), act) != 0) {
+		type_num, 0, CLASS_ID_FROM_FLAG(flags),
+		ARENA_ID_FROM_FLAG(flags), act) != 0) {
 		PMEMOBJ_API_END();
 		return oid;
 	}
@@ -3391,5 +3370,20 @@ void
 pobj_emit_log(const char *func, int order)
 {
 	util_emit_log("libpmemobj", func, order);
+}
+#endif
+
+#if FAULT_INJECTION
+void
+pmemobj_inject_fault_at(enum pmem_allocation_type type, int nth,
+							const char *at)
+{
+	common_inject_fault_at(type, nth, at);
+}
+
+int
+pmemobj_fault_injection_enabled(void)
+{
+	return common_fault_injection_enabled();
 }
 #endif

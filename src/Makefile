@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2018, Intel Corporation
+# Copyright 2014-2019, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -172,10 +172,15 @@ jemalloc-check: jemalloc-test
 test: all jemalloc-test
 	$(MAKE) -C test test
 
-check pcheck: test jemalloc-check
+check pcheck pycheck: test jemalloc-check
 	$(MAKE) -C test $@
 
-check-remote: test
+require-rpmem:
+ifneq ($(BUILD_RPMEM),y)
+	$(error ERROR: cannot run remote tests because $(BUILD_RPMEM_INFO))
+endif
+
+check-remote: require-rpmem test
 	$(MAKE) -C test $@
 
 jemalloc jemalloc-clean jemalloc-clobber jemalloc-test jemalloc-check:
@@ -233,4 +238,4 @@ clobber: clean-here
 
 .PHONY: all install uninstall clean clobber cstyle format test check pcheck\
 	jemalloc jemalloc-clean jemalloc-test jemalloc-check cscope $(ALL_TARGETS)\
-	pkg-config check-remote clean-here pkg-cfg-common
+	pkg-config check-remote clean-here pkg-cfg-common require-rpmem

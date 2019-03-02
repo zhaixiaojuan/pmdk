@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018, Intel Corporation
+ * Copyright 2014-2019, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -436,6 +436,42 @@ pmempool_create_parse_args(struct pmempool_create *pcp, const char *appname,
 	return 0;
 }
 
+static int
+allocate_max_size_available_file(const char *name_of_file, mode_t mode,
+		os_off_t max_size)
+{
+	int fd = os_open(name_of_file, O_CREAT | O_EXCL | O_RDWR, mode);
+	if (fd == -1) {
+		outv_err("!open '%s' failed", name_of_file);
+		return -1;
+	}
+
+	os_off_t offset = 0;
+	os_off_t length = max_size - (max_size % (os_off_t)Pagesize);
+	int ret;
+	do {
+		ret = os_posix_fallocate(fd, offset, length);
+		if (ret == 0)
+			offset += length;
+		else if (ret != ENOSPC) {
+			os_close(fd);
+			if (os_unlink(name_of_file) == -1)
+				outv_err("!unlink '%s' failed", name_of_file);
+			errno = ret;
+			outv_err("!space allocation for '%s' failed",
+					name_of_file);
+			return -1;
+		}
+
+		length /= 2;
+		length -= (length % (os_off_t)Pagesize);
+	} while (length > (os_off_t)Pagesize);
+
+	os_close(fd);
+
+	return 0;
+}
+
 /*
  * pmempool_create_func -- main function for create command
  */
@@ -595,6 +631,15 @@ pmempool_create_func(const char *appname, int argc, char *argv[])
 			}
 			outv(1, "Available space is %s\n",
 				out_get_size_str(pc.params.size, 2));
+			if (allocate_max_size_available_file(pc.fname,
+					pc.params.mode,
+					(os_off_t)pc.params.size))
+				return -1;
+			/*
+			 * We are going to create pool based
+			 * on file size instead of the pc.params.size.
+			 */
+			pc.params.size = 0;
 		} else {
 			if (!pc.fexists) {
 				outv(1, "No size option passed "

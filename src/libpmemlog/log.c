@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2018, Intel Corporation
+ * Copyright 2014-2019, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -156,11 +156,7 @@ log_runtime_init(PMEMlogpool *plp, int rdonly)
 		return -1;
 	}
 
-	if ((errno = os_rwlock_init(plp->rwlockp))) {
-		ERR("!os_rwlock_init");
-		Free((void *)plp->rwlockp);
-		return -1;
-	}
+	util_rwlock_init(plp->rwlockp);
 
 	/*
 	 * If possible, turn off all permissions on the pool header page.
@@ -353,7 +349,7 @@ pmemlog_openU(const char *path)
 {
 	LOG(3, "path %s", path);
 
-	return log_open_common(path, 0);
+	return log_open_common(path, COW_at_open ? POOL_OPEN_COW : 0);
 }
 
 #ifndef _WIN32
@@ -391,8 +387,7 @@ pmemlog_close(PMEMlogpool *plp)
 {
 	LOG(3, "plp %p", plp);
 
-	if ((errno = os_rwlock_destroy(plp->rwlockp)))
-		ERR("!os_rwlock_destroy");
+	util_rwlock_destroy(plp->rwlockp);
 	Free((void *)plp->rwlockp);
 
 	util_poolset_close(plp->set, DO_NOT_DELETE_PARTS);
@@ -406,10 +401,7 @@ pmemlog_nbyte(PMEMlogpool *plp)
 {
 	LOG(3, "plp %p", plp);
 
-	if ((errno = os_rwlock_rdlock(plp->rwlockp))) {
-		ERR("!os_rwlock_rdlock");
-		return (size_t)-1;
-	}
+	util_rwlock_rdlock(plp->rwlockp);
 
 	size_t size = le64toh(plp->end_offset) - le64toh(plp->start_offset);
 	LOG(4, "plp %p nbyte %zu", plp, size);
@@ -476,10 +468,7 @@ pmemlog_append(PMEMlogpool *plp, const void *buf, size_t count)
 		return -1;
 	}
 
-	if ((errno = os_rwlock_wrlock(plp->rwlockp))) {
-		ERR("!os_rwlock_wrlock");
-		return -1;
-	}
+	util_rwlock_wrlock(plp->rwlockp);
 
 	/* get the current values */
 	uint64_t end_offset = le64toh(plp->end_offset);
@@ -551,10 +540,7 @@ pmemlog_appendv(PMEMlogpool *plp, const struct iovec *iov, int iovcnt)
 		return -1;
 	}
 
-	if ((errno = os_rwlock_wrlock(plp->rwlockp))) {
-		ERR("!os_rwlock_wrlock");
-		return -1;
-	}
+	util_rwlock_wrlock(plp->rwlockp);
 
 	/* get the current values */
 	uint64_t end_offset = le64toh(plp->end_offset);
@@ -624,10 +610,7 @@ pmemlog_tell(PMEMlogpool *plp)
 {
 	LOG(3, "plp %p", plp);
 
-	if ((errno = os_rwlock_rdlock(plp->rwlockp))) {
-		ERR("!os_rwlock_rdlock");
-		return (os_off_t)-1;
-	}
+	util_rwlock_rdlock(plp->rwlockp);
 
 	ASSERT(le64toh(plp->write_offset) >= le64toh(plp->start_offset));
 	long long wp = (long long)(le64toh(plp->write_offset) -
@@ -654,10 +637,7 @@ pmemlog_rewind(PMEMlogpool *plp)
 		return;
 	}
 
-	if ((errno = os_rwlock_wrlock(plp->rwlockp))) {
-		ERR("!os_rwlock_wrlock");
-		return;
-	}
+	util_rwlock_wrlock(plp->rwlockp);
 
 	/* unprotect the pool descriptor (debug version only) */
 	RANGE_RW((char *)plp->addr + sizeof(struct pool_hdr),
@@ -693,10 +673,7 @@ pmemlog_walk(PMEMlogpool *plp, size_t chunksize,
 	 * in place. We prevent everyone from changing the data behind our back
 	 * until we are done with processing it.
 	 */
-	if ((errno = os_rwlock_rdlock(plp->rwlockp))) {
-		ERR("!os_rwlock_rdlock");
-		return;
-	}
+	util_rwlock_rdlock(plp->rwlockp);
 
 	char *data = plp->addr;
 	uint64_t write_offset = le64toh(plp->write_offset);
@@ -928,5 +905,20 @@ pmemlog_ctl_execW(PMEMlogpool *plp, const wchar_t *name, void *arg)
 	util_free_UTF8(uname);
 
 	return ret;
+}
+#endif
+
+#if FAULT_INJECTION
+void
+pmemlog_inject_fault_at(enum pmem_allocation_type type, int nth,
+							const char *at)
+{
+	common_inject_fault_at(type, nth, at);
+}
+
+int
+pmemlog_fault_injection_enabled(void)
+{
+	return common_fault_injection_enabled();
 }
 #endif

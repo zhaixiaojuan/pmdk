@@ -72,7 +72,7 @@ fi
 [ "$CHECK_TYPE" ] || CHECK_TYPE=auto
 [ "$CHECK_POOL" ] || CHECK_POOL=0
 [ "$VERBOSE" ] || VERBOSE=0
-[ -n "${SUFFIX+x}" ] || SUFFIX="😘⠝⠧⠍⠇ɗPMDKӜ⥺🙋"
+[ -n "${SUFFIX+x}" ] || SUFFIX="😘⠏⠍⠙⠅ɗPMDKӜ⥺🙋"
 
 export UNITTEST_LOG_LEVEL GREP TEST FS BUILD CHECK_TYPE CHECK_POOL VERBOSE SUFFIX
 
@@ -96,6 +96,7 @@ LIB_TOOLS="../../tools"
 [ "$FALLOCATE_DETECT" ] || FALLOCATE_DETECT=$TOOLS/fallocate_detect/fallocate_detect.static-nondebug
 [ "$OBJ_VERIFY" ] || OBJ_VERIFY=$TOOLS/obj_verify/obj_verify
 [ "$USC_PERMISSION" ] || USC_PERMISSION=$TOOLS/usc_permission_check/usc_permission_check.static-nondebug
+[ "$ANONYMOUS_MMAP" ] || ANONYMOUS_MMAP=$TOOLS/anonymous_mmap/anonymous_mmap.static-nondebug
 
 # force globs to fail if they don't match
 shopt -s failglob
@@ -126,7 +127,9 @@ $DIR_SRC/test/tools/ctrld/ctrld \
 $DIR_SRC/test/tools/fip/fip"
 
 # Portability
-VALGRIND_SUPP="--suppressions=../ld.supp --suppressions=../memcheck-libunwind.supp"
+VALGRIND_SUPP="--suppressions=../ld.supp \
+	--suppressions=../memcheck-libunwind.supp \
+	--suppressions=../memcheck-ndctl.supp"
 if [ "$(uname -s)" = "FreeBSD" ]; then
 	DATE="gdate"
 	DD="gdd"
@@ -355,7 +358,6 @@ function disable_exit_on_error() {
 	store_exit_on_error
 	set +e
 }
-
 
 #
 # get_files -- print list of files in the current directory matching the given regex to stdout
@@ -859,26 +861,12 @@ function expect_normal_exit() {
 		else
 			echo -e "$UNITTEST_NAME $msg." >&2
 		fi
-		if [ "$CHECK_TYPE" != "none" -a -f $VALGRIND_LOG_FILE ]; then
-			dump_last_n_lines $VALGRIND_LOG_FILE
-		fi
 
 		# ignore Ctrl-C
 		if [ $ret != 130 ]; then
-			for f in $(get_files "node_.*${UNITTEST_NUM}\.log"); do
+			for f in $(get_files ".*[a-zA-Z_]${UNITTEST_NUM}\.log"); do
 				dump_last_n_lines $f
 			done
-
-			dump_last_n_lines $TRACE_LOG_FILE
-			dump_last_n_lines $PMEM_LOG_FILE
-			dump_last_n_lines $PMEMOBJ_LOG_FILE
-			dump_last_n_lines $PMEMLOG_LOG_FILE
-			dump_last_n_lines $PMEMBLK_LOG_FILE
-			dump_last_n_lines $PMEMPOOL_LOG_FILE
-			dump_last_n_lines $VMEM_LOG_FILE
-			dump_last_n_lines $VMMALLOC_LOG_FILE
-			dump_last_n_lines $RPMEM_LOG_FILE
-			dump_last_n_lines $RPMEMD_LOG_FILE
 		fi
 
 		[ $NODES_MAX -ge 0 ] && clean_all_remote_nodes
@@ -1203,6 +1191,7 @@ function require_dev_dax_node() {
 # number of Device DAX devices
 #
 function require_dax_devices() {
+	REQUIRE_DAX_DEVICES=$1
 	require_dev_dax_node $1
 }
 
@@ -1459,7 +1448,7 @@ function require_native_fallocate() {
 }
 
 #
-# require_usc_persmission -- verify if usc can be read with current persmission
+# require_usc_permission -- verify if usc can be read with current permissions
 #
 function require_usc_permission() {
 	set +e
@@ -1996,6 +1985,53 @@ function require_no_sds() {
 }
 
 #
+# is_ndctl_ge_63 -- check if binary is compiled with libndctl 63+
+#
+#	usage: is_ndctl_ge_63 <binary>
+#
+function is_ndctl_ge_63() {
+	local binary=$1
+	local dir=.
+	if [ -z "$binary" ]; then
+		fatal "is_ndctl_ge_63: error: no binary found"
+	fi
+
+	strings ${binary} 2>&1 | \
+		grep -q "compiled with libndctl 63+" && true
+
+	return $?
+}
+
+#
+# require_user_bb -- checks if the binary has support for unprivileged
+#	bad block iteration
+#
+#	usage: require_user_bb <binary>
+#
+function require_user_bb() {
+	if ! is_ndctl_ge_63 $1 &> /dev/null ; then
+		msg "$UNITTEST_NAME: SKIP unprivileged bad block iteration not supported"
+		exit 0
+	fi
+
+	return 0
+}
+
+#
+# require_su_bb -- checks if the binary does not have support for
+#	unprivileged bad block iteration
+#
+#	usage: require_su_bb <binary>
+#
+function require_su_bb() {
+	if is_ndctl_ge_63 $1 &> /dev/null ; then
+		msg "$UNITTEST_NAME: SKIP unprivileged bad block iteration supported"
+		exit 0
+	fi
+	return 0
+}
+
+#
 # check_absolute_path -- continue script execution only if $DIR path is
 #                        an absolute path; do not resolve symlinks
 #
@@ -2112,7 +2148,7 @@ function require_node_libfabric() {
 
 	require_pkg libfabric "$version"
 	require_node_pkg $N libfabric "$version"
-	if [ "$RPMEM_DISABLE_LIBIBVERBS" != "y" ]; then
+	if [ "$RPMEM_PROVIDER" == "verbs" ]; then
 		if ! fi_info --list | grep -q verbs; then
 			msg "$UNITTEST_NAME: SKIP libfabric not compiled with verbs provider"
 			exit 0
@@ -2530,6 +2566,31 @@ function create_holey_file_on_node() {
 }
 
 #
+# require_mmap_under_valgrind -- only allow script to continue if mapping is
+#				possible under Valgrind with required length
+#				(sum of required DAX devices size).
+#				This function is being called internally in
+#				setup() function.
+#
+function require_mmap_under_valgrind() {
+
+	local FILE_MAX_DAX_DEVICES="../tools/anonymous_mmap/max_dax_devices"
+
+	if [ -z "$REQUIRE_DAX_DEVICES" ]; then
+		return
+	fi
+
+	if [ ! -f "$FILE_MAX_DAX_DEVICES" ]; then
+		fatal "$FILE_MAX_DAX_DEVICES not found. Run make test."
+	fi
+
+	if [ "$REQUIRE_DAX_DEVICES" -gt "$(< $FILE_MAX_DAX_DEVICES)" ]; then
+		msg "$UNITTEST_NAME: SKIP: anonymous mmap under Valgrind not possible for $REQUIRE_DAX_DEVICES DAX device(s)."
+		exit 0
+	fi
+}
+
+#
 # setup -- print message that test setup is commencing
 #
 function setup() {
@@ -2560,6 +2621,10 @@ function setup() {
 
 	if [ "$CHECK_TYPE" != "none" ]; then
 		require_valgrind
+
+		# detect possible Valgrind mmap issues and skip uncertain tests
+		require_mmap_under_valgrind
+
 		export VALGRIND_LOG_FILE=$CHECK_TYPE${UNITTEST_NUM}.log
 		MCSTR="/$CHECK_TYPE"
 	else
@@ -2592,6 +2657,10 @@ function setup() {
 	if [ "$DEVDAX_TO_LOCK" == 1 ]; then
 		lock_devdax
 	fi
+
+	export PMEMBLK_CONF="fallocate.at_create=0;"
+	export PMEMOBJ_CONF="fallocate.at_create=0;"
+	export PMEMLOG_CONF="fallocate.at_create=0;"
 }
 
 #
@@ -3242,11 +3311,11 @@ function get_pmemcheck_version()
 #
 # require_pmemcheck_version_ge - check if pmemcheck API
 # version is greater or equal to required value
-#	usage: require_pmemcheck_version_ge <major> <minor>
+#	usage: require_pmemcheck_version_ge <major> <minor> [binary]
 #
 function require_pmemcheck_version_ge()
 {
-	require_valgrind_tool pmemcheck
+	require_valgrind_tool pmemcheck $3
 
 	REQUIRE_MAJOR=$1
 	REQUIRE_MINOR=$2
@@ -3276,11 +3345,11 @@ function require_pmemcheck_version_ge()
 #
 # require_pmemcheck_version_lt - check if pmemcheck API
 # version is less than required value
-#	usage: require_pmemcheck_version_lt <major> <minor>
+#	usage: require_pmemcheck_version_lt <major> <minor> [binary]
 #
 function require_pmemcheck_version_lt()
 {
-	require_valgrind_tool pmemcheck
+	require_valgrind_tool pmemcheck $3
 
 	REQUIRE_MAJOR=$1
 	REQUIRE_MINOR=$2
@@ -3331,14 +3400,15 @@ function require_python3()
 }
 
 #
-# require_pmreorder -- check all necessarily conditions to run pmreorder
+# require_pmreorder -- check all necessary conditions to run pmreorder
+# usage: require_pmreorder [binary]
 #
 function require_pmreorder()
 {
 	# python3 and valgrind are necessary
 	require_python3
 	# pmemcheck is required to generate store_log
-	configure_valgrind pmemcheck force-enable
+	configure_valgrind pmemcheck force-enable $1
 	# pmreorder tool does not support unicode yet
 	require_no_unicode
 }

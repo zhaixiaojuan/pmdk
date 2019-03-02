@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018, Intel Corporation
+ * Copyright 2015-2019, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -320,6 +320,8 @@ pmembench_set_priv(struct benchmark *bench, void *priv)
 int
 pmembench_register(struct benchmark_info *bench_info)
 {
+	assert(bench_info->name && bench_info->brief);
+
 	struct benchmark *bench = (struct benchmark *)calloc(1, sizeof(*bench));
 	assert(bench != nullptr);
 
@@ -1163,8 +1165,9 @@ pmembench_single_repeat(struct benchmark *bench, struct benchmark_args *args,
 
 	if (bench->info->rm_file && !args->is_dynamic_poolset) {
 		ret = pmembench_remove_file(args->fname);
-		if (ret != 0) {
+		if (ret != 0 && errno != ENOENT) {
 			perror("removing file failed");
+
 			return ret;
 		}
 	}

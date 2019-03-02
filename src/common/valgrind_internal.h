@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018, Intel Corporation
+ * Copyright 2015-2019, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -136,6 +136,7 @@ extern unsigned _On_valgrind;
 #include "valgrind/pmemcheck.h"
 
 void pobj_emit_log(const char *func, int order);
+void pmem_emit_log(const char *func, int order);
 extern int _Pmreorder_emit;
 
 #define Pmreorder_emit __builtin_expect(_Pmreorder_emit, 0)
@@ -191,26 +192,6 @@ extern int _Pmreorder_emit;
 #define VALGRIND_WRITE_STATS do {\
 	if (On_valgrind)\
 		VALGRIND_PMC_WRITE_STATS;\
-} while (0)
-
-#define VALGRIND_LOG_STORES do {\
-	if (On_valgrind)\
-		VALGRIND_PMC_LOG_STORES;\
-} while (0)
-
-#define VALGRIND_NO_LOG_STORES do {\
-	if (On_valgrind)\
-		VALGRIND_PMC_NO_LOG_STORES;\
-} while (0)
-
-#define VALGRIND_ADD_LOG_REGION(addr, len) do {\
-	if (On_valgrind)\
-		VALGRIND_PMC_ADD_LOG_REGION((addr), (len));\
-} while (0)
-
-#define VALGRIND_REMOVE_LOG_REGION(addr, len) do {\
-	if (On_valgrind)\ \
-		VALGRIND_PMC_REMOVE_LOG_REGION((addr), (len));\
 } while (0)
 
 #define VALGRIND_EMIT_LOG(emit_log) do {\
@@ -274,6 +255,13 @@ extern int _Pmreorder_emit;
 	if (Pmreorder_emit)\
 		pobj_emit_log(__func__, 1);
 
+#define PMEM_API_START()\
+	if (Pmreorder_emit)\
+		pmem_emit_log(__func__, 0);
+#define PMEM_API_END()\
+	if (Pmreorder_emit)\
+		pmem_emit_log(__func__, 1);
+
 #else
 
 #define Pmreorder_emit (0)
@@ -321,20 +309,6 @@ extern int _Pmreorder_emit;
 
 #define VALGRIND_WRITE_STATS do {} while (0)
 
-#define VALGRIND_LOG_STORES do {} while (0)
-
-#define VALGRIND_NO_LOG_STORES do {} while (0)
-
-#define VALGRIND_ADD_LOG_REGION(addr, len) do {\
-	(void) (addr);\
-	(void) (len);\
-} while (0)
-
-#define VALGRIND_REMOVE_LOG_REGION(addr, len) do {\
-	(void) (addr);\
-	(void) (len);\
-} while (0)
-
 #define VALGRIND_EMIT_LOG(emit_log) do {\
 	(void) (emit_log);\
 } while (0)
@@ -379,6 +353,10 @@ extern int _Pmreorder_emit;
 #define PMEMOBJ_API_START() do {} while (0)
 
 #define PMEMOBJ_API_END() do {} while (0)
+
+#define PMEM_API_START() do {} while (0)
+
+#define PMEM_API_END() do {} while (0)
 
 #endif
 

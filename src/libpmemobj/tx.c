@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018, Intel Corporation
+ * Copyright 2015-2019, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -586,7 +586,8 @@ tx_alloc_common(struct tx *tx, size_t size, type_num_t type_num,
 		return obj_tx_abort_null(ENOMEM);
 
 	if (palloc_reserve(&pop->heap, size, constructor, &args, type_num, 0,
-		CLASS_ID_FROM_FLAG(args.flags), action) != 0)
+		CLASS_ID_FROM_FLAG(args.flags),
+		ARENA_ID_FROM_FLAG(args.flags), action) != 0)
 		goto err_oom;
 
 	/* allocate object to undo log */
@@ -1743,7 +1744,7 @@ CTL_WRITE_HANDLER(size)(void *ctx,
 	return 0;
 }
 
-static struct ctl_argument CTL_ARG(size) = CTL_ARG_LONG_LONG;
+static const struct ctl_argument CTL_ARG(size) = CTL_ARG_LONG_LONG;
 
 /*
  * CTL_READ_HANDLER(threshold) -- gets the cache threshold transaction parameter
@@ -1769,7 +1770,7 @@ CTL_WRITE_HANDLER(threshold)(void *ctx,
 	return 0;
 }
 
-static struct ctl_argument CTL_ARG(threshold) = CTL_ARG_LONG_LONG;
+static const struct ctl_argument CTL_ARG(threshold) = CTL_ARG_LONG_LONG;
 
 static const struct ctl_node CTL_NODE(cache)[] = {
 	CTL_LEAF_RW(size),
@@ -1811,7 +1812,8 @@ CTL_WRITE_HANDLER(skip_expensive_checks)(void *ctx,
 	return 0;
 }
 
-static struct ctl_argument CTL_ARG(skip_expensive_checks) = CTL_ARG_BOOLEAN;
+static const struct ctl_argument CTL_ARG(skip_expensive_checks) =
+		CTL_ARG_BOOLEAN;
 
 static const struct ctl_node CTL_NODE(debug)[] = {
 	CTL_LEAF_RW(skip_expensive_checks),
@@ -1839,7 +1841,7 @@ CTL_WRITE_HANDLER(queue_depth)(void *ctx, enum ctl_query_source source,
 	return 0;
 }
 
-static struct ctl_argument CTL_ARG(queue_depth) = CTL_ARG_INT;
+static const struct ctl_argument CTL_ARG(queue_depth) = CTL_ARG_INT;
 
 /*
  * CTL_READ_HANDLER(worker) -- launches the post commit worker thread function

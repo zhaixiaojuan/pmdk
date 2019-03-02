@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2018, Intel Corporation
+# Copyright 2014-2019, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -74,14 +74,16 @@ OBJ_TESTS = \
 	obj_bucket\
 	obj_check\
 	obj_constructor\
+	obj_critnib\
+	obj_critnib_mt\
 	obj_ctl_alignment\
 	obj_ctl_alloc_class\
 	obj_ctl_alloc_class_config\
+	obj_ctl_arenas\
 	obj_ctl_config\
 	obj_ctl_debug\
 	obj_ctl_heap_size\
 	obj_ctl_stats\
-	obj_cuckoo\
 	obj_debug\
 	obj_direct\
 	obj_direct_volatile\
@@ -149,7 +151,8 @@ OBJ_REMOTE_DEPS = \
 OBJ_REMOTE_TESTS = \
 	obj_rpmem_basic_integration\
 	obj_rpmem_heap_interrupt\
-	obj_rpmem_heap_state
+	obj_rpmem_heap_state\
+	obj_check_remote
 
 OTHER_TESTS = \
 	arch_flags\
@@ -157,6 +160,7 @@ OTHER_TESTS = \
 	checksum\
 	compat_incompat_features\
 	ctl_prefault\
+	ctl_cow\
 	magic\
 	out_err\
 	out_err_mt\
@@ -357,9 +361,12 @@ format  : TARGET = format
 check   : TARGET = check
 pcheck  : TARGET = pcheck
 sparse  : TARGET = sparse
+pycheck : TARGET = pycheck
 
 DIR_SYNC=$(TOP)/src/test/.sync-dir
 SYNC_EXT=synced
+TESTCONFIG=$(TOP)/src/test/testconfig.sh
+FILE_MAX_DAX_DEVICES=$(TOP)/src/test/tools/anonymous_mmap/max_dax_devices
 
 all test format sparse: $(TESTS_BUILD)
 
@@ -369,6 +376,7 @@ cstyle: $(TESTS_BUILD)
 clean clobber: $(TESTS_BUILD)
 	$(RM) -r $(DIR_SYNC)
 	$(RM) *.$(SYNC_EXT)
+	$(RM) $(FILE_MAX_DAX_DEVICES)
 
 $(TESTS) $(OBJ_DEPS) $(LIBPMEMPOOL_DEPS) $(LIBPMEMPOOL_MOD_DEPS) $(VMMALLOC_DUMMY_FUNCS_DEPS): $(TEST_DEPS)
 
@@ -381,6 +389,11 @@ $(VMMALLOC_DUMMY_FUNCS_TESTS): $(VMMALLOC_DUMMY_FUNCS_DEPS)
 $(TESTS_BUILD):
 	$(MAKE) -C $@ $(TARGET)
 
+require-rpmem:
+ifneq ($(BUILD_RPMEM),y)
+	$(error ERROR: cannot run remote tests because $(BUILD_RPMEM_INFO))
+endif
+
 memcheck-summary:
 	grep ERROR */memcheck*.log
 
@@ -390,20 +403,32 @@ memcheck-summary-errors:
 memcheck-summary-leaks:
 	grep "in use at exit" */memcheck*.log | grep -v " 0 bytes in 0 blocks" || true
 
-check: sync-remotes
-	@./RUNTESTS $(RUNTEST_OPTIONS) $(TESTS)
+check:
+	@./RUNTESTS $(RUNTEST_OPTIONS) $(LOCAL_TESTS)
+	$(MAKE) check-remote-quiet-conditional
 	@echo "No failures."
+
+pycheck:
+	@./RUNTESTS.py $(RUNTEST_OPTIONS)
+	@echo "No failures."
+
+check-remote-quiet-conditional:
+ifeq ($(BUILD_RPMEM),y)
+	$(MAKE) check-remote-quiet
+else
+	$(info NOTE: Skipping remote tests because $(BUILD_RPMEM_INFO))
+endif
 
 check-remote-quiet: sync-remotes
 	@MAKEFLAGS="$(MAKEFLAGS)" ./RUNTESTS $(RUNTEST_OPTIONS) $(REMOTE_TESTS)
 
-sync-remotes: test
+sync-remotes: require-rpmem test
 
 check-remote: check-remote-quiet
 	@echo "No failures."
 
 # XXX remote tests do not work in parallel mode
-pcheck: pcheck-local-quiet check-remote-quiet
+pcheck: pcheck-local-quiet check-remote-quiet-conditional
 	@echo "No failures."
 
 pcheck-blk: TARGET = pcheck
@@ -456,8 +481,6 @@ pcheck-remote: TARGET = pcheck
 pcheck-remote: $(REMOTE_TESTS)
 	@echo "No failures."
 
-TESTCONFIG=$(TOP)/src/test/testconfig.sh
-
 $(TESTCONFIG):
 
 SUPP_SYNC_FILES=$(shell echo *.supp | sed s/supp/$(SYNC_EXT)/g)
@@ -486,5 +509,6 @@ endif
 
 .PHONY: all check clean clobber cstyle pcheck pcheck-blk pcheck-log pcheck-obj\
 	 pcheck-other pcheck-pmem pcheck-pmempool pcheck-vmem pcheck-vmmalloc\
-	 test unittest tools check-remote format pcheck-libpmempool\
-	 pcheck-rpmem pcheck-local pcheck-remote sync-remotes $(TESTS_BUILD)
+	 test unittest tools check-remote format pcheck-libpmempool pycheck\
+	 pcheck-rpmem pcheck-local pcheck-remote sync-remotes $(TESTS_BUILD)\
+	 require-rpmem check-remote-quiet check-remote-quiet-conditional

@@ -19,7 +19,7 @@
     <ClCompile Include="..\..\libpmemobj\ctl_debug.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libpmemobj\cuckoo.c">
+    <ClCompile Include="..\..\libpmemobj\critnib.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\libpmemobj\heap.c">
@@ -74,6 +74,9 @@
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\common\ctl_sds.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\common\ctl_fallocate.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>

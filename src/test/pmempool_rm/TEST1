@@ -70,11 +70,20 @@ check_files\
 	$DIR/rep.part1\
 	$DIR/rep.part2
 
-echo -e "n\nn\nn\ny\ny\ny\ny\n" | expect_normal_exit $PMEMPOOL$EXESUFFIX rm -sv\
+expect_normal_exit $PMEMPOOL$EXESUFFIX rm -sv\
 	$DIR/pool.log\
 	$DIR/pool.blk\
 	$DIR/pool.obj\
-	$DIR/pool.set >> $LOG
+	$DIR/pool.set >> $LOG 2>&1 << EOF
+n
+n
+n
+y
+y
+y
+y
+n
+EOF
 
 check_files\
 	$DIR/pool.log\

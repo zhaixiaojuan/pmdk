@@ -42,6 +42,7 @@ MAINTAINER marcin.slusarz@intel.com
 RUN dnf update -y \
  && dnf install -y \
 	asciidoc \
+	asciidoctor \
 	autoconf \
 	automake \
 	bash-completion \
@@ -56,7 +57,9 @@ RUN dnf update -y \
 	gdb \
 	git \
 	glib2-devel \
+	hub \
 	json-c-devel \
+	keyutils-libs-devel \
 	kmod-devel \
 	lbzip2 \
 	libtool \
@@ -84,7 +87,7 @@ RUN dnf update -y \
 
 # Install libndctl
 COPY install-libndctl.sh install-libndctl.sh
-RUN ./install-libndctl.sh fedora
+RUN ./install-libndctl.sh tags/v64.1 fedora
 
 # Install valgrind
 COPY install-valgrind.sh install-valgrind.sh
