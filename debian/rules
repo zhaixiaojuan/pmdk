@@ -34,5 +34,5 @@ ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 	echo "TEST_BUILD=\"debug nondebug\"" >> src/test/testconfig.sh
 	# Display execution time of each test
 	echo "TM=1" >> src/test/testconfig.sh
-	+$(MAKE) check
+	+$(MAKE) check UNITTEST_CHECK_OPEN_FILES_IGNORE_BADBLOCKS=y
 endif
