@@ -35,6 +35,7 @@
  */
 
 #include <inttypes.h>
+#include <sched.h>
 
 #include "obj.h"
 #include "out.h"
@@ -71,12 +72,16 @@ _get_value(uint64_t pop_runid, volatile uint64_t *runid, void *value, void *arg,
 	int initializer = 0;
 
 	while ((tmp_runid = *runid) != pop_runid) {
-		if (tmp_runid == pop_runid - 1)
+		if (tmp_runid == pop_runid - 1) {
+			sched_yield();
 			continue;
+		}
 
 		if (!util_bool_compare_and_swap64(runid, tmp_runid,
-				pop_runid - 1))
+				pop_runid - 1)) {
+			sched_yield();
 			continue;
+		}
 
 		initializer = 1;
 
