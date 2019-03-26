@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2015-2019, Intel Corporation
+# Copyright 2019, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -32,18 +32,25 @@
 #
 
 #
-# src/test/obj_critnib/TEST2 -- multithreaded test for critnib
+# src/test/obj_recovery/TEST9 -- unit test for pool recovery
 #
 
 # standard unit test setup
 . ../unittest/unittest.sh
 
-require_test_type long
-require_fs_type none
-configure_valgrind drd force-enable
+require_test_type medium
+require_no_asan
 
 setup
 
-expect_normal_exit ./obj_critnib_mt$EXESUFFIX
+# exits in the middle of transaction, so pool cannot be closed
+export MEMCHECK_DONT_CHECK_LEAKS=1
+
+create_holey_file 16M $DIR/testfile
+
+expect_normal_exit ./obj_recovery$EXESUFFIX $DIR/testfile n c l
+expect_normal_exit ./obj_recovery$EXESUFFIX $DIR/testfile n o l
+
+check
 
 pass
