@@ -1,3 +1,9 @@
+pmdk (1.6-1) experimental; urgency=medium
+
+  * New upstream release.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Tue, 26 Mar 2019 22:58:25 +0100
+
 pmdk (1.6~rc2-1) experimental; urgency=medium
 
   * New upstream pre-release.
