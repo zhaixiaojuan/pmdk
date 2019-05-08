@@ -23,6 +23,9 @@ override_dh_install:
 override_dh_installexamples:
 	dh_installexamples --exclude=.gitignore --exclude=.vcxproj
 
+override_dh_missing:
+	dh_missing --list-missing --exclude=usr/share/man --exclude=usr/lib/$(DEB_HOST_MULTIARCH)/pmdk_debug/ --exclude=usr/share/bash-completion/completions/pmempool
+
 override_dh_auto_test:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 	# Use fake pmem; we really want tmpfs if possible.
