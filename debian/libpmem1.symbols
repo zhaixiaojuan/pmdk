@@ -1,4 +1,5 @@
 libpmem.so.1 libpmem1 #MINVER#
+* Build-Depends-Package: libpmem-dev
  LIBPMEM_1.0@LIBPMEM_1.0 1.4
  pmem_check_version@LIBPMEM_1.0 1.4
  pmem_deep_drain@LIBPMEM_1.0 1.4

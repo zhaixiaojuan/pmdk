@@ -1,4 +1,5 @@
 libpmemlog.so.1 libpmemlog1 #MINVER#
+* Build-Depends-Package: libpmemlog-dev
  LIBPMEMLOG_1.0@LIBPMEMLOG_1.0 1.4
  pmemlog_append@LIBPMEMLOG_1.0 1.4
  pmemlog_appendv@LIBPMEMLOG_1.0 1.4

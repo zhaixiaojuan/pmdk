@@ -1,4 +1,5 @@
 libpmemobj.so.1 libpmemobj1 #MINVER#
+* Build-Depends-Package: libpmemobj-dev
  LIBPMEMOBJ_1.0@LIBPMEMOBJ_1.0 1.4
  _pobj_cache_invalidate@LIBPMEMOBJ_1.0 1.4
  _pobj_cached_pool@LIBPMEMOBJ_1.0 1.4

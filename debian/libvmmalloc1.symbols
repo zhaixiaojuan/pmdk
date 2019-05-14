@@ -1,4 +1,5 @@
 libvmmalloc.so.1 libvmmalloc1 #MINVER#
+* Build-Depends-Package: libvmmalloc-dev
  __free_hook@Base 1.4
  __malloc_hook@Base 1.4
  __memalign_hook@Base 1.4

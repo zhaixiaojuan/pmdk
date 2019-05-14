@@ -1,4 +1,5 @@
 libpmemblk.so.1 libpmemblk1 #MINVER#
+* Build-Depends-Package: libpmemblk-dev
  LIBPMEMBLK_1.0@LIBPMEMBLK_1.0 1.4
  pmemblk_bsize@LIBPMEMBLK_1.0 1.4
  pmemblk_check@LIBPMEMBLK_1.0 1.4

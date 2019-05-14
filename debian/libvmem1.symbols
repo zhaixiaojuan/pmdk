@@ -1,4 +1,5 @@
 libvmem.so.1 libvmem1 #MINVER#
+* Build-Depends-Package: libvmem-dev
  LIBVMEM_1.0@LIBVMEM_1.0 1.4
  vmem_aligned_alloc@LIBVMEM_1.0 1.4
  vmem_calloc@LIBVMEM_1.0 1.4
