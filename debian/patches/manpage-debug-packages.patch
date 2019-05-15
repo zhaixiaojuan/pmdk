@@ -17,7 +17,7 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
  place the mapping.
  
 +>NOTE:
-+On Ubuntu systems, this extra debug version of the library is
++On Debian/Ubuntu systems, this extra debug version of the library is
 +shipped in the respective **-debug** Debian package and placed in
 +the **/usr/lib/$ARCH/pmdk_dbg/** directory.
  
@@ -28,7 +28,7 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
  written to *stderr*.
  
 +>NOTE:
-+On Ubuntu systems, this extra debug version of the library is
++On Debian/Ubuntu systems, this extra debug version of the library is
 +shipped in the respective **-debug** Debian package and placed in
 +the **/usr/lib/$ARCH/pmdk_dbg/** directory.
  
@@ -41,7 +41,7 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
  that may affect **libpmemblk** behavior.
  
 +>NOTE:
-+On Ubuntu systems, this extra debug version of the library is
++On Debian/Ubuntu systems, this extra debug version of the library is
 +shipped in the respective **-debug** Debian package and placed in
 +the **/usr/lib/$ARCH/pmdk_dbg/** directory.
  
@@ -54,7 +54,7 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
  variables affecting **libpmemlog** behavior.
  
 +>NOTE:
-+On Ubuntu systems, this extra debug version of the library is
++On Debian/Ubuntu systems, this extra debug version of the library is
 +shipped in the respective **-debug** Debian package and placed in
 +the **/usr/lib/$ARCH/pmdk_dbg/** directory.
  
@@ -67,7 +67,7 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
  about other environment variables affecting **libpmemobj** behavior.
  
 +>NOTE:
-+On Ubuntu systems, this extra debug version of the library is
++On Debian/Ubuntu systems, this extra debug version of the library is
 +shipped in the respective **-debug** Debian package and placed in
 +the **/usr/lib/$ARCH/pmdk_dbg/** directory.
  
@@ -80,7 +80,7 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
  written to *stderr*.
  
 +>NOTE:
-+On Ubuntu systems, this extra debug version of the library is
++On Debian/Ubuntu systems, this extra debug version of the library is
 +shipped in the respective **-debug** Debian package and placed in
 +the **/usr/lib/$ARCH/pmdk_dbg/** directory.
  
@@ -93,7 +93,7 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
  **RPMEM_LOG_FILE** is not set, logging output is written to *stderr*.
  
 +>NOTE:
-+On Ubuntu systems, this extra debug version of the library is
++On Debian/Ubuntu systems, this extra debug version of the library is
 +shipped in the respective **-debug** Debian package and placed in
 +the **/usr/lib/$ARCH/pmdk_dbg/** directory.
  
@@ -106,7 +106,7 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
  written to *stderr*.
  
 +>NOTE:
-+On Ubuntu systems, this extra debug version of the library is
++On Debian/Ubuntu systems, this extra debug version of the library is
 +shipped in the respective **-debug** Debian package and placed in
 +the **/usr/lib/$ARCH/pmdk_dbg/** directory.
  
@@ -119,7 +119,7 @@ This patch header follows DEP-3: http://dep.debian.net/deps/dep3/
  summary statistics at program termination.
  
 +>NOTE:
-+On Ubuntu systems, this extra debug version of the library is
++On Debian/Ubuntu systems, this extra debug version of the library is
 +shipped in the respective **-debug** Debian package and placed in
 +the **/usr/lib/$ARCH/pmdk_dbg/** directory.
  
