@@ -257,6 +257,10 @@ output is written to *stderr*.
 See also **libpmem**(7) for information on other environment variables
 that may affect **libpmemblk** behavior.
 
+>NOTE:
+On Debian/Ubuntu systems, this extra debug version of the library is
+shipped in the respective **-debug** Debian package and placed in
+the **/usr/lib/$ARCH/pmdk_dbg/** directory.
 
 # EXAMPLE #
 

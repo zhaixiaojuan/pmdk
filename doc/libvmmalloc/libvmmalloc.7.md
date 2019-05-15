@@ -255,6 +255,10 @@ written to *stderr*.
 Setting **VMMALLOC_LOG_STATS** to 1 enables logging human-readable
 summary statistics at program termination.
 
+>NOTE:
+On Debian/Ubuntu systems, this extra debug version of the library is
+shipped in the respective **-debug** Debian package and placed in
+the **/usr/lib/$ARCH/pmdk_dbg/** directory.
 
 # NOTES #
 

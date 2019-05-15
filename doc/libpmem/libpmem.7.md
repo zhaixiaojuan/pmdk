@@ -261,6 +261,10 @@ affects all the PMDK libraries,** disabling mapping address randomization
 and causing the specified address to be used as a hint about where to
 place the mapping.
 
+>NOTE:
+On Debian/Ubuntu systems, this extra debug version of the library is
+shipped in the respective **-debug** Debian package and placed in
+the **/usr/lib/$ARCH/pmdk_dbg/** directory.
 
 # DEBUGGING AND ERROR HANDLING #
 
@@ -320,6 +324,10 @@ is "-", the *PID* of the current process will be appended to the file name when
 the log file is created. If **PMEM_LOG_FILE** is not set, output is
 written to *stderr*.
 
+>NOTE:
+On Debian/Ubuntu systems, this extra debug version of the library is
+shipped in the respective **-debug** Debian package and placed in
+the **/usr/lib/$ARCH/pmdk_dbg/** directory.
 
 # EXAMPLE #
 

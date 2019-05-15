@@ -256,6 +256,10 @@ process will be appended to the file name when the log file is created. If
 See also **libpmem**(7) for information about other environment
 variables affecting **libpmemlog** behavior.
 
+>NOTE:
+On Debian/Ubuntu systems, this extra debug version of the library is
+shipped in the respective **-debug** Debian package and placed in
+the **/usr/lib/$ARCH/pmdk_dbg/** directory.
 
 # EXAMPLE #
 

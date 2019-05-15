@@ -355,6 +355,10 @@ If the last character in the name is "-", the *PID* of the current process will
 be appended to the file name when the log file is created. If
 **RPMEM_LOG_FILE** is not set, logging output is written to *stderr*.
 
+>NOTE:
+On Debian/Ubuntu systems, this extra debug version of the library is
+shipped in the respective **-debug** Debian package and placed in
+the **/usr/lib/$ARCH/pmdk_dbg/** directory.
 
 # EXAMPLE #
 

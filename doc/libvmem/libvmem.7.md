@@ -235,6 +235,10 @@ is "-", the *PID* of the current process will be appended to the file name when
 the log file is created. If **VMEM_LOG_FILE** is not set, output is
 written to *stderr*.
 
+>NOTE:
+On Debian/Ubuntu systems, this extra debug version of the library is
+shipped in the respective **-debug** Debian package and placed in
+the **/usr/lib/$ARCH/pmdk_dbg/** directory.
 
 # EXAMPLE #
 
