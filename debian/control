@@ -323,8 +323,8 @@ Architecture: amd64
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory dynamic allocation support library
  The libvmmalloc library transparently converts all the dynamic memory
- allocations into persistent memory allocations.  This allows the use of
- persistent memory as volatile memory without modifying the target
+ allocations into volatile persistent memory allocations.  This allows the
+ use of persistent memory as volatile memory without modifying the target
  application.
 
 Package: libvmmalloc1-debug
@@ -332,8 +332,8 @@ Architecture: amd64
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory dynamic allocation support library — debug build
  The libvmmalloc library transparently converts all the dynamic memory
- allocations into persistent memory allocations.  This allows the use of
- persistent memory as volatile memory without modifying the target
+ allocations into volatile persistent memory allocations.  This allows the
+ use of persistent memory as volatile memory without modifying the target
  application.
  .
  This package contains a special build of this library meant for debugging
@@ -349,7 +349,7 @@ Depends: libpmem-dev (= ${binary:Version}),
          ${shlibs:Depends}
 Description: development files for libvmmalloc1
  The libvmmalloc library transparently converts all the dynamic memory
- allocations into persistent memory allocations.
+ allocations into volatile persistent memory allocations.
  .
  This package contains libraries and header files used for linking programs
  against libvmalloc.
