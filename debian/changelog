@@ -1,3 +1,9 @@
+pmdk (1.6-3) unstable; urgency=medium
+
+  * Disable obj_pool/TEST34 again -- times out on crap hardware.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 08 Jul 2019 15:28:07 +0200
+
 pmdk (1.6-2) unstable; urgency=medium
 
   * Upload to unstable.
