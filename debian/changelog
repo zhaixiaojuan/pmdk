@@ -1,3 +1,11 @@
+pmdk (1.6-2) unstable; urgency=medium
+
+  * Upload to unstable.
+  * Merge in Ubuntu changes (dh_missing, Build-Depends-Package, docs).
+  * Other minor docs improvements.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 08 Jul 2019 11:55:38 +0200
+
 pmdk (1.6-1) experimental; urgency=medium
 
   * New upstream release.
