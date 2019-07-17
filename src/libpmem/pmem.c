@@ -170,6 +170,7 @@
 #include <sys/stat.h>
 #include <errno.h>
 #include <fcntl.h>
+#include <xmmintrin.h>
 
 #include "libpmem.h"
 #include "pmem.h"
@@ -204,7 +205,7 @@ pmem_drain(void)
 {
 	LOG(15, NULL);
 
-	Funcs.predrain_fence();
+	_mm_sfence();
 }
 
 /*

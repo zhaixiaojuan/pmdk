@@ -51,7 +51,6 @@ extern "C" {
 #define PMEM_LOG_LEVEL_VAR "PMEM_LOG_LEVEL"
 #define PMEM_LOG_FILE_VAR "PMEM_LOG_FILE"
 
-typedef void (*predrain_fence_func)(void);
 typedef void (*flush_func)(const void *, size_t);
 typedef int (*is_pmem_func)(const void *addr, size_t len);
 typedef void *(*memmove_nodrain_func)(void *pmemdest, const void *src,
@@ -60,7 +59,6 @@ typedef void *(*memset_nodrain_func)(void *pmemdest, int c, size_t len,
 		unsigned flags);
 
 struct pmem_funcs {
-	predrain_fence_func predrain_fence;
 	flush_func flush;
 	is_pmem_func is_pmem;
 	memmove_nodrain_func memmove_nodrain;

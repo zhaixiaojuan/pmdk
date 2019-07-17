@@ -47,28 +47,6 @@
 size_t Movnt_threshold = MOVNT_THRESHOLD;
 
 /*
- * predrain_fence_empty -- (internal) issue the pre-drain fence instruction
- */
-static void
-predrain_fence_empty(void)
-{
-	LOG(15, NULL);
-
-	VALGRIND_DO_FENCE;
-	/* nothing to do (because CLFLUSH did it for us) */
-}
-
-/*
- * predrain_memory_barrier -- (internal) issue the pre-drain fence instruction
- */
-static void
-predrain_memory_barrier(void)
-{
-	LOG(15, NULL);
-	_mm_sfence();	/* ensure CLWB or CLFLUSHOPT completes */
-}
-
-/*
  * flush_clflush -- (internal) flush the CPU cache, using clflush
  */
 static void
@@ -380,7 +358,6 @@ pmem_cpuinfo_to_funcs(struct pmem_funcs *funcs, enum memcpy_impl *impl)
 			LOG(3, "PMEM_NO_CLFLUSHOPT forced no clflushopt");
 		} else {
 			funcs->deep_flush = flush_clflushopt;
-			funcs->predrain_fence = predrain_memory_barrier;
 		}
 	}
 
@@ -392,7 +369,6 @@ pmem_cpuinfo_to_funcs(struct pmem_funcs *funcs, enum memcpy_impl *impl)
 			LOG(3, "PMEM_NO_CLWB forced no clwb");
 		} else {
 			funcs->deep_flush = flush_clwb;
-			funcs->predrain_fence = predrain_memory_barrier;
 		}
 	}
 
@@ -418,7 +394,6 @@ pmem_init_funcs(struct pmem_funcs *funcs)
 {
 	LOG(3, NULL);
 
-	funcs->predrain_fence = predrain_fence_empty;
 	funcs->deep_flush = flush_clflush;
 	funcs->is_pmem = NULL;
 	funcs->memmove_nodrain = memmove_nodrain_generic;
@@ -476,7 +451,6 @@ pmem_init_funcs(struct pmem_funcs *funcs)
 		funcs->flush = funcs->deep_flush;
 	} else {
 		funcs->flush = flush_empty;
-		funcs->predrain_fence = predrain_memory_barrier;
 	}
 
 	if (funcs->deep_flush == flush_clwb)
