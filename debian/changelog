@@ -1,3 +1,16 @@
+pmdk (1.6-4) unstable; urgency=medium
+
+  * Fix FTBFS with valgrind 3.15.
+  * Fix a strict aliasing violation (caused crashes with some
+    compiler:platform combinations).
+  * Depend on valgrind that doesn't SIGILL on DC CVAC on arm64.
+  * Unversion B-Dep on dh-exec.
+  * Increase test timeout by 10×.
+  * dh 12.
+  * R³.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 22 Jul 2019 23:31:11 +0200
+
 pmdk (1.6-3) unstable; urgency=medium
 
   * Disable obj_pool/TEST34 again -- times out on crap hardware.
