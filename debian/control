@@ -4,7 +4,7 @@ Priority: optional
 Maintainer: Adam Borowski <kilobyte@angband.pl>
 Build-Depends: bash-completion,
                bc,
-               debhelper (>= 11),
+               debhelper-compat (= 12),
                dh-exec (>= 0.3),
                libdaxctl-dev (>= 60.1),
                libfabric-dev [amd64],
