@@ -41,5 +41,5 @@ ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 	rm -f src/test/obj_pool/TEST34
 	# Be nice to slow hardware.
 	echo TEST_TIMEOUT=30m >> src/test/testconfig.sh
-	+$(MAKE) check UNITTEST_CHECK_OPEN_FILES_IGNORE_BADBLOCKS=y
+	+$(MAKE) check
 endif
