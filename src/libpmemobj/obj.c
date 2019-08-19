@@ -1556,9 +1556,8 @@ obj_check_basic_remote(PMEMobjpool *pop, size_t mapped_size)
 
 	/* pop->heap_size can still be 0 at this point */
 	size_t heap_size = mapped_size - pop->heap_offset;
-	errno = palloc_heap_check_remote((char *)pop + pop->heap_offset,
-		heap_size, &pop->p_ops.remote);
-	if (errno != 0) {
+	if (palloc_heap_check_remote((char *)pop + pop->heap_offset,
+			heap_size, &pop->p_ops.remote)) {
 		LOG(2, "!heap_check_remote");
 		consistent = 0;
 	}
@@ -2933,26 +2932,26 @@ pmemobj_next(PMEMoid oid)
 {
 	LOG(3, "oid.off 0x%016" PRIx64, oid.off);
 
-	if (oid.off == 0)
+	PMEMoid curr = oid;
+	if (curr.off == 0)
 		return OID_NULL;
 
-	PMEMobjpool *pop = pmemobj_pool_by_oid(oid);
-
+	PMEMobjpool *pop = pmemobj_pool_by_oid(curr);
 	ASSERTne(pop, NULL);
-	ASSERT(OBJ_OID_IS_VALID(pop, oid));
 
-	PMEMoid ret = {0, 0};
-	uint64_t off = palloc_next(&pop->heap, oid.off);
-	if (off != 0) {
-		ret.off = off;
-		ret.pool_uuid_lo = pop->uuid_lo;
+	do {
+		ASSERT(OBJ_OID_IS_VALID(pop, curr));
+		uint64_t next_off = palloc_next(&pop->heap, curr.off);
 
-		if (palloc_flags(&pop->heap, off) & OBJ_INTERNAL_OBJECT_MASK) {
-			return pmemobj_next(ret);
-		}
-	}
+		if (next_off == 0)
+			return OID_NULL;
 
-	return ret;
+		/* next object exists */
+		curr.off = next_off;
+
+	} while (palloc_flags(&pop->heap, curr.off) & OBJ_INTERNAL_OBJECT_MASK);
+
+	return curr;
 }
 
 /*

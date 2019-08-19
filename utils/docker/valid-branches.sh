@@ -1,5 +1,6 @@
+#!/usr/bin/env bash
 #
-# Copyright 2014-2016, Intel Corporation
+# Copyright 2019, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -28,14 +29,10 @@
 # THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 # (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
 
-#
-# src/test/vmem_delete/Makefile -- build vmem_delete unit test
-#
-TARGET = vmem_delete
-OBJS = vmem_delete.o
+VALID_BRANCHES=("master" "stable-1.5" "stable-1.6")
 
-LIBVMEM=y
-
-include ../Makefile.inc
+declare -A TARGET_BRANCHES=(		\
+		["master"]="master"	\
+		["stable-1.5"]="v1.5"	\
+		["stable-1.6"]="v1.6")
