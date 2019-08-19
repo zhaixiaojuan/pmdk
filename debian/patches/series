@@ -1,5 +1,2 @@
 do-not-build-examples.patch
 manpage-debug-packages.patch
-travis-clean-debian-dir.patch
-vecq-aliasing.patch
-valgrind-1.5.patch
