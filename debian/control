@@ -95,6 +95,8 @@ Section: libdevel
 Architecture: amd64 arm64
 Depends: libpmem-dev (= ${binary:Version}),
          libpmemblk1 (= ${binary:Version}),
+         libndctl-dev (>= 63),
+         libdaxctl-dev (>= 63),
          ${misc:Depends},
          ${shlibs:Depends}
 Description: development files for libpmemblk1
@@ -136,6 +138,8 @@ Section: libdevel
 Architecture: amd64 arm64
 Depends: libpmem-dev (= ${binary:Version}),
          libpmemlog1 (= ${binary:Version}),
+         libndctl-dev (>= 63),
+         libdaxctl-dev (>= 63),
          ${misc:Depends},
          ${shlibs:Depends}
 Description: development files for libpmemlog1
@@ -171,6 +175,8 @@ Section: libdevel
 Architecture: amd64 arm64
 Depends: libpmem-dev (= ${binary:Version}),
          libpmemobj1 (= ${binary:Version}),
+         libndctl-dev (>= 63),
+         libdaxctl-dev (>= 63),
          ${misc:Depends},
          ${shlibs:Depends}
 Description: development files for libpmemobj1
@@ -214,6 +220,8 @@ Section: libdevel
 Architecture: amd64 arm64
 Depends: libpmem-dev (= ${binary:Version}),
          libpmempool1 (= ${binary:Version}),
+         libndctl-dev (>= 63),
+         libdaxctl-dev (>= 63),
          ${misc:Depends},
          ${shlibs:Depends}
 Description: development files for libpmempool1
