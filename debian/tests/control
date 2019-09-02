@@ -8,3 +8,6 @@ Restrictions: allow-stderr
 Tests: rpmemd-version
 Depends: pmdk-tools
 Restrictions: allow-stderr, skippable
+
+Tests: examples-libpmem
+Depends: gcc, libc6-dev, libpmem-dev
