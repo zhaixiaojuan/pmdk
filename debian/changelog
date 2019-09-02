@@ -1,3 +1,11 @@
+pmdk (1.6.1-2) unstable; urgency=medium
+
+  * Verify upstream GPG signatures.
+  * Drop unused install files for libpmemobj-doc.
+  * Add autopkgtests to compile examples against installed libraries.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 02 Sep 2019 20:41:03 +0200
+
 pmdk (1.6.1-1) unstable; urgency=medium
 
   * New upstream release.
