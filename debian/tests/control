@@ -11,3 +11,15 @@ Restrictions: allow-stderr, skippable
 
 Tests: examples-libpmem
 Depends: gcc, libc6-dev, libpmem-dev
+
+Tests: examples-libpmemblk
+Depends: gcc, libc6-dev, libpmemblk-dev
+
+Tests: examples-libpmemlog
+Depends: gcc, libc6-dev, libpmemlog-dev
+
+Tests: examples-libpmempool
+Depends: gcc, libc6-dev, libpmempool-dev
+
+Tests: examples-libvmem
+Depends: gcc, libc6-dev, libvmem-dev
