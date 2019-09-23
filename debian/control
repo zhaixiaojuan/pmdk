@@ -22,6 +22,7 @@ Vcs-Browser: https://github.com/kilobyte/pmdk/tree/debian
 
 Package: libpmem1
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory low level support library
  libpmem provides low level persistent memory support.  In particular, support
@@ -34,6 +35,7 @@ Description: Persistent Memory low level support library
 
 Package: libpmem1-debug
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory low level support library — debug build
  libpmem provides low level persistent memory support.  In particular, support
@@ -51,6 +53,7 @@ Description: Persistent Memory low level support library — debug build
 Package: libpmem-dev
 Section: libdevel
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: libpmem1 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: development files for libpmem1
  libpmem provides low level persistent memory support.  In particular, support
@@ -62,6 +65,7 @@ Description: development files for libpmem1
 
 Package: libpmemblk1
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: libpmem1 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory block array support library
  libpmemblk implements a pmem-resident array of blocks, all the same size, where
@@ -74,6 +78,7 @@ Description: Persistent Memory block array support library
 
 Package: libpmemblk1-debug
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: libpmem1-debug (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
@@ -93,6 +98,7 @@ Description: Persistent Memory block array support library — debug build
 Package: libpmemblk-dev
 Section: libdevel
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: libpmem-dev (= ${binary:Version}),
          libpmemblk1 (= ${binary:Version}),
          libndctl-dev (>= 63),
@@ -109,6 +115,7 @@ Description: development files for libpmemblk1
 
 Package: libpmemlog1
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: libpmem1 (=${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory log file support library
  libpmemlog implements a pmem-resident log file.
@@ -119,6 +126,7 @@ Description: Persistent Memory log file support library
 
 Package: libpmemlog1-debug
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: libpmem1-debug (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
@@ -136,6 +144,7 @@ Description: Persistent Memory log file support library — debug build
 Package: libpmemlog-dev
 Section: libdevel
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: libpmem-dev (= ${binary:Version}),
          libpmemlog1 (= ${binary:Version}),
          libndctl-dev (>= 63),
@@ -150,6 +159,7 @@ Description: development files for libpmemlog1
 
 Package: libpmemobj1
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: libpmem1 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory object store support library
  libpmemobj turns a persistent memory file into a flexible object store,
@@ -158,6 +168,7 @@ Description: Persistent Memory object store support library
 
 Package: libpmemobj1-debug
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: libpmem1-debug (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
@@ -173,6 +184,7 @@ Description: Persistent Memory object store support library — debug build
 Package: libpmemobj-dev
 Section: libdevel
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: libpmem-dev (= ${binary:Version}),
          libpmemobj1 (= ${binary:Version}),
          libndctl-dev (>= 63),
@@ -189,6 +201,7 @@ Description: development files for libpmemobj1
 
 Package: libpmempool1
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: libpmem1 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory pool management support library
  libpmempool provides a set of utilities for management, diagnostics and repair
@@ -200,6 +213,7 @@ Description: Persistent Memory pool management support library
 
 Package: libpmempool1-debug
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: libpmem1-debug (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
@@ -218,6 +232,7 @@ Description: Persistent Memory pool management support library — debug build
 Package: libpmempool-dev
 Section: libdevel
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: libpmem-dev (= ${binary:Version}),
          libpmempool1 (= ${binary:Version}),
          libndctl-dev (>= 63),
@@ -233,6 +248,7 @@ Description: development files for libpmempool1
 
 Package: librpmem1
 Architecture: amd64
+Multi-Arch: same
 Depends: libpmem1 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory remote access support library
  librpmem provides low-level support for remote access to persistent memory
@@ -249,6 +265,7 @@ Description: Persistent Memory remote access support library
 
 Package: librpmem1-debug
 Architecture: amd64
+Multi-Arch: same
 Depends: libpmem1-debug (= ${binary:Version}),
          ${misc:Depends},
          ${shlibs:Depends}
@@ -272,6 +289,7 @@ Description: Persistent Memory remote access support library — debug build
 Package: librpmem-dev
 Section: libdevel
 Architecture: amd64
+Multi-Arch: same
 Depends: libpmem-dev (= ${binary:Version}),
          librpmem1 (= ${binary:Version}),
          ${misc:Depends},
@@ -285,6 +303,7 @@ Description: development files for librpmem1
 
 Package: libvmem1
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory volatile memory support library
  The libvmem library turns a pool of persistent memory into a volatile memory
@@ -298,6 +317,7 @@ Description: Persistent Memory volatile memory support library
 
 Package: libvmem1-debug
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory volatile memory support library — debug build
  The libvmem library turns a pool of persistent memory into a volatile memory
@@ -316,6 +336,7 @@ Description: Persistent Memory volatile memory support library — debug build
 Package: libvmem-dev
 Section: libdevel
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: libpmem-dev (= ${binary:Version}),
          libvmem1 (= ${binary:Version}),
          ${misc:Depends},
@@ -330,6 +351,7 @@ Description: development files for libvmem1
 
 Package: libvmmalloc1
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory dynamic allocation support library
  The libvmmalloc library transparently converts all the dynamic memory
@@ -339,6 +361,7 @@ Description: Persistent Memory dynamic allocation support library
 
 Package: libvmmalloc1-debug
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory dynamic allocation support library — debug build
  The libvmmalloc library transparently converts all the dynamic memory
@@ -353,6 +376,7 @@ Description: Persistent Memory dynamic allocation support library — debug buil
 Package: libvmmalloc-dev
 Section: libdevel
 Architecture: amd64 arm64
+Multi-Arch: same
 Depends: libpmem-dev (= ${binary:Version}),
          libvmmalloc1 (= ${binary:Version}),
          ${misc:Depends},
@@ -367,6 +391,7 @@ Description: development files for libvmmalloc1
 Package: pmdk-tools
 Section: misc
 Architecture: amd64 arm64
+Multi-Arch: foreign
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory management tools
  The main purpose of this package is to provide a user with a set of utilities
