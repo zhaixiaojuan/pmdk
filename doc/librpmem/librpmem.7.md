@@ -4,10 +4,10 @@ Content-Style: 'text/css'
 title: _MP(LIBRPMEM, 7)
 collection: librpmem
 header: PMDK
-date: rpmem API version 1.2
+date: rpmem API version 1.3
 ...
 
-[comment]: <> (Copyright 2016-2018, Intel Corporation)
+[comment]: <> (Copyright 2016-2019, Intel Corporation)
 
 [comment]: <> (Redistribution and use in source and binary forms, with or without)
 [comment]: <> (modification, are permitted provided that the following conditions)
@@ -297,6 +297,16 @@ in-band RDMA connection. The *verbs* provider is enabled by default.
 
 Limit the maximum number of lanes to *num*. See **LANES**, in **rpmem_create**(3), for details.
 
+* **RPMEM_WORK_QUEUE_SIZE**=*size*
+
+Suggest the work queue size. The effective work queue size can be greater than
+suggested if **librpmem** requires it or it can be smaller if underlying hardware
+does not support the suggested size. The work queue size affects the performance
+of communication to the remote node.
+**rpmem_flush**(3) operations can be added to the work queue up to the size of
+this queue. When work queue is full any subsequent call has to wait till the work
+queue will be drained. **rpmem_drain**(3) and **rpmem_persist**(3) among other
+things also drain the work queue.
 
 # DEBUGGING AND ERROR HANDLING #
 
@@ -368,28 +378,73 @@ pool is zeroed and the data is made persistent on remote node. Upon success
 the remote pool is closed.
 
 ```c
+#include <assert.h>
+#include <unistd.h>
 #include <stdio.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include <librpmem.h>
 
-#define POOL_SIZE    (32 * 1024 * 1024)
-#define NLANES        4
-unsigned char pool[POOL_SIZE];
+#define POOL_SIGNATURE	"MANPAGE"
+#define POOL_SIZE	(32 * 1024 * 1024)
+#define NLANES		4
+
+#define DATA_OFF	4096
+#define DATA_SIZE	(POOL_SIZE - DATA_OFF)
+
+static void
+parse_args(int argc, char *argv[], const char **target, const char **poolset)
+{
+	if (argc < 3) {
+		fprintf(stderr, "usage:\t%s <target> <poolset>\n", argv[0]);
+		exit(1);
+	}
+
+	*target = argv[1];
+	*poolset = argv[2];
+}
+
+static void *
+alloc_memory()
+{
+	long pagesize = sysconf(_SC_PAGESIZE);
+	if (pagesize < 0) {
+		perror("sysconf");
+		exit(1);
+	}
+
+	/* allocate a page size aligned local memory pool */
+	void *mem;
+	int ret = posix_memalign(&mem, pagesize, POOL_SIZE);
+	if (ret) {
+		fprintf(stderr, "posix_memalign: %s\n", strerror(ret));
+		exit(1);
+	}
+
+	assert(mem != NULL);
+
+	return mem;
+}
 
 int
 main(int argc, char *argv[])
 {
-	int ret;
+	const char *target, *poolset;
+	parse_args(argc, argv, &target, &poolset);
+
 	unsigned nlanes = NLANES;
+	void *pool = alloc_memory();
+	int ret;
 
 	/* fill pool_attributes */
 	struct rpmem_pool_attr pool_attr;
 	memset(&pool_attr, 0, sizeof(pool_attr));
+	strncpy(pool_attr.signature, POOL_SIGNATURE, RPMEM_POOL_HDR_SIG_LEN);
 
 	/* create a remote pool */
-	RPMEMpool *rpp = rpmem_create("localhost", "pool.set",
-			pool, POOL_SIZE, &nlanes, &pool_attr);
+	RPMEMpool *rpp = rpmem_create(target, poolset, pool, POOL_SIZE,
+			&nlanes, &pool_attr);
 	if (!rpp) {
 		fprintf(stderr, "rpmem_create: %s\n", rpmem_errormsg());
 		return 1;
@@ -399,7 +454,7 @@ main(int argc, char *argv[])
 	memset(pool, 0, POOL_SIZE);
 
 	/* make local data persistent on remote node */
-	ret = rpmem_persist(rpp, 0, POOL_SIZE, 0, 0);
+	ret = rpmem_persist(rpp, DATA_OFF, DATA_SIZE, 0, 0);
 	if (ret) {
 		fprintf(stderr, "rpmem_persist: %s\n", rpmem_errormsg());
 		return 1;
@@ -411,6 +466,8 @@ main(int argc, char *argv[])
 		fprintf(stderr, "rpmem_close: %s\n", rpmem_errormsg());
 		return 1;
 	}
+
+	free(pool);
 
 	return 0;
 }
@@ -432,8 +489,8 @@ recommended by the SNIA NVM Programming Technical Work Group:
 # SEE ALSO #
 
 **rpmemd**(1), **ssh**(1), **fork**(2), **dlclose**(3), **dlopen**(3),
-**ibv_fork_init**(3), **rpmem_create**(3), **rpmem_open**(3),
-**rpmem_persist**(3), **strerror**(3), **limits.conf**(5), **fabric**(7),
-**fi_sockets**(7), **fi_verbs**(7), **libpmem**(7), **libpmemblk**(7),
+**ibv_fork_init**(3), **rpmem_create**(3), **rpmem_drain**(3), **rpmem_flush**(3),
+**rpmem_open**(3), **rpmem_persist**(3), **strerror**(3), **limits.conf**(5),
+**fabric**(7), **fi_sockets**(7), **fi_verbs**(7), **libpmem**(7), **libpmemblk**(7),
 **libpmemlog**(7), **libpmemobj**(7)
 and **<http://pmem.io>**

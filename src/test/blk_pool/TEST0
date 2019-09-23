@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2015-2018, Intel Corporation
+# Copyright 2015-2019, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -35,7 +35,6 @@
 # src/test/blk_pool/TEST0 -- unit test for pmemblk_create
 #
 
-# standard unit test setup
 . ../unittest/unittest.sh
 
 require_test_type medium
@@ -46,6 +45,8 @@ umask 0
 #
 # TEST0 non-existing file, poolsize > 0
 #
+expect_normal_exit ./blk_pool$EXESUFFIX f $DIR/testfile 4096 20 0600
+
 expect_normal_exit ./blk_pool$EXESUFFIX c $DIR/testfile 4096 20 0600
 
 check_files $DIR/testfile

@@ -1,5 +1,5 @@
 /*
- * Copyright 2016-2018, Intel Corporation
+ * Copyright 2016-2019, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -353,7 +353,7 @@ rpmemd_fip_init_ep(struct rpmemd_fip *fip, struct fi_info *info,
 {
 	int ret;
 
-	info->tx_attr->size = rpmem_fip_tx_size(fip->persist_method,
+	info->tx_attr->size = rpmem_fip_wq_size(fip->persist_method,
 			RPMEM_FIP_NODE_SERVER);
 
 	info->rx_attr->size = rpmem_fip_rx_size(fip->persist_method,
@@ -673,7 +673,7 @@ rpmemd_fip_process_recv(struct rpmemd_fip *fip, struct rpmemd_fip_lane *lanep)
 	ret = rpmemd_fip_check_pmsg(fip, pmsg);
 	if (unlikely(ret))
 		goto err;
-	unsigned mode = pmsg->flags & RPMEM_PERSIST_MASK;
+	unsigned mode = pmsg->flags & RPMEM_FLUSH_PERSIST_MASK;
 
 	if (mode == RPMEM_DEEP_PERSIST) {
 		fip->deep_persist((void *)pmsg->addr, pmsg->size, fip->ctx);

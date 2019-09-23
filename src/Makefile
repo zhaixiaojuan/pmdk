@@ -38,6 +38,8 @@ include $(TOP)/src/common.inc
 TARGETS = libpmem libvmem libpmemblk libpmemlog libpmemobj libpmempool\
 		  libvmmalloc tools
 ALL_TARGETS = $(TARGETS) common librpmem
+POSSIBLE_TARGETS = $(TARGETS) common librpmem rpmem_common test\
+	examples benchmarks
 
 SCOPE_DIRS = $(TARGETS) common librpmem rpmem_common
 
@@ -45,13 +47,23 @@ DEBUG_RELEASE_TARGETS = common libpmem libvmem libpmemblk libpmemlog libpmemobj\
 	libpmempool libvmmalloc librpmem
 RELEASE_TARGETS = tools
 
-CLEAN_NO_JE_TARGETS = $(ALL_TARGETS) rpmem_common test
+ifneq ($(BUILD_EXAMPLES),n)
+	ALL_TARGETS += examples
+	RELEASE_TARGETS += examples
+endif
+
+ifneq ($(BUILD_BENCHMARKS),n)
+	ALL_TARGETS += benchmarks
+	RELEASE_TARGETS += benchmarks
+endif
+
+CLEAN_NO_JE_TARGETS = $(POSSIBLE_TARGETS)
 CLEAN_TARGETS = $(CLEAN_NO_JE_TARGETS) jemalloc
-CLOBBER_NO_JE_TARGETS = $(ALL_TARGETS) rpmem_common test
+CLOBBER_NO_JE_TARGETS = $(POSSIBLE_TARGETS)
 CLOBBER_TARGETS = $(CLOBBER_NO_JE_TARGETS) jemalloc
-CSTYLE_TARGETS = $(ALL_TARGETS) test rpmem_common
+CSTYLE_TARGETS = $(POSSIBLE_TARGETS)
 INSTALL_TARGETS = $(TARGETS)
-SPARSE_TARGETS = $(ALL_TARGETS) test rpmem_common
+SPARSE_TARGETS = $(POSSIBLE_TARGETS)
 
 HEADERS_DESTDIR = $(DESTDIR)$(includedir)
 HEADERS_INSTALL = include/libpmem.h include/libvmem.h\
@@ -134,8 +146,9 @@ sparse: $(SPARSE_TARGETS:=-sparse)
 custom_build = $(DEBUG)$(OBJDIR)
 
 libvmmalloc libvmem: jemalloc
-tools: libpmem libpmemblk libpmemlog libpmemobj
+tools: libpmem libpmemblk libpmemlog libpmemobj libpmempool
 libpmemblk libpmemlog libpmemobj: libpmem
+libpmempool: libpmemblk
 benchmarks test tools: common
 
 pkg-cfg-common:

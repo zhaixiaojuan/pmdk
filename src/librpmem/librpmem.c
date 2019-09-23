@@ -62,6 +62,7 @@ librpmem_init(void)
 	rpmem_util_cmds_init();
 
 	rpmem_util_get_env_max_nlanes(&Rpmem_max_nlanes);
+	rpmem_util_get_env_wq_size(&Rpmem_wq_size);
 }
 
 /*

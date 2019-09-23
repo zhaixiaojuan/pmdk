@@ -108,7 +108,7 @@ sds.at_create | rw | global | int | int | - | boolean
 
 If set, force-enables or force-disables SDS feature during pool creation.
 Affects only the _UW(pmemobj_create) function. See **pmempool_feature_query**(3)
-for informations about SDS (SHUTDOWN_STATE) feature.
+for information about SDS (SHUTDOWN_STATE) feature.
 
 copy_on_write.at_open | rw | global | int | int | - | boolean
 
@@ -121,6 +121,14 @@ tx.debug.skip_expensive_checks | rw | - | int | int | - | boolean
 
 Turns off some expensive checks performed by the transaction module in "debug"
 builds. Ignored in "release" builds.
+
+tx.debug.verify_user_buffers | rw | - | int | int | - | boolean
+
+Enables verification of user buffers provided by
+**pmemobj_tx_log_append_buffer**(3) API. For now the only verified aspect
+is whether the same buffer is used simultaneously in 2 or more transactions
+or more than once in the same transaction. This value should not be modified
+at runtime if any transaction for the current pool is in progress.
 
 tx.cache.size | rw | - | long long | long long | - | integer
 

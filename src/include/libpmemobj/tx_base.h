@@ -74,20 +74,37 @@ enum pobj_tx_param {
 	TX_PARAM_CB,	 /* pmemobj_tx_callback cb, void *arg */
 };
 
-#if !defined(_has_deprecated_with_message) && defined(__clang__)
+enum pobj_log_type {
+	TX_LOG_TYPE_SNAPSHOT,
+	TX_LOG_TYPE_INTENT,
+};
+
+#if !defined(pmdk_use_attr_deprec_with_msg) && defined(__COVERITY__)
+#define pmdk_use_attr_deprec_with_msg 0
+#endif
+
+#if !defined(pmdk_use_attr_deprec_with_msg) && defined(__clang__)
 #if __has_extension(attribute_deprecated_with_message)
-#define _has_deprecated_with_message
+#define pmdk_use_attr_deprec_with_msg 1
+#else
+#define pmdk_use_attr_deprec_with_msg 0
 #endif
 #endif
 
-#if !defined(_has_deprecated_with_message) && \
+#if !defined(pmdk_use_attr_deprec_with_msg) && \
 		defined(__GNUC__) && !defined(__INTEL_COMPILER)
 #if __GNUC__ * 100 + __GNUC_MINOR__ >= 601 /* 6.1 */
-#define _has_deprecated_with_message
+#define pmdk_use_attr_deprec_with_msg 1
+#else
+#define pmdk_use_attr_deprec_with_msg 0
 #endif
 #endif
 
-#ifdef _has_deprecated_with_message
+#if !defined(pmdk_use_attr_deprec_with_msg)
+#define pmdk_use_attr_deprec_with_msg 0
+#endif
+
+#if pmdk_use_attr_deprec_with_msg
 #define tx_lock_deprecated __attribute__((deprecated(\
 		"enum pobj_tx_lock is deprecated, use enum pobj_tx_param")))
 #else
@@ -109,8 +126,12 @@ typedef void (*pmemobj_tx_callback)(PMEMobjpool *pop, enum pobj_tx_stage stage,
 	POBJ_XALLOC_ARENA_MASK |\
 	POBJ_XALLOC_CLASS_MASK)
 
-#define POBJ_XADD_NO_FLUSH	POBJ_FLAG_NO_FLUSH
-#define POBJ_XADD_VALID_FLAGS	POBJ_XADD_NO_FLUSH
+#define POBJ_XADD_NO_FLUSH		POBJ_FLAG_NO_FLUSH
+#define POBJ_XADD_NO_SNAPSHOT		POBJ_FLAG_NO_SNAPSHOT
+#define POBJ_XADD_ASSUME_INITIALIZED	POBJ_FLAG_ASSUME_INITIALIZED
+#define POBJ_XADD_VALID_FLAGS	(POBJ_XADD_NO_FLUSH |\
+	POBJ_XADD_NO_SNAPSHOT |\
+	POBJ_XADD_ASSUME_INITIALIZED)
 
 /*
  * Starts a new transaction in the current thread.
@@ -298,6 +319,37 @@ PMEMoid pmemobj_tx_wcsdup(const wchar_t *s, uint64_t type_num);
  * This function must be called during TX_STAGE_WORK.
  */
 int pmemobj_tx_free(PMEMoid oid);
+
+/*
+ * Append user allocated buffer to the ulog.
+ *
+ * If successful, returns zero.
+ * Otherwise, state changes to TX_STAGE_ONABORT and an error number is returned.
+ *
+ * This function must be called during TX_STAGE_WORK.
+ */
+int pmemobj_tx_log_append_buffer(enum pobj_log_type type,
+	void *addr, size_t size);
+
+/*
+ * Enables or disables automatic ulog allocations.
+ *
+ * If successful, returns zero.
+ * Otherwise, state changes to TX_STAGE_ONABORT and an error number is returned.
+ *
+ * This function must be called during TX_STAGE_WORK.
+ */
+int pmemobj_tx_log_auto_alloc(enum pobj_log_type type, int on_off);
+
+/*
+ * Calculates and returns size for user buffers for snapshots.
+ */
+size_t pmemobj_tx_log_snapshot_max_size(size_t *sizes, size_t nsizes);
+
+/*
+ * Calculates and returns size for user buffers for intents.
+ */
+size_t pmemobj_tx_log_intent_max_size(size_t nintents);
 
 #ifdef __cplusplus
 }

@@ -482,7 +482,7 @@ function create_file() {
 	shift
 	for file in $*
 	do
-		$DD if=/dev/zero of=$file bs=1M count=$size iflag=count_bytes >> $PREP_LOG_FILE
+		$DD if=/dev/zero of=$file bs=1M count=$size iflag=count_bytes status=none >> $PREP_LOG_FILE
 	done
 }
 
@@ -1358,18 +1358,6 @@ function get_node_devdax_size() {
 }
 
 #
-# dax_get_alignment -- get the alignment of a device dax
-#
-function dax_get_alignment() {
-	major_hex=$(stat -c "%t" $1)
-	minor_hex=$(stat -c "%T" $1)
-	major_dec=$((16#$major_hex))
-	minor_dec=$((16#$minor_hex))
-	cat /sys/dev/char/$major_dec:$minor_dec/device/align
-}
-
-
-#
 # require_dax_device_node_alignments -- only allow script to continue if
 #    the internal Device DAX alignments on a remote nodes are as specified.
 # If necessary, it sorts DEVICE_DAX_PATH entries to match
@@ -2100,12 +2088,10 @@ function run_command()
 	fi
 }
 
-
 #
 # validate_node_number -- validate a node number
 #
 function validate_node_number() {
-
 	[ $1 -gt $NODES_MAX ] \
 		&& fatal "error: node number ($1) greater than maximum allowed node number ($NODES_MAX)"
 	return 0
@@ -3609,13 +3595,65 @@ function require_max_devdax_size() {
 }
 
 #
-# require_nfit_tests_enabled - check if tests using the nfit_test kernel module are not enabled
+# require_badblock_tests_enabled - check if tests for bad block support are not enabled
+# Input arguments:
+# 1) test device type
 #
-function require_nfit_tests_enabled() {
-	if [ "$ENABLE_NFIT_TESTS" != "y" ]; then
-		msg "$UNITTEST_NAME: SKIP: tests using the nfit_test kernel module are not enabled in testconfig.sh (ENABLE_NFIT_TESTS)"
+function require_badblock_tests_enabled() {
+	require_sudo_allowed
+	require_command ndctl
+
+	if [ "$BADBLOCK_TEST_TYPE" == "nfit_test" ]; then
+
+		require_kernel_module nfit_test
+
+		# nfit_test dax device is created by the test and is
+		# used directly - no file system path nor device dax path
+		# needs to be provided by the user
+		if [ $1 == "dax_device" ]; then
+			require_fs_type none
+
+		# nfit_test block device is created by the test and mounted on
+		# a filesystem of any type provided by the user
+		elif [ $1 == "block_device" ]; then
+			require_fs_type any
+		fi
+
+	elif [ "$BADBLOCK_TEST_TYPE" == "real_pmem" ]; then
+
+		if [ $1 == "dax_device" ]; then
+			require fs_type none
+			require_dax_devices 1
+			require_binary $DAXIO$EXESUFFIX
+
+		elif [ $1 == "block_device" ]; then
+			require_fs_type pmem
+		fi
+
+	else
+		msg "$UNITTEST_NAME: SKIP: bad block tests are not enabled in testconfig.sh"
 		exit 0
 	fi
+}
+
+#
+# require_badblock_tests_enabled_node - check if tests for bad block support are not enabled
+# on given remote node
+#
+function require_badblock_tests_enabled_node() {
+	require_sudo_allowed_node $1
+	require_command_node $1 ndctl
+	if [ "$BADBLOCK_TEST_TYPE" == "nfit_test" ]; then
+		require_kernel_module_node $1 nfit_test
+	elif [ "$BADBLOCK_TEST_TYPE" == "real_pmem" ]; then
+		:
+	else
+		msg "$UNITTEST_NAME: SKIP: bad block tests are not enabled in testconfig.sh"
+		exit 0
+	fi
+	require_sudo_allowed
+	require_kernel_module nfit_test
+	require_command ndctl
 }
 
 #

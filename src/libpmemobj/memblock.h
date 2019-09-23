@@ -243,7 +243,7 @@ struct memory_block_ops {
 
 	/*
 	 * Initializes bitmap data for a run.
-	 * Do *not* use this function unless absolutely necessery, it breaks
+	 * Do *not* use this function unless absolutely necessary, it breaks
 	 * the abstraction layer by exposing implementation details.
 	 */
 	void (*get_bitmap)(const struct memory_block *m, struct run_bitmap *b);
@@ -289,6 +289,7 @@ struct memory_block {
 struct memory_block_reserved {
 	struct memory_block m;
 
+	struct bucket *bucket;
 	/*
 	 * Number of reservations made from this run, the pointer to this value
 	 * is stored in a user facing pobj_action structure. Decremented once

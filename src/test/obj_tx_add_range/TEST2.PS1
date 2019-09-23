@@ -1,5 +1,5 @@
 #
-# Copyright 2015-2018, Intel Corporation
+# Copyright 2015-2019, Intel Corporation
 # Copyright (c) 2016, Microsoft Corporation. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,7 +35,6 @@
 # src/test/obj_tx_add_range/TEST2 -- unit test for pmemobj_tx_add_range
 #
 
-# standard unit test setup
 . ..\unittest\unittest.ps1
 
 require_test_type medium
@@ -43,6 +42,6 @@ require_fs_type pmem
 
 setup
 
-expect_normal_exit $ENV:EXE_DIR\obj_tx_add_range$Env:EXESUFFIX $DIR\testfile1 1
+expect_normal_exit $ENV:EXE_DIR\obj_tx_add_range$Env:EXESUFFIX $DIR\testfile2 1
 
 pass

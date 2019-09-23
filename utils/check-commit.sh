@@ -35,50 +35,45 @@
 # Used to check whether all the commit messages in a pull request
 # follow the GIT/PMDK guidelines.
 #
-# usage: ./check-commit.sh
+# usage: ./check-commit.sh commit
 #
 
-if [[ "$TRAVIS_REPO_SLUG" != "$GITHUB_REPO" \
-	|| $TRAVIS_EVENT_TYPE != "pull_request" ]];
-then
-	echo "SKIP: $0 can only be executed for pull requests to $GITHUB_REPO"
+if [ -z "$1" ]; then
+	echo "Usage: check-commit.sh commit-id"
+	exit 1
+fi
+
+echo "Checking $1"
+
+subject=$(git log --format="%s" -n 1 $1)
+
+if [[ $subject =~ ^Merge.* ]]; then
+	# skip
 	exit 0
 fi
 
-# Find all the commits for the current build
-if [[ -n "$TRAVIS_COMMIT_RANGE" ]]; then
-	MERGE_BASE=$(echo $TRAVIS_COMMIT_RANGE | cut -d. -f1)
-	[ -z $MERGE_BASE ] && \
-		MERGE_BASE=$(git log --pretty="%cN:%H" | grep GitHub | head -n1 | cut -d: -f2)
-	commits=$(git log --pretty=%H $MERGE_BASE..$TRAVIS_COMMIT)
-else
-	commits=$TRAVIS_COMMIT
+if [[ $subject =~ ^Revert.* ]]; then
+	# skip
+	exit 0
 fi
 
 # valid area names
 AREAS="pmem\|rpmem\|log\|blk\|obj\|pool\|test\|benchmark\|examples\|vmem\|vmmalloc\|jemalloc\|doc\|common\|daxio\|pmreorder"
 
-# Check commit message
-for commit in $commits; do
-	subject=$(git log --format="%s" -n 1 $commit)
-	commit_len=$(git log --format="%s%n%b" -n 1 $commit | wc -L)
-	prefix=$(echo $subject | sed -n "s/^\($AREAS\)\:.*/\1/p")
+prefix=$(echo $subject | sed -n "s/^\($AREAS\)\:.*/\1/p")
 
-	if [[ $subject =~ ^Merge.* ]]; then
-		# skip
-		continue
-	fi
-	if [ "$prefix" = "" ]; then
-		echo "FAIL: subject line in commit message does not contain valid area name"
-		echo
-		./utils/check-area.sh $commit
-		exit 1
-	fi
+if [ "$prefix" = "" ]; then
+	echo "FAIL: subject line in commit message does not contain valid area name"
+	echo
+	`dirname $0`/check-area.sh $1
+	exit 1
+fi
 
-	if [ $commit_len -gt 73 ]; then
-		echo "FAIL: commit message exceeds 72 chars per line (commit_len)"
-		echo
-		git log -n 1 $commit
-		exit 1
-	fi
-done
+commit_len=$(git log --format="%s%n%b" -n 1 $1 | wc -L)
+
+if [ $commit_len -gt 73 ]; then
+	echo "FAIL: commit message exceeds 72 chars per line (commit_len)"
+	echo
+	git log -n 1 $1 | cat
+	exit 1
+fi

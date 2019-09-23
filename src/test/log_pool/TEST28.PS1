@@ -1,5 +1,5 @@
 #
-# Copyright 2015-2018, Intel Corporation
+# Copyright 2015-2019, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -32,7 +32,6 @@
 # src/test/log_pool/TEST28 -- unit test for pmemlog_open
 #
 
-# standard unit test setup
 . ..\unittest\unittest.ps1
 
 require_test_type medium
@@ -53,14 +52,14 @@ cp $DIR\testfile1 $DIR\testfile2
         pool_hdr.prev_part_uuid=1111111111111111 `
         pool_hdr.next_repl_uuid=2222222222222222 `
         pool_hdr.prev_repl_uuid=2222222222222222 `
-        "pool_hdr.checksum_gen()"
+        "pool_hdr.f:checksum_gen"
 
 &$PMEMSPOIL $DIR\testfile2 pool_hdr.uuid=2222222222222222 `
         pool_hdr.next_part_uuid=2222222222222222 `
         pool_hdr.prev_part_uuid=2222222222222222 `
         pool_hdr.next_repl_uuid=1111111111111111 `
         pool_hdr.prev_repl_uuid=1111111111111111 `
-        "pool_hdr.checksum_gen()"
+        "pool_hdr.f:checksum_gen"
 
 create_poolset $DIR\testset 20M:$DIR\testfile1 R 20M:$DIR\testfile2
 

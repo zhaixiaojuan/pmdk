@@ -37,11 +37,14 @@ import itertools
 import shutil
 import subprocess as sp
 import sys
+import re
+import os
 from datetime import datetime
-from os import listdir, makedirs, path
+from os import path
 
 import context as ctx
-import helpers as hlp
+import futils
+import valgrind as vg
 
 
 if not hasattr(builtins, 'testcases'):
@@ -59,16 +62,6 @@ CTX_COMPONENTS = (
     ('build', ctx._Build),
     ('fs', ctx._Fs)
 )
-
-
-class Fail(Exception):
-    """Thrown when test fails"""
-    def __init__(self, message):
-        super().__init__(message)
-        self.message = message
-
-    def __str__(self):
-        return self.message
 
 
 class Any:
@@ -94,12 +87,10 @@ class _TestCase(type):
     def __init__(cls, name, bases, dct):
         type.__init__(cls, name, bases, dct)
 
-        # only classes deriving from BaseTest are meant to be used
-        if cls.__base__.__name__ != 'BaseTest':
-            return
-
         # globally register class as test case
-        builtins.testcases.append(cls)
+        # only classes whose names start with 'TEST' are meant to be run
+        if cls.__name__.startswith('TEST'):
+            builtins.testcases.append(cls)
 
         # expand values of context classes attributes
         for attr, _ in CTX_COMPONENTS:
@@ -110,18 +101,18 @@ class _TestCase(type):
                 setattr(cls, attr, val)
 
         cls.name = cls.__name__
-        try:
-            cls.testnum = int(cls.__name__.replace('TEST', ''))
-        except ValueError as e:
-            print('Invalid test class name {}, should be "TEST[number]"'
-                  .format(cls.__name__))
-            raise e
+        cls._testnum = cls.__name__.replace('TEST', '')
 
 
 class BaseTest(metaclass=_TestCase):
     """Every test case need to inherit from this class"""
     test_type = ctx.Medium
+    memcheck, pmemcheck, drd, helgrind = vg.AUTO, vg.AUTO, vg.AUTO, vg.AUTO
+    valgrind = None
+    memcheck_check_leaks = True
     match = True
+    enabled = True
+    ld_preload = ''
 
     def __repr__(self):
         return '{}/{}'.format(self.group, self.__class__.__name__)
@@ -133,12 +124,24 @@ class BaseTest(metaclass=_TestCase):
             self.cwd = self.__module__
 
         self.config = config
-        self.msg = hlp.Message(config)
+        self.msg = futils.Message(config)
         self.group = path.basename(self.cwd)
 
         self.testdir = self.group + '_' + str(self.testnum)
         self.utenv = self._get_utenv()
-        self.ctxs = self._get_contexts()
+        self._ctx_attrs_init()
+
+        if self.test_type not in self.config.test_type:
+            self.enabled = False
+
+    @property
+    def testnum(self):
+        try:
+            return int(self._testnum)
+        except ValueError as e:
+            print('Invalid test class name {}, should be "TEST[number]"'
+                  .format(self.name))
+            raise e
 
     def _ctx_attrs_init(self):
         """
@@ -155,25 +158,35 @@ class BaseTest(metaclass=_TestCase):
                 if test_val == Any:
                     ctx_val = Any.get(conf_val)
                 else:
-                    ctx_val = hlp.filter_contexts(conf_val, test_val)
+                    ctx_val = futils.filter_contexts(conf_val, test_val)
             else:
-                ctx_val = hlp.filter_contexts(conf_val, None)
-            setattr(self, attr, base.factory(self.config, *ctx_val))
+                ctx_val = futils.filter_contexts(conf_val, None)
+            setattr(self, attr, ctx.expand(*ctx_val))
 
-    def _get_contexts(self):
-        """Initialize context classes used for each test run"""
-        self._ctx_attrs_init()
+        self._valgrind_init()
 
-        ctxs = []
-        if self.test_type not in self.config.test_type:
-            return ctxs
+    def _valgrind_init(self):
+        vg_tool = vg.enabled_tool(self)
 
-        # generate combination sets of context components
-        ctx_sets = itertools.product(self.fs, self.build)
-        for cs in ctx_sets:
-            ctxs.append(ctx.Context(self, self.config, fs=cs[0], build=cs[1]))
+        if sys.platform == 'win32':
+            if vg_tool:
+                self.enabled = False
+            return
 
-        return ctxs
+        if self.config.force_enable:
+            if self.config.force_enable not in vg.disabled_tools(self):
+                vg_tool = self.config.force_enable
+            else:
+                vg_tool = None
+
+        self.valgrind = vg.Valgrind(vg_tool, self.cwd, self.testnum)
+
+    def _init_context(self, **ctx_params):
+        """Initialize context class using provided parameters"""
+        fs = ctx_params['fs'](self.config)
+        build = ctx_params['build'](self.config)
+        return ctx.Context(self, self.config, fs=fs, build=build,
+                           valgrind=self.valgrind)
 
     def _get_utenv(self):
         """Get environment variables values used by C test framework"""
@@ -189,38 +202,53 @@ class BaseTest(metaclass=_TestCase):
         one test failed
         """
         failed = False
-        for c in self.ctxs:
-            self.msg.print('{}: SETUP\t({}/{}/{})'
-                           .format(self, self.test_type, c.fs, c.build))
-
-            self.setup(c)
-            start_time = datetime.now()
+        ctx_params = itertools.product(self.fs, self.build)
+        for cp in ctx_params:
+            ctx_str = '{}/{}/{}'.format(self.test_type, cp[0], cp[1])
+            if self.valgrind:
+                ctx_str = '{}/{}'.format(ctx_str, self.valgrind)
+            c = None
             try:
+                self.msg.print('{}: SETUP\t({})'.format(self, ctx_str))
+                c = self._init_context(fs=cp[0], build=cp[1])
+
+                if self.valgrind:
+                    self.valgrind.verify()
+
+                # removes old log files, to make sure that logs made by test
+                # are up to date
+                self.remove_log_files()
+
+                self.setup(c)
+                start_time = datetime.now()
                 self.run(c)
                 self.elapsed = (datetime.now() - start_time).total_seconds()
                 self.check()
 
-            except Fail as f:
+            except futils.Fail as f:
                 failed = True
                 print(f)
-                print('{}: {}FAILED{}\t({}/{}/{})'
-                      .format(self, hlp.Color.RED, hlp.Color.END,
-                              self.test_type, c.fs, c.build))
+                self._print_log_files(c)
+                print('{}: {}FAILED{}\t({})'.format(self, futils.Color.RED,
+                                                    futils.Color.END, ctx_str))
                 if not self.config.keep_going:
                     sys.exit(1)
 
+            except futils.Skip as s:
+                print('{}: SKIP: {}'.format(self, s))
+                if c:
+                    self.clean(c)
+
             except sp.TimeoutExpired:
                 failed = True
-                print('{}: {}TIMEOUT{}\t({}/{}/{})'
-                      .format(self, hlp.Color.RED, hlp.Color.END,
-                              self.test_type, c.fs, c.build))
+                print('{}: {}TIMEOUT{}\t({})'.format(self, futils.Color.RED,
+                                                     futils.Color.END,
+                                                     ctx_str))
                 if not self.config.keep_going:
                     sys.exit(1)
 
             else:
                 self._test_passed()
-
-            finally:
                 self.clean(c)
 
         if failed:
@@ -230,7 +258,7 @@ class BaseTest(metaclass=_TestCase):
     def setup(self, ctx):
         """Test setup"""
         if not path.exists(ctx.testdir):
-            makedirs(ctx.testdir)
+            os.makedirs(ctx.testdir)
 
     def run(self, ctx):
         """
@@ -245,12 +273,9 @@ class BaseTest(metaclass=_TestCase):
         if self.match:
             self._run_match()
 
-    def fail(self, msg):
-        raise Fail(msg)
-
     def _run_match(self):
         """Match log files"""
-        cwd_listdir = [path.join(self.cwd, f) for f in listdir(self.cwd)]
+        cwd_listdir = [path.join(self.cwd, f) for f in os.listdir(self.cwd)]
 
         suffix = '{}.log.match'.format(self.testnum)
 
@@ -263,14 +288,14 @@ class BaseTest(metaclass=_TestCase):
 
         match_files = filter(is_matchfile, cwd_listdir)
         prefix = 'perl ' if sys.platform == 'win32' else ''
-        match_cmd = prefix + path.join(hlp.ROOTDIR, 'match')
+        match_cmd = prefix + path.join(futils.ROOTDIR, 'match')
 
         for mf in match_files:
             cmd = '{} {}'.format(match_cmd, mf)
             proc = sp.run(cmd.split(), stdout=sp.PIPE, cwd=self.cwd,
                           stderr=sp.STDOUT, universal_newlines=True)
             if proc.returncode != 0:
-                self.fail(proc.stdout)
+                futils.fail(proc.stdout, exit_code=proc.returncode)
             else:
                 self.msg.print_verbose(proc.stdout)
 
@@ -286,4 +311,35 @@ class BaseTest(metaclass=_TestCase):
             tm = ''
 
         self.msg.print('{}: {}PASS{} {}'
-                       .format(self, hlp.Color.GREEN, hlp.Color.END, tm))
+                       .format(self, futils.Color.GREEN, futils.Color.END, tm))
+
+    def get_log_files(self):
+        """
+        Returns names of all log files for given test
+        """
+        pattern = r'.*[a-zA-Z_]{}\.log'
+        log_files = []
+        files = os.scandir(self.cwd)
+        for file in files:
+            match = re.fullmatch(pattern.format(self.testnum), file.name)
+            if match:
+                log = path.abspath(path.join(self.cwd, file.name))
+                log_files.append(log)
+        return log_files
+
+    def _print_log_files(self, ctx):
+        """
+        Prints all log files for given test
+        """
+        log_files = self.get_log_files()
+        for file in log_files:
+            with open(file) as f:
+                ctx.dump_n_lines(f)
+
+    def remove_log_files(self):
+        """
+        Removes log files for given test
+        """
+        log_files = self.get_log_files()
+        for file in log_files:
+            os.remove(file)

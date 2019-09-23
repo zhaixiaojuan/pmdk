@@ -17,7 +17,7 @@
 # DIRSUFFIX="$LONGDIR/$LONGDIR/$LONGDIR/$LONGDIR/$LONGDIR"
 #
 # For tests that require true persistent memory, set the path to a directory
-# on a PMEM-aware file system here.  Comment this line out if there's no
+# on a PMEM-aware file system here. Uncomment this line if there's an
 # actual persistent memory available on this system.
 # Note that PMEM_FS_DIR is intended mostly to test codepaths where
 # pmem_persist() is used for flushing data to persistence.  For now, there is
@@ -35,7 +35,7 @@
 # to verify something works on traditional page-cache based memory-mapped
 # files) set the path to a directory on a normal file system here.
 #
-NON_PMEM_FS_DIR=/tmp
+#NON_PMEM_FS_DIR=/tmp
 
 #
 # If you don't have real PMEM or PMEM emulation set up and/or the filesystem
@@ -139,17 +139,26 @@ TM=1
 #ENABLE_SUDO_TESTS=y
 
 #
-# The 'nfit' tests test the code handling bad blocks.
-# They use the 'sudo' command many times and insert the 'nfit_test' kernel
-# module, so they can be considered as POTENTIALLY DANGEROUS
-# and have to be explicitly enabled.
+# Enable and select the type of tests for code handling bad blocks.
+# Options: nfit_test, real_pmem, none (do not run, default).
+#
+# Running tests on emulated memory ('nfit test' option) requires 'nfit_test'
+# kernel module to be present in the system.
+# See https://github.com/pmem/ndctl#unit-tests
+#
+# If the 'real_pmem' option is enabled, tests are run on real hardware
+# provided through PMEM_FS_DIR or DEVICE_DAX_PATH config fields.
+#
+# The tests use 'sudo' command many times and, in case of tests on
+# emulated memory, insert the 'nfit_test' kernel module, so they can be
+# considered as POTENTIALLY DANGEROUS and have to be explicitly enabled.
 # Enable them ONLY IF you are sure you know what you are doing.
 #
 # As of kernel 4.20, the nfit-test module causes kernel oops whenever a devdax
 # namespace is created and then accessed for the first time. This causes several
 # of badblock-related unit tests to fail.
 #
-#ENABLE_NFIT_TESTS=y
+# BADBLOCK_TEST_TYPE=none
 
 #
 # 2) *** REMOTE CONFIGURATION ***

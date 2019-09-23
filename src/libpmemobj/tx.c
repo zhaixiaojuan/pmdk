@@ -269,6 +269,7 @@ tx_remove_range(struct txr *tx_ranges, void *begin, void *end)
 		if (begin > txr->begin) {
 			struct tx_range_data *txrn = Malloc(sizeof(*txrn));
 			if (txrn == NULL)
+				/* we can't do it any other way */
 				FATAL("!Malloc");
 
 			txrn->begin = txr->begin;
@@ -280,6 +281,7 @@ tx_remove_range(struct txr *tx_ranges, void *begin, void *end)
 		if (end < txr->end) {
 			struct tx_range_data *txrn = Malloc(sizeof(*txrn));
 			if (txrn == NULL)
+				/* we can't do it any other way */
 				FATAL("!Malloc");
 
 			txrn->begin = end;
@@ -316,6 +318,7 @@ tx_restore_range(PMEMobjpool *pop, struct tx *tx, struct ulog_entry_buf *range)
 	struct tx_range_data *txr;
 	txr = Malloc(sizeof(*txr));
 	if (txr == NULL) {
+		/* we can't do it any other way */
 		FATAL("!Malloc");
 	}
 
@@ -390,7 +393,7 @@ tx_abort_set(PMEMobjpool *pop, struct lane *lane)
 
 	ulog_foreach_entry((struct ulog *)&lane->layout->undo,
 		tx_undo_entry_apply, NULL, &pop->p_ops);
-	operation_finish(lane->undo);
+	operation_finish(lane->undo, ULOG_INC_FIRST_GEN_NUM);
 }
 
 /*
@@ -666,6 +669,38 @@ tx_realloc_common(struct tx *tx, PMEMoid oid, size_t size, uint64_t type_num,
 }
 
 /*
+ * tx_construct_user_buffer -- add user buffer to the ulog
+ */
+static int
+tx_construct_user_buffer(struct tx *tx, void *addr, size_t size,
+		enum pobj_log_type type, int outer_tx)
+{
+	if (tx->pop != pmemobj_pool_by_ptr(addr)) {
+		ERR("Buffer from a different pool");
+		goto err;
+	}
+
+	/*
+	 * We want to extend a log of a specified type, but if it is
+	 * an outer transaction and the first user buffer we need to
+	 * free all logs except the first at the beginning.
+	 */
+	struct operation_context *ctx = type == TX_LOG_TYPE_INTENT ?
+		tx->lane->external : tx->lane->undo;
+
+	if (outer_tx && !operation_get_any_user_buffer(ctx))
+		operation_free_logs(ctx, ULOG_ANY_USER_BUFFER);
+
+	if (operation_add_user_buffer(ctx, addr, size))
+		goto err;
+
+	return 0;
+
+err:
+	return obj_tx_abort_err(EINVAL);
+}
+
+/*
  * pmemobj_tx_begin -- initializes new transaction
  */
 int
@@ -875,7 +910,7 @@ pmemobj_tx_errno(void)
 static void
 tx_post_commit(struct tx *tx)
 {
-	operation_finish(tx->lane->undo);
+	operation_finish(tx->lane->undo, 0);
 
 	VEC_CLEAR(&tx->actions);
 }
@@ -1057,11 +1092,24 @@ vg_verify_initialized(PMEMobjpool *pop, const struct tx_range_def *def)
 static int
 pmemobj_tx_add_snapshot(struct tx *tx, struct tx_range_def *snapshot)
 {
-	vg_verify_initialized(tx->pop, snapshot);
+	/*
+	 * Depending on the size of the block, either allocate an
+	 * entire new object or use cache.
+	 */
+	void *ptr = OBJ_OFF_TO_PTR(tx->pop, snapshot->offset);
+
+	VALGRIND_ADD_TO_TX(ptr, snapshot->size);
+
+	/* do nothing */
+	if (snapshot->flags & POBJ_XADD_NO_SNAPSHOT)
+		return 0;
+
+	if (!(snapshot->flags & POBJ_XADD_ASSUME_INITIALIZED))
+		vg_verify_initialized(tx->pop, snapshot);
 
 	/*
 	 * If we are creating the first snapshot, setup a redo log action to
-	 * clear the first entry so that the undo log becomes
+	 * increment counter in the undo log, so that the log becomes
 	 * invalid once the redo log is processed.
 	 */
 	if (tx->first_snapshot) {
@@ -1069,29 +1117,37 @@ pmemobj_tx_add_snapshot(struct tx *tx, struct tx_range_def *snapshot)
 		if (action == NULL)
 			return -1;
 
-		/* first entry of the first ulog */
-		struct ulog_entry_base *e =
-			(struct ulog_entry_base *)tx->lane->layout->undo.data;
+		uint64_t *n = &tx->lane->layout->undo.gen_num;
 		palloc_set_value(&tx->pop->heap, action,
-			&e->offset, 0);
+			n, *n + 1);
 
 		tx->first_snapshot = 0;
 	}
-
-	/*
-	 * Depending on the size of the block, either allocate an
-	 * entire new object or use cache.
-	 */
-	void *ptr = OBJ_OFF_TO_PTR(tx->pop, snapshot->offset);
-	VALGRIND_ADD_TO_TX(ptr, snapshot->size);
 
 	return operation_add_buffer(tx->lane->undo, ptr, ptr, snapshot->size,
 		ULOG_OPERATION_BUF_CPY);
 }
 
 /*
+ * pmemobj_tx_merge_flags -- (internal) common code for merging flags between
+ * two ranges to ensure resultant behavior is correct
+ */
+static void
+pmemobj_tx_merge_flags(struct tx_range_def *dest, struct tx_range_def *merged)
+{
+	/*
+	 * POBJ_XADD_NO_FLUSH should only be set in merged range if set in
+	 * both ranges
+	 */
+	if ((dest->flags & POBJ_XADD_NO_FLUSH) &&
+				!(merged->flags & POBJ_XADD_NO_FLUSH)) {
+		dest->flags = dest->flags & (~POBJ_XADD_NO_FLUSH);
+	}
+}
+
+/*
  * pmemobj_tx_add_common -- (internal) common code for adding persistent memory
- *				into the transaction
+ * into the transaction
  */
 static int
 pmemobj_tx_add_common(struct tx *tx, struct tx_range_def *args)
@@ -1184,7 +1240,7 @@ pmemobj_tx_add_common(struct tx *tx, struct tx_range_def *args)
 			 * Existing ranges:
 			 *	+++---- (overlap on left)
 			 * or	---+--- (found snapshot is inside)
-			 * or	---+-++ (inside, and adjacent on the rigt)
+			 * or	---+-++ (inside, and adjacent on the right)
 			 * or	+++++-- (desired snapshot is inside)
 			 *
 			 */
@@ -1197,6 +1253,7 @@ pmemobj_tx_add_common(struct tx *tx, struct tx_range_def *args)
 			size_t intersection = fend - MAX(f->offset, r.offset);
 			r.size -= intersection + snapshot.size;
 			f->size += snapshot.size;
+			pmemobj_tx_merge_flags(f, args);
 
 			if (snapshot.size != 0) {
 				ret = pmemobj_tx_add_snapshot(tx, &snapshot);
@@ -1212,6 +1269,7 @@ pmemobj_tx_add_common(struct tx *tx, struct tx_range_def *args)
 				struct tx_range_def *fprev = ravl_data(nprev);
 				ASSERTeq(rend, fprev->offset);
 				f->size += fprev->size;
+				pmemobj_tx_merge_flags(f, fprev);
 				ravl_remove(tx->ranges, nprev);
 			}
 		} else if (fend >= r.offset) {
@@ -1235,6 +1293,7 @@ pmemobj_tx_add_common(struct tx *tx, struct tx_range_def *args)
 			 */
 			size_t overlap = rend - MAX(f->offset, r.offset);
 			r.size -= overlap;
+			pmemobj_tx_merge_flags(f, args);
 		} else {
 			ASSERT(0);
 		}
@@ -1655,7 +1714,7 @@ pmemobj_tx_free(PMEMoid oid)
 	if (n != NULL) {
 		VEC_FOREACH_BY_PTR(action, &tx->actions) {
 			if (action->type == POBJ_ACTION_TYPE_HEAP &&
-			    action->heap.offset == oid.off) {
+				action->heap.offset == oid.off) {
 				struct tx_range_def *r = ravl_data(n);
 				void *ptr = OBJ_OFF_TO_PTR(pop, r->offset);
 				VALGRIND_SET_CLEAN(ptr, r->size);
@@ -1696,8 +1755,9 @@ pmemobj_tx_publish(struct pobj_action *actv, size_t actvcnt)
 		sizeof(struct ulog_entry_val);
 
 	if (operation_reserve(tx->lane->external, entries_size) != 0) {
+		int ret = obj_tx_abort_err(ENOMEM);
 		PMEMOBJ_API_END();
-		return -1;
+		return ret;
 	}
 
 	for (size_t i = 0; i < actvcnt; ++i) {
@@ -1706,6 +1766,156 @@ pmemobj_tx_publish(struct pobj_action *actv, size_t actvcnt)
 
 	PMEMOBJ_API_END();
 	return 0;
+}
+
+/*
+ * pmemobj_tx_log_append_buffer -- append user allocated buffer to the ulog
+ */
+int
+pmemobj_tx_log_append_buffer(enum pobj_log_type type, void *addr, size_t size)
+{
+	struct tx *tx = get_tx();
+	ASSERT_TX_STAGE_WORK(tx);
+	PMEMOBJ_API_START();
+	int err;
+
+	struct tx_data *td = PMDK_SLIST_FIRST(&tx->tx_entries);
+	err = tx_construct_user_buffer(tx, addr, size, type,
+			PMDK_SLIST_NEXT(td, tx_entry) == NULL);
+
+	if (err)
+		goto err_abort;
+
+	PMEMOBJ_API_END();
+	return 0;
+
+err_abort:
+	if (tx->stage == TX_STAGE_WORK)
+		err = obj_tx_abort_err(err);
+	else
+		tx->stage = TX_STAGE_ONABORT;
+
+	PMEMOBJ_API_END();
+	return err;
+}
+
+/*
+ * pmemobj_tx_log_auto_alloc -- enable/disable automatic ulog allocation
+ */
+int
+pmemobj_tx_log_auto_alloc(enum pobj_log_type type, int on_off)
+{
+	struct tx *tx = get_tx();
+	ASSERT_TX_STAGE_WORK(tx);
+
+	struct operation_context *ctx = type == TX_LOG_TYPE_INTENT ?
+		tx->lane->external : tx->lane->undo;
+
+	operation_set_auto_reserve(ctx, on_off);
+
+	return 0;
+}
+
+/*
+ * pmemobj_tx_log_snapshot_max_size -- calculates the maximum
+ * size of a buffer which will be able to hold nsizes snapshots,
+ * each of size from sizes array
+ */
+size_t
+pmemobj_tx_log_snapshot_max_size(size_t *sizes, size_t nsizes)
+{
+	LOG(3, NULL);
+
+	/* each buffer has its header */
+	size_t result = TX_SNAPSHOT_LOG_BUFFER_OVERHEAD;
+	for (size_t i = 0; i < nsizes; ++i) {
+		/* check for overflow */
+		if (sizes[i] + TX_SNAPSHOT_LOG_ENTRY_OVERHEAD +
+				TX_SNAPSHOT_LOG_ENTRY_ALIGNMENT < sizes[i])
+			goto err_overflow;
+		/* each entry has its header */
+		size_t size =
+			ALIGN_UP(sizes[i] + TX_SNAPSHOT_LOG_ENTRY_OVERHEAD,
+				TX_SNAPSHOT_LOG_ENTRY_ALIGNMENT);
+		/* check for overflow */
+		if (result + size < result)
+			goto err_overflow;
+		/* sum up */
+		result += size;
+	}
+
+	/*
+	 * if the result is bigger than a single allocation it must be divided
+	 * into multiple allocations where each of them will have its own buffer
+	 * header and entry header
+	 */
+	size_t allocs_overhead = (result / PMEMOBJ_MAX_ALLOC_SIZE) *
+	    (TX_SNAPSHOT_LOG_BUFFER_OVERHEAD + TX_SNAPSHOT_LOG_ENTRY_OVERHEAD);
+	/* check for overflow */
+	if (result + allocs_overhead < result)
+		goto err_overflow;
+	result += allocs_overhead;
+
+	/* SIZE_MAX is a special value */
+	if (result == SIZE_MAX)
+		goto err_overflow;
+
+	return result;
+
+err_overflow:
+	errno = EOVERFLOW;
+	return SIZE_MAX;
+}
+
+/*
+ * pmemobj_tx_log_intent_max_size -- calculates the maximum size of a buffer
+ * which will be able to hold nintents
+ */
+size_t
+pmemobj_tx_log_intent_max_size(size_t nintents)
+{
+	LOG(3, NULL);
+
+	/* check for overflow */
+	if (nintents > SIZE_MAX / TX_INTENT_LOG_ENTRY_OVERHEAD)
+		goto err_overflow;
+	/* each entry has its header */
+	size_t entries_overhead = nintents * TX_INTENT_LOG_ENTRY_OVERHEAD;
+	/* check for overflow */
+	if (entries_overhead + TX_INTENT_LOG_BUFFER_ALIGNMENT
+			< entries_overhead)
+		goto err_overflow;
+	/* the whole buffer is aligned */
+	size_t result =
+		ALIGN_UP(entries_overhead, TX_INTENT_LOG_BUFFER_ALIGNMENT);
+
+	/* check for overflow */
+	if (result + TX_INTENT_LOG_BUFFER_OVERHEAD < result)
+		goto err_overflow;
+	/* add a buffer overhead */
+	result += TX_INTENT_LOG_BUFFER_OVERHEAD;
+
+	/*
+	 * if the result is bigger than a single allocation it must be divided
+	 * into multiple allocations where each of them will have its own buffer
+	 * header and entry header
+	 */
+	size_t allocs_overhead = (result / PMEMOBJ_MAX_ALLOC_SIZE) *
+	    (TX_INTENT_LOG_BUFFER_OVERHEAD + TX_INTENT_LOG_ENTRY_OVERHEAD);
+	/* check for overflow */
+	if (result + allocs_overhead < result)
+		goto err_overflow;
+	result += allocs_overhead;
+
+	/* SIZE_MAX is a special value */
+	if (result == SIZE_MAX)
+		goto err_overflow;
+
+	return result;
+
+err_overflow:
+	errno = EOVERFLOW;
+	return SIZE_MAX;
 }
 
 /*
@@ -1757,19 +1967,19 @@ static int
 CTL_READ_HANDLER(threshold)(void *ctx,
 	enum ctl_query_source source, void *arg, struct ctl_indexes *indexes)
 {
-	LOG(1, "tx.cache.threshold parameter is depracated");
+	LOG(1, "tx.cache.threshold parameter is deprecated");
 
 	return 0;
 }
 
 /*
- * CTL_WRITE_HANDLER(threshold) -- depracated
+ * CTL_WRITE_HANDLER(threshold) -- deprecated
  */
 static int
 CTL_WRITE_HANDLER(threshold)(void *ctx,
 	enum ctl_query_source source, void *arg, struct ctl_indexes *indexes)
 {
-	LOG(1, "tx.cache.threshold parameter is depracated");
+	LOG(1, "tx.cache.threshold parameter is deprecated");
 
 	return 0;
 }
@@ -1819,14 +2029,51 @@ CTL_WRITE_HANDLER(skip_expensive_checks)(void *ctx,
 static const struct ctl_argument CTL_ARG(skip_expensive_checks) =
 		CTL_ARG_BOOLEAN;
 
+/*
+ * CTL_READ_HANDLER(verify_user_buffers) -- returns "ulog_user_buffers.verify"
+ * variable from the pool
+ */
+static int
+CTL_READ_HANDLER(verify_user_buffers)(void *ctx,
+	enum ctl_query_source source, void *arg, struct ctl_indexes *indexes)
+{
+	PMEMobjpool *pop = ctx;
+
+	int *arg_out = arg;
+
+	*arg_out = pop->ulog_user_buffers.verify;
+
+	return 0;
+}
+
+/*
+ * CTL_WRITE_HANDLER(verify_user_buffers) -- sets "ulog_user_buffers.verify"
+ * variable in the pool
+ */
+static int
+CTL_WRITE_HANDLER(verify_user_buffers)(void *ctx,
+	enum ctl_query_source source, void *arg, struct ctl_indexes *indexes)
+{
+	PMEMobjpool *pop = ctx;
+
+	int arg_in = *(int *)arg;
+
+	pop->ulog_user_buffers.verify = arg_in;
+	return 0;
+}
+
+static const struct ctl_argument CTL_ARG(verify_user_buffers) =
+		CTL_ARG_BOOLEAN;
+
 static const struct ctl_node CTL_NODE(debug)[] = {
 	CTL_LEAF_RW(skip_expensive_checks),
+	CTL_LEAF_RW(verify_user_buffers),
 
 	CTL_NODE_END
 };
 
 /*
- * CTL_WRITE_HANDLER(queue_depth) -- returns the depth of the post commit queue
+ * CTL_READ_HANDLER(queue_depth) -- returns the depth of the post commit queue
  */
 static int
 CTL_READ_HANDLER(queue_depth)(void *ctx, enum ctl_query_source source,

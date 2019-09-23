@@ -61,7 +61,7 @@ extern "C" {
 
 /* attributes of the obj memory pool format for the pool header */
 #define OBJ_HDR_SIG "PMEMOBJ"	/* must be 8 bytes including '\0' */
-#define OBJ_FORMAT_MAJOR 5
+#define OBJ_FORMAT_MAJOR 6
 
 #define OBJ_FORMAT_FEAT_DEFAULT \
 	{POOL_FEAT_COMPAT_DEFAULT, POOL_FEAT_INCOMPAT_DEFAULT, 0x0000}
@@ -204,9 +204,15 @@ struct pmemobjpool {
 	PMEMrwlock_internal *rwlock_head;
 	PMEMcond_internal *cond_head;
 
+	struct {
+		struct ravl *map;
+		os_mutex_t lock;
+		int verify;
+	} ulog_user_buffers;
+
 	/* padding to align size of this structure to page boundary */
 	/* sizeof(unused2) == 8192 - offsetof(struct pmemobjpool, unused2) */
-	char unused2[992];
+	char unused2[924];
 };
 
 /*

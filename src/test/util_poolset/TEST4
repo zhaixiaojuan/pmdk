@@ -35,7 +35,6 @@
 # src/test/util_poolset/TEST4 -- unit test for util_pool_open()
 #
 
-# standard unit test setup
 . ../unittest/unittest.sh
 
 require_test_type medium
@@ -77,6 +76,9 @@ expect_normal_exit ./util_poolset$EXESUFFIX o $MIN_POOL\
 	$DIR/testset1\
 	$DIR/testset2\
 	$DIR/testset3\
+	$DIR/testset4
+
+expect_normal_exit ./util_poolset$EXESUFFIX f $MIN_POOL\
 	$DIR/testset4
 
 expect_normal_exit ./util_poolset$EXESUFFIX e $MIN_POOL\

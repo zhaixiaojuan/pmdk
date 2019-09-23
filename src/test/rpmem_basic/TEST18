@@ -37,7 +37,6 @@
 # test case for rpmem_persist without relaxed flag is in TEST7
 #
 
-# standard unit test setup
 . ../unittest/unittest.sh
 
 require_test_type medium

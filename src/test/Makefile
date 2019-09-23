@@ -71,6 +71,7 @@ OBJ_TESTS = \
 	obj_sync\
 	\
 	obj_action\
+	obj_alloc\
 	obj_bucket\
 	obj_check\
 	obj_constructor\
@@ -141,6 +142,7 @@ OBJ_TESTS = \
 	obj_tx_mt\
 	obj_tx_realloc\
 	obj_tx_strdup\
+	obj_ulog_size\
 	obj_zones
 
 OBJ_REMOTE_DEPS = \
@@ -161,7 +163,10 @@ OTHER_TESTS = \
 	compat_incompat_features\
 	ctl_prefault\
 	ctl_cow\
+	getopt\
 	magic\
+	mmap\
+	mmap_fixed\
 	out_err\
 	out_err_mt\
 	pmemobjcli\
@@ -203,6 +208,7 @@ PMEM_TESTS = \
 	pmem_is_pmem\
 	pmem_is_pmem_posix\
 	pmem_map_file\
+	pmem_map_file_trunc\
 	pmem_has_auto_flush\
 	pmem_deep_persist\
 	pmem_memcpy\
@@ -288,6 +294,12 @@ EXAMPLES_TESTS = \
 	ex_libpmemobj\
 	ex_linkedlist
 
+RPMEM_EXAMPLES_TESTS = \
+	ex_librpmem_manpage\
+	ex_librpmem_basic\
+	ex_librpmem_hello\
+	ex_librpmem_fibonacci
+
 LIBPMEMPOOL_DEPS = \
 	libpmempool_api
 
@@ -295,6 +307,7 @@ LIBPMEMPOOL_TESTS = \
 	libpmempool_include\
 	libpmempool_backup\
 	libpmempool_bttdev\
+	libpmempool_check_version\
 	libpmempool_feature\
 	libpmempool_map_flog\
 	libpmempool_rm
@@ -339,6 +352,11 @@ REMOTE_TESTS = \
 	pmempool_rm_remote\
 	pmempool_sync_remote\
 	pmempool_transform_remote
+
+ifneq ($(BUILD_EXAMPLES),n)
+	LOCAL_TESTS += $(EXAMPLES_TESTS)
+	REMOTE_TESTS += $(RPMEM_EXAMPLES_TESTS)
+endif
 
 TESTS = \
 	$(LOCAL_TESTS)\
@@ -416,7 +434,7 @@ check:
 	@echo "No failures."
 
 pycheck:
-	@./RUNTESTS.py $(RUNTEST_OPTIONS)
+	@./RUNTESTS.py $(subst nondebug,release,$(RUNTEST_OPTIONS))
 	@echo "No failures."
 
 check-remote-quiet-conditional:
