@@ -5,15 +5,17 @@ export DEB_BUILD_MAINT_OPTIONS = hardening=+all
 DEB_HOST_MULTIARCH ?= $(shell dpkg-architecture -qDEB_HOST_MULTIARCH)
 DEB_UPSTREAM_VERSION = $(shell dpkg-parsechangelog -S version | cut -d - -f 1 | cut -d : -f 2)
 
+BUILD_ARGS = prefix=/usr libdir=/usr/lib/$(DEB_HOST_MULTIARCH) sysconfdir=/etc bashcompdir=/usr/share/bash-completion/completions NORPATH=1 BUILD_EXAMPLES=n BUILD_BENCHMARKS=n
+
 %:
 	dh $@ --with bash-completion
 
 override_dh_auto_build:
 	+$(MAKE) doc
-	dh_auto_build  -- prefix=/usr libdir=/usr/lib/$(DEB_HOST_MULTIARCH) sysconfdir=/etc bashcompdir=/usr/share/bash-completion/completions NORPATH=1
+	dh_auto_build  -- $(BUILD_ARGS)
 
 override_dh_auto_install:
-	dh_auto_install -- prefix=/usr libdir=/usr/lib/$(DEB_HOST_MULTIARCH) sysconfdir=/etc bashcompdir=/usr/share/bash-completion/completions NORPATH=1
+	dh_auto_install -- $(BUILD_ARGS)
 
 override_dh_install:
 	mkdir -p debian/tmp/usr/share/pmdk/
@@ -41,5 +43,5 @@ ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 	rm -f src/test/obj_pool/TEST34
 	# Be nice to slow hardware.
 	echo TEST_TIMEOUT=30m >> src/test/testconfig.sh
-	+$(MAKE) check
+	+$(MAKE) check $(BUILD_ARGS)
 endif
