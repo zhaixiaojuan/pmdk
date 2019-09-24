@@ -1,3 +1,13 @@
+pmdk (1.7~rc1-1) experimental; urgency=medium
+
+  * New upstream pre-release.
+  * Drop redundant dirs from example paths.
+  * Use upstream method to avoid building examples.
+  * Multi-Arch settings.
+  * Update symbols.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Tue, 24 Sep 2019 02:05:38 +0200
+
 pmdk (1.6.1-2) unstable; urgency=medium
 
   * Verify upstream GPG signatures.
