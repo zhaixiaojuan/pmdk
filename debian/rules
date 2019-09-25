@@ -30,18 +30,8 @@ override_dh_missing:
 
 override_dh_auto_test:
 ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
-	# Use fake pmem; we really want tmpfs if possible.
-	# No non-pmem dir, as real syncs there are slow.
-	echo "PMEM_FS_DIR=/tmp" > src/test/testconfig.sh
-	# Use cache flushes instead of msync().
-	echo "PMEM_FS_DIR_FORCE_PMEM=1" >> src/test/testconfig.sh
-	# Don't try static libs.
-	echo "TEST_BUILD=\"debug nondebug\"" >> src/test/testconfig.sh
-	# Display execution time of each test
-	echo "TM=1" >> src/test/testconfig.sh
+	cp debian/testconfig.* src/test/
 	# Still fails/times out on weird setups (a 33GB fallocate).
 	rm -f src/test/obj_pool/TEST34
-	# Be nice to slow hardware.
-	echo TEST_TIMEOUT=30m >> src/test/testconfig.sh
-	+$(MAKE) check $(BUILD_ARGS)
+	+$(MAKE) check pycheck $(BUILD_ARGS)
 endif
