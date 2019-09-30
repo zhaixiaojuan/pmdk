@@ -73,10 +73,10 @@ libpmemobj.so.1 libpmemobj1 #MINVER#
  pmemobj_tx_errno@LIBPMEMOBJ_1.0 1.4
  pmemobj_tx_free@LIBPMEMOBJ_1.0 1.4
  pmemobj_tx_lock@LIBPMEMOBJ_1.0 1.4
- pmemobj_tx_log_append_buffer@LIBPMEMOBJ_1.0 1.7~
- pmemobj_tx_log_auto_alloc@LIBPMEMOBJ_1.0 1.7~
- pmemobj_tx_log_intents_max_size@LIBPMEMOBJ_1.0 1.7~
- pmemobj_tx_log_snapshots_max_size@LIBPMEMOBJ_1.0 1.7~
+ pmemobj_tx_log_append_buffer@LIBPMEMOBJ_1.0 1.7
+ pmemobj_tx_log_auto_alloc@LIBPMEMOBJ_1.0 1.7
+ pmemobj_tx_log_intents_max_size@LIBPMEMOBJ_1.0 1.7
+ pmemobj_tx_log_snapshots_max_size@LIBPMEMOBJ_1.0 1.7
  pmemobj_tx_process@LIBPMEMOBJ_1.0 1.4
  pmemobj_tx_publish@LIBPMEMOBJ_1.0 1.4
  pmemobj_tx_realloc@LIBPMEMOBJ_1.0 1.4
