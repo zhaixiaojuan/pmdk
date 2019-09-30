@@ -1,3 +1,9 @@
+pmdk (1.7-1) unstable; urgency=medium
+
+  * Upstream release.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 30 Sep 2019 19:20:09 +0200
+
 pmdk (1.7~rc2-1) experimental; urgency=medium
 
   * New upstream pre-release.
