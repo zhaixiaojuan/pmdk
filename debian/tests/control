@@ -20,6 +20,3 @@ Depends: gcc, libc6-dev, libpmemlog-dev
 
 Tests: examples-libpmempool
 Depends: gcc, libc6-dev, libpmempool-dev
-
-Tests: examples-libvmem
-Depends: gcc, libc6-dev, libvmem-dev
