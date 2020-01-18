@@ -81,6 +81,9 @@ test_layout()
 	ASSERT_FIELD_SIZE(unused2, POOL_HDR_UNUSED2_LEN_V1);
 	ASSERT_ALIGNED_FIELD(struct pool_hdr, sds);
 	ASSERT_ALIGNED_FIELD(struct pool_hdr, checksum);
+#if PMEM_PAGESIZE > 4096
+	ASSERT_ALIGNED_FIELD(struct pool_hdr, align_pad);
+#endif
 	ASSERT_ALIGNED_CHECK(struct pool_hdr);
 
 	ASSERT_ALIGNED_BEGIN(features_t);
@@ -118,7 +121,7 @@ test_layout()
 #define POOL_FEAT_SDS_FINAL		0x0004U
 
 /* incompat features effective values */
-#if defined(_WIN32) || defined(NDCTL_GE_63)
+#if defined(_WIN32) || NDCTL_ENABLED
 #ifdef SDS_ENABLED
 #define POOL_E_FEAT_SDS_FINAL		POOL_FEAT_SDS_FINAL
 #else

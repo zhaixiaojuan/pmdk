@@ -414,8 +414,6 @@ function check_exit_code {
         dump_last_n_lines $Env:PMEMLOG_LOG_FILE
         dump_last_n_lines $Env:PMEMBLK_LOG_FILE
         dump_last_n_lines $Env:PMEMPOOL_LOG_FILE
-        dump_last_n_lines $Env:VMEM_LOG_FILE
-        dump_last_n_lines $Env:VMMALLOC_LOG_FILE
 
         fail ""
     }
@@ -1026,7 +1024,6 @@ function setup {
 
     $Script:DIR = $DIR + "\" + $Env:DIRSUFFIX + "\" + $curtestdir + $Env:UNITTEST_NUM + $Env:SUFFIX
 
-
     # test type must be explicitly specified
     if ($req_test_type -ne "1") {
         fatal "error: required test type is not specified"
@@ -1172,7 +1169,6 @@ if (-Not $Env:UNITTEST_NAME) {
 
 $Global:REAL_FS = $Env:FS
 
-
 # choose based on FS env variable
 switch ($Env:FS) {
     'pmem' {
@@ -1217,7 +1213,6 @@ switch ($Env:FS) {
     }
 } # switch
 
-
 # Length of pool file's signature
 sv -Name SIG_LEN 8
 
@@ -1238,8 +1233,6 @@ sv -Name ARENA_OFF 8192
 # The default is to turn on library logging to level 3 and save it to local files.
 # Tests that don't want it on, should override these environment variables.
 #
-$Env:VMEM_LOG_LEVEL = 3
-$Env:VMEM_LOG_FILE = "vmem${Env:UNITTEST_NUM}.log"
 $Env:PMEM_LOG_LEVEL = 3
 $Env:PMEM_LOG_FILE = "pmem${Env:UNITTEST_NUM}.log"
 $Env:PMEMBLK_LOG_LEVEL=3
@@ -1250,11 +1243,6 @@ $Env:PMEMOBJ_LOG_LEVEL = 3
 $Env:PMEMOBJ_LOG_FILE= "pmemobj${Env:UNITTEST_NUM}.log"
 $Env:PMEMPOOL_LOG_LEVEL = 3
 $Env:PMEMPOOL_LOG_FILE= "pmempool${Env:UNITTEST_NUM}.log"
-
-$Env:VMMALLOC_POOL_DIR = $DIR
-$Env:VMMALLOC_POOL_SIZE = $((16 * 1024 * 1024))
-$Env:VMMALLOC_LOG_LEVEL = 3
-$Env:VMMALLOC_LOG_FILE = "vmmalloc${Env:UNITTEST_NUM}.log"
 
 $Env:TRACE_LOG_FILE = "trace${Env:UNITTEST_NUM}.log"
 $Env:ERR_LOG_FILE = "err${Env:UNITTEST_NUM}.log"

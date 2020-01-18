@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 #
-# Copyright 2016-2019, Intel Corporation
+# Copyright 2016-2020, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -55,7 +55,7 @@ set -o pipefail
 filename=$1
 template=$2
 outfile=$3
-title=`sed -n 's/^title:\ _MP(*\([A-Za-z_-]*\).*$/\1/p' $filename`
+title=`sed -n 's/^title:\ _MP(*\([A-Za-z0-9_-]*\).*$/\1/p' $filename`
 section=`sed -n 's/^title:.*\([0-9]\))$/\1/p' $filename`
 version=`sed -n 's/^date:\ *\(.*\)$/\1/p' $filename`
 
@@ -82,31 +82,14 @@ if [ "$WEB" == 1 ]; then
 	m4 $OPTS macros.man $filename | sed -n -e '/---/,$p' > $outfile
 else
 	SOURCE_DATE_EPOCH="${SOURCE_DATE_EPOCH:-$(date +%s)}"
-	YEAR=$(date -u -d "@$SOURCE_DATE_EPOCH" +%Y 2>/dev/null ||
-		date -u -r "$SOURCE_DATE_EPOCH" +%Y 2>/dev/null || date -u +%Y)
+	COPYRIGHT=$(grep -rwI "\[comment]: <> (Copyright" $filename |\
+		sed "s/\[comment\]: <> (\([^)]*\))/\1/")
 	dt=$(date -u -d "@$SOURCE_DATE_EPOCH" +%F 2>/dev/null ||
 		date -u -r "$SOURCE_DATE_EPOCH" +%F 2>/dev/null || date -u +%F)
 	m4 $OPTS macros.man $filename | sed -n -e '/# NAME #/,$p' |\
-		pandoc -s -t man -o $outfile.tmp --template=$template \
+		pandoc -s -t man -o $outfile --template=$template \
 		-V title=$title -V section=$section \
 		-V date="$dt" -V version="$version" \
-		-V year="$YEAR" |
-sed '/^\.IP/{
-N
-/\n\.nf/{
-	s/IP/PP/
-    }
-}'
-
-	# don't overwrite the output file if the only thing that changed
-	# is modification date (diff output has exactly 4 lines in this case)
-	difflines=`diff $outfile $outfile.tmp | wc -l || true`
-	onlydates=`diff $outfile $outfile.tmp | grep "$dt" | wc -l || true`
-	if [ $difflines -eq 4 -a $onlydates -eq 1 ]; then
-		rm $outfile.tmp
-	else
-		mv $outfile.tmp $outfile
-	fi
-
+		-V copyright="$COPYRIGHT"
 fi
 fi

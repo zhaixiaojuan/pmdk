@@ -1,5 +1,5 @@
 /*
- * Copyright 2017-2019, Intel Corporation
+ * Copyright 2016-2019, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -51,10 +51,11 @@
 #include "pmemcommon.h"
 #include "os.h"
 #include "util.h"
+#include "page_size.h"
 
 #define BTT_CREATE_DEF_SIZE	(20 * 1UL << 20) /* 20 MB */
 #define BTT_CREATE_DEF_BLK_SIZE	512UL
-#define BTT_CREATE_DEF_OFFSET_SIZE	(4 * 1UL << 10) /* 4 KB */
+#define BTT_CREATE_DEF_OFFSET_SIZE	PMEM_PAGESIZE
 
 struct btt_context {
 	void *addr;
@@ -332,7 +333,7 @@ main(int argc, char *argv[])
 	}
 
 	/* map created file */
-	void *base = util_map(fd, opts.poolsize, MAP_SHARED, 0, 0, NULL);
+	void *base = util_map(fd, 0, opts.poolsize, MAP_SHARED, 0, 0, NULL);
 	if (!base) {
 		perror("util_map");
 		res = file_error(fd, opts.fpath);
@@ -388,7 +389,6 @@ main(int argc, char *argv[])
 
 	/* print results */
 	print_result(&opts);
-
 
 error_btt:
 	btt_fini(bttp);

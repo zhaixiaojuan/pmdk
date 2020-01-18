@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2019, Intel Corporation
+# Copyright 2014-2020, Intel Corporation
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are permitted provided that the following conditions
@@ -35,16 +35,18 @@
 TOP := $(dir $(lastword $(MAKEFILE_LIST)))..
 include $(TOP)/src/common.inc
 
-TARGETS = libpmem libvmem libpmemblk libpmemlog libpmemobj libpmempool\
-		  libvmmalloc tools
-ALL_TARGETS = $(TARGETS) common librpmem
+# core targets
+TARGETS = libpmem libpmemblk libpmemlog libpmemobj libpmempool tools
+# make all targets
+ALL_TARGETS = $(TARGETS) common librpmem libpmem2
+# all available targets
 POSSIBLE_TARGETS = $(TARGETS) common librpmem rpmem_common test\
-	examples benchmarks
+	examples benchmarks libpmem2
 
 SCOPE_DIRS = $(TARGETS) common librpmem rpmem_common
 
-DEBUG_RELEASE_TARGETS = common libpmem libvmem libpmemblk libpmemlog libpmemobj\
-	libpmempool libvmmalloc librpmem
+DEBUG_RELEASE_TARGETS = common libpmem libpmemblk libpmemlog libpmemobj\
+	libpmempool librpmem libpmem2
 RELEASE_TARGETS = tools
 
 ifneq ($(BUILD_EXAMPLES),n)
@@ -57,31 +59,35 @@ ifneq ($(BUILD_BENCHMARKS),n)
 	RELEASE_TARGETS += benchmarks
 endif
 
-CLEAN_NO_JE_TARGETS = $(POSSIBLE_TARGETS)
-CLEAN_TARGETS = $(CLEAN_NO_JE_TARGETS) jemalloc
-CLOBBER_NO_JE_TARGETS = $(POSSIBLE_TARGETS)
-CLOBBER_TARGETS = $(CLOBBER_NO_JE_TARGETS) jemalloc
+CLEAN_TARGETS = $(POSSIBLE_TARGETS)
+CLOBBER_TARGETS = $(POSSIBLE_TARGETS)
 CSTYLE_TARGETS = $(POSSIBLE_TARGETS)
 INSTALL_TARGETS = $(TARGETS)
 SPARSE_TARGETS = $(POSSIBLE_TARGETS)
+EXAMPLES_TARGETS = $(TARGETS) librpmem
 
 HEADERS_DESTDIR = $(DESTDIR)$(includedir)
-HEADERS_INSTALL = include/libpmem.h include/libvmem.h\
+HEADERS_INSTALL = include/libpmem.h\
 		include/libpmemobj.h include/libpmempool.h\
-		include/libpmemblk.h include/libpmemlog.h\
-		include/libvmmalloc.h
+		include/libpmemblk.h include/libpmemlog.h
 
 OBJ_HEADERS_INSTALL = include/libpmemobj/*.h
 
 PKG_CONFIG_DESTDIR = $(DESTDIR)$(pkgconfigdir)
 PKG_CONFIG_COMMON = common.pc
-PKG_CONFIG_FILES = libpmem.pc libvmem.pc libvmmalloc.pc libpmemobj.pc\
-		libpmemlog.pc libpmemblk.pc libpmempool.pc
+PKG_CONFIG_FILES = libpmem.pc libpmemobj.pc libpmemlog.pc libpmemblk.pc\
+		libpmempool.pc
 PMREORDER_BIN = $(DESTDIR)$(bindir)
 PMREORDER_SRC = tools/pmreorder
 PMREORDER_FILES = $(PMREORDER_SRC)/*.py
 PMREORDER_DESTDIR = $(DESTDIR)$(datarootdir)/pmreorder
 PMREORDER_ROOTDIR = $(datarootdir)/pmreorder
+
+ifeq ($(PMEM2_INSTALL),y)
+	PKG_CONFIG_FILES += libpmem2.pc
+	HEADERS_INSTALL += include/libpmem2.h
+	INSTALL_TARGETS += libpmem2
+endif
 
 ifeq ($(BUILD_RPMEM),y)
 	PKG_CONFIG_FILES += librpmem.pc
@@ -92,18 +98,8 @@ endif
 rwildcard=$(strip $(foreach d,$(wildcard $1*),$(call rwildcard,$d/,$2)\
 	$(filter $(subst *,%,$2),$d)))
 
-SCOPE_SRC_DIRS = $(SCOPE_DIRS) include jemalloc/src
-SCOPE_HDR_DIRS = $(SCOPE_DIRS) include jemalloc/src\
-		jemalloc/include/jemalloc\
-		jemalloc/include/jemalloc/internal\
-		debug/libvmem/jemalloc/include/jemalloc\
-		debug/libvmmalloc/jemalloc/include/jemalloc\
-		debug/libvmem/jemalloc/include/jemalloc/internal\
-		debug/libvmmalloc/jemalloc/include/jemalloc/internal\
-		nondebug/libvmem/jemalloc/include/jemalloc\
-		nondebug/libvmmalloc/jemalloc/include/jemalloc\
-		nondebug/libvmem/jemalloc/include/jemalloc/internal\
-		nondebug/libvmmalloc/jemalloc/include/jemalloc/internal
+SCOPE_SRC_DIRS = $(SCOPE_DIRS) include
+SCOPE_HDR_DIRS = $(SCOPE_DIRS) include
 
 SCOPE_SRC_FILES = $(foreach d, $(SCOPE_SRC_DIRS), $(wildcard $(d)/*.c))
 SCOPE_HDR_FILES = $(foreach d, $(SCOPE_HDR_DIRS), $(wildcard $(D)/*.h))
@@ -139,13 +135,12 @@ clean: $(CLEAN_TARGETS:=-clean)
 clobber: $(CLOBBER_TARGETS:=-clobber)
 cstyle: $(CSTYLE_TARGETS:=-cstyle)
 format: $(CSTYLE_TARGETS:=-format)
-examples benchmarks: $(TARGETS)
+examples benchmarks: $(EXAMPLES_TARGETS)
 benchmarks: examples
 sparse: $(SPARSE_TARGETS:=-sparse)
 
 custom_build = $(DEBUG)$(OBJDIR)
 
-libvmmalloc libvmem: jemalloc
 tools: libpmem libpmemblk libpmemlog libpmemobj libpmempool
 libpmemblk libpmemlog libpmemobj: libpmem
 libpmempool: libpmemblk
@@ -163,10 +158,13 @@ $(PKG_CONFIG_COMMON): pkg-cfg-common
 
 pkg-config: $(PKG_CONFIG_FILES)
 
-$(eval $(call sub-target,$(INSTALL_TARGETS),install,y))
+%-install: %
+	$(MAKE) -C $^ install
+	$(MAKE) -C $^ install DEBUG=1
+
 $(eval $(call sub-target,$(INSTALL_TARGETS),uninstall,y))
-$(eval $(call sub-target,$(CLEAN_NO_JE_TARGETS),clean,y))
-$(eval $(call sub-target,$(CLOBBER_NO_JE_TARGETS),clobber,y))
+$(eval $(call sub-target,$(CLEAN_TARGETS),clean,y))
+$(eval $(call sub-target,$(CLOBBER_TARGETS),clobber,y))
 $(eval $(call sub-target,$(CSTYLE_TARGETS),cstyle,n))
 $(eval $(call sub-target,$(CSTYLE_TARGETS),format,n))
 $(eval $(call sub-target,$(SPARSE_TARGETS),sparse,n))
@@ -180,12 +178,19 @@ endif
 $(RELEASE_TARGETS):
 	$(MAKE) -C $@
 
-jemalloc-check: jemalloc-test
+df:
+	@echo ====================================================================================
+	@if [ -e test/testconfig.sh ]; then \
+		bash -c '. test/testconfig.sh; \
+		if [ -n "$$PMEM_FS_DIR" ]; then df -h "$$PMEM_FS_DIR"; stat -f "$$PMEM_FS_DIR"; fi; \
+		if [ -n "$$NON_PMEM_FS_DIR" ]; then df -h "$$NON_PMEM_FS_DIR"; stat -f "$$NON_PMEM_FS_DIR";fi'; \
+	fi
+	@echo ====================================================================================
 
-test: all jemalloc-test
+test: all
 	$(MAKE) -C test test
 
-check pcheck pycheck: test jemalloc-check
+check pcheck pycheck: test df
 	$(MAKE) -C test $@
 
 require-rpmem:
@@ -195,14 +200,6 @@ endif
 
 check-remote: require-rpmem test
 	$(MAKE) -C test $@
-
-jemalloc jemalloc-clean jemalloc-clobber jemalloc-test jemalloc-check:
-	$(MAKE) -C jemalloc -f Makefile.libvmem     $@ EXTRA_CFLAGS="$(EXTRA_CFLAGS) -I$(abspath $(TOP))/src/common"
-	$(MAKE) -C jemalloc -f Makefile.libvmmalloc $@ EXTRA_CFLAGS="$(EXTRA_CFLAGS) -I$(abspath $(TOP))/src/common"
-ifeq ($(custom_build),)
-	$(MAKE) -C jemalloc -f Makefile.libvmem     $@ DEBUG=1 EXTRA_CFLAGS="$(EXTRA_CFLAGS) -I$(abspath $(TOP))/src/common"
-	$(MAKE) -C jemalloc -f Makefile.libvmmalloc $@ DEBUG=1 EXTRA_CFLAGS="$(EXTRA_CFLAGS) -I$(abspath $(TOP))/src/common"
-endif
 
 # Re-generate pkg-config files on 'make install' (not on 'make all'),
 # to handle the case when prefix is specified only for 'install'.
@@ -217,7 +214,7 @@ install: all pkg-config
 	install -d $(PMREORDER_DESTDIR)
 	install -p -m 0644 $(PMREORDER_FILES) $(PMREORDER_DESTDIR)
 	@echo "#!/bin/sh" > $(PMREORDER_SRC)/pmreorder
-	@echo "exec python3 $(PMREORDER_ROOTDIR)/pmreorder.py \$$*" >> $(PMREORDER_SRC)/pmreorder
+	@echo "exec python3 $(PMREORDER_ROOTDIR)/pmreorder.py $(SRCVERSION) \$$*" >> $(PMREORDER_SRC)/pmreorder
 	install -d $(PMREORDER_BIN)
 	install -p $(PMREORDER_SRC)/pmreorder $(PMREORDER_BIN)
 	$(RM) $(PKG_CONFIG_FILES)
@@ -247,8 +244,6 @@ clean: clean-here
 
 clobber: clean-here
 
-.NOTPARALLEL: libvmem libvmmalloc
-
 .PHONY: all install uninstall clean clobber cstyle format test check pcheck\
-	jemalloc jemalloc-clean jemalloc-test jemalloc-check cscope $(ALL_TARGETS)\
+	cscope $(ALL_TARGETS)\
 	pkg-config check-remote clean-here pkg-cfg-common require-rpmem

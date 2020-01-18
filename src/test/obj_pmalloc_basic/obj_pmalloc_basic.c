@@ -52,11 +52,12 @@
 
 #define MAX_MALLOC_FREE_LOOP 1000
 #define MALLOC_FREE_SIZE 8000
+#define PAD_SIZE (PMEM_PAGESIZE - LANE_TOTAL_SIZE)
 
 struct mock_pop {
 	PMEMobjpool p;
 	char lanes[LANE_TOTAL_SIZE];
-	char padding[1024]; /* to page boundary */
+	char padding[PAD_SIZE]; /* to page boundary */
 	uint64_t ptr;
 };
 
@@ -388,7 +389,6 @@ main(int argc, char *argv[])
 
 	DONE(NULL);
 }
-
 
 #ifdef _MSC_VER
 /*

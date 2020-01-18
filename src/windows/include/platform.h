@@ -1,5 +1,5 @@
 /*
- * Copyright 2015-2018, Intel Corporation
+ * Copyright 2015-2020, Intel Corporation
  * Copyright (c) 2016, Microsoft Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -44,7 +44,7 @@
 
 #pragma warning(disable : 4996)
 #pragma warning(disable : 4200) /* allow flexible array member */
-#pragma warning(disable : 4819) /* non unicode characteres */
+#pragma warning(disable : 4819) /* non unicode characters */
 
 #ifdef __cplusplus
 extern "C" {
@@ -89,7 +89,6 @@ extern "C" {
 #ifndef __cplusplus
 #define inline __inline
 #endif
-
 
 /* XXX - no equivalents in VC++ */
 #define __attribute__(a)

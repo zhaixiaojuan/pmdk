@@ -296,7 +296,6 @@ obj_init(void)
 
 	COMPILE_ERROR_ON(PMEMOBJ_F_MEM_NOFLUSH != PMEM_F_MEM_NOFLUSH);
 
-
 #ifdef _WIN32
 	/* XXX - temporary implementation (see above) */
 	os_once(&Cached_pool_key_once, _Cached_pool_key_alloc);
@@ -1220,6 +1219,8 @@ obj_runtime_init(PMEMobjpool *pop, int rdonly, int boot, unsigned nlanes)
 	if (pop->stats == NULL)
 		goto err_stat;
 
+	pop->user_data = NULL;
+
 	VALGRIND_REMOVE_PMEM_MAPPING(&pop->mutex_head,
 		sizeof(pop->mutex_head));
 	VALGRIND_REMOVE_PMEM_MAPPING(&pop->rwlock_head,
@@ -2133,6 +2134,30 @@ pmemobj_pool_by_ptr(const void *addr)
 		return NULL;
 
 	return pop;
+}
+
+/*
+ * pmemobj_set_user_data -- sets volatile pointer to the user data for specified
+ * pool
+ */
+void
+pmemobj_set_user_data(PMEMobjpool *pop, void *data)
+{
+	LOG(3, "pop %p data %p", pop, data);
+
+	pop->user_data = data;
+}
+
+/*
+ * pmemobj_get_user_data -- gets volatile pointer to the user data associated
+ * with the specified pool
+ */
+void *
+pmemobj_get_user_data(PMEMobjpool *pop)
+{
+	LOG(3, "pop %p", pop);
+
+	return pop->user_data;
 }
 
 /* arguments for constructor_alloc */
@@ -3092,6 +3117,52 @@ pmemobj_cancel(PMEMobjpool *pop, struct pobj_action *actv, size_t actvcnt)
 	PMEMOBJ_API_START();
 	palloc_cancel(&pop->heap, actv, actvcnt);
 	PMEMOBJ_API_END();
+}
+
+/*
+ * pmemobj_defrag -- reallocates provided PMEMoids so that the underlying memory
+ *	is efficiently arranged.
+ */
+int
+pmemobj_defrag(PMEMobjpool *pop, PMEMoid **oidv, size_t oidcnt,
+	struct pobj_defrag_result *result)
+{
+	PMEMOBJ_API_START();
+
+	if (result) {
+		result->relocated = 0;
+		result->total = 0;
+	}
+
+	uint64_t **objv = Malloc(sizeof(uint64_t *) * oidcnt);
+	if (objv == NULL)
+		return -1;
+
+	int ret = 0;
+
+	size_t j = 0;
+	for (size_t i = 0; i < oidcnt; ++i) {
+		if (OID_IS_NULL(*oidv[i]))
+			continue;
+		if (oidv[i]->pool_uuid_lo != pop->uuid_lo) {
+			ret = -1;
+			ERR("Not all PMEMoids belong to the provided pool");
+			goto out;
+		}
+		objv[j++] = &oidv[i]->off;
+	}
+
+	struct operation_context *ctx = pmalloc_operation_hold(pop);
+
+	ret = palloc_defrag(&pop->heap, objv, j, ctx, result);
+
+	pmalloc_operation_release(pop);
+
+out:
+	Free(objv);
+
+	PMEMOBJ_API_END();
+	return ret;
 }
 
 /*

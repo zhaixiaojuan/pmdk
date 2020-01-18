@@ -7,7 +7,7 @@ header: PMDK
 date: pmemobj API version 2.3
 ...
 
-[comment]: <> (Copyright 2016-2018, Intel Corporation)
+[comment]: <> (Copyright 2016-2019, Intel Corporation)
 
 [comment]: <> (Redistribution and use in source and binary forms, with or without)
 [comment]: <> (modification, are permitted provided that the following conditions)
@@ -46,11 +46,9 @@ date: pmemobj API version 2.3
 [ACKNOWLEDGEMENTS](#acknowledgements)<br />
 [SEE ALSO](#see-also)<br />
 
-
 # NAME #
 
 **libpmemobj** - persistent memory transactional object store
-
 
 # SYNOPSIS #
 
@@ -149,7 +147,6 @@ cause the process to exit. The only exception to this is the debugging
 information, when enabled, as described under **DEBUGGING AND ERROR HANDLING**,
 below.
 
-
 # LIBRARY API VERSIONING #
 
 This section describes how the library API is versioned,
@@ -183,7 +180,6 @@ the section of this manual describing the feature.
 On success, _UW(pmemobj_check_version) returns NULL. Otherwise, the return
 value is a static string describing the reason the version check failed. The
 string returned by _UW(pmemobj_check_version) must not be modified or freed.
-
 
 # MANAGING LIBRARY BEHAVIOR #
 
@@ -226,6 +222,11 @@ typical way to access the debug version is to set the environment variable
 controlled using the following environment variables. These variables have
 no effect on the non-debug version of the library.
 
+>NOTE:
+On Debian/Ubuntu systems, this extra debug version of the library is
+shipped in the respective **-debug** Debian package and placed in
+the **/usr/lib/$ARCH/pmdk_dbg/** directory.
+
 + **PMEMOBJ_LOG_LEVEL**
 
 The value of **PMEMOBJ_LOG_LEVEL** enables trace points in the debug version
@@ -258,15 +259,9 @@ be appended to the file name when the log file is created. If
 See also **libpmem**(7) to get information
 about other environment variables affecting **libpmemobj** behavior.
 
->NOTE:
-On Debian/Ubuntu systems, this extra debug version of the library is
-shipped in the respective **-debug** Debian package and placed in
-the **/usr/lib/$ARCH/pmdk_dbg/** directory.
-
 # EXAMPLE #
 
 See <http://pmem.io/pmdk/libpmemobj> for examples using the **libpmemobj** API.
-
 
 # ACKNOWLEDGEMENTS #
 
@@ -274,8 +269,7 @@ See <http://pmem.io/pmdk/libpmemobj> for examples using the **libpmemobj** API.
 by the SNIA NVM Programming Technical Work Group:
 <http://snia.org/nvmp>
 
-
 # SEE ALSO #
 
-**OID_IS_NULL**(3), **pmemobj_alloc**(3), **pmemobj_ctl_exec**(3), **pmemobj_ctl_get**(3), **pmemobj_ctl_set**(3), **pmemobj_first**(3), **pmemobj_list_insert**(3), **pmemobj_memcpy_persist**(3), **pmemobj_mutex_zero**(3), **pmemobj_open**(3), **pmemobj_root**(3), **pmemobj_tx_add_range**(3), **pmemobj_tx_alloc**(3), **pmemobj_tx_begin**(3), **POBJ_LAYOUT_BEGIN**(3), **POBJ_LIST_HEAD**(3), **strerror**(3), **TOID_DECLARE**(3), **libpmem**(7), **libpmemblk**(7), **libpmemlog**(7), **libvmem**(7)
+**OID_IS_NULL**(3), **pmemobj_alloc**(3), **pmemobj_ctl_exec**(3), **pmemobj_ctl_get**(3), **pmemobj_ctl_set**(3), **pmemobj_first**(3), **pmemobj_list_insert**(3), **pmemobj_memcpy_persist**(3), **pmemobj_mutex_zero**(3), **pmemobj_open**(3), **pmemobj_root**(3), **pmemobj_tx_add_range**(3), **pmemobj_tx_alloc**(3), **pmemobj_tx_begin**(3), **POBJ_LAYOUT_BEGIN**(3), **POBJ_LIST_HEAD**(3), **strerror**(3), **TOID_DECLARE**(3), **libpmem**(7), **libpmemblk**(7), **libpmemlog**(7)
 and **<http://pmem.io>**

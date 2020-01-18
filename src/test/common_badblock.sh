@@ -55,7 +55,6 @@ COMMAND_NDCTL_NFIT_TEST_FINI="\
 	sudo ndctl disable-region all &>>$PREP_LOG_FILE && \
 	sudo modprobe -r nfit_test &>>$PREP_LOG_FILE"
 
-
 #
 # badblock_test_init -- initialize badblock test based on underlying hardware
 #
@@ -219,7 +218,6 @@ function prepare_mount_dir_node() {
 		fi
 	fi
 }
-
 
 #
 # real_pmem_get_dax_device -- get real pmem dax device name
@@ -483,7 +481,6 @@ function ndctl_nfit_test_grant_access() {
 		sudo chmod o+r /sys/bus/nd/devices/ndbus*/$REGION/resource"
 }
 
-
 #
 # ndctl_nfit_test_grant_access_node -- grant accesses required by libndctl on a node
 #
@@ -513,7 +510,7 @@ function ndctl_requires_extra_access()
 {
 	# Tests require additional permissions for badblock iteration if they
 	# are ran on device dax or with ndctl version prior to v63.
-	if [ "$1" != "fsdax" ] || ! is_ndctl_ge_63 $PMEMPOOL$EXESUFFIX ; then
+	if [ "$1" != "fsdax" ] || ! is_ndctl_enabled $PMEMPOOL$EXESUFFIX ; then
 		return 0
 	fi
 	return 1

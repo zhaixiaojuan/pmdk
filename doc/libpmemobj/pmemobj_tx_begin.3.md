@@ -7,7 +7,7 @@ header: PMDK
 date: pmemobj API version 2.3
 ...
 
-[comment]: <> (Copyright 2017-2018, Intel Corporation)
+[comment]: <> (Copyright 2017-2019, Intel Corporation)
 
 [comment]: <> (Redistribution and use in source and binary forms, with or without)
 [comment]: <> (modification, are permitted provided that the following conditions)
@@ -43,24 +43,26 @@ date: pmemobj API version 2.3
 [CAVEATS](#caveats)<br />
 [SEE ALSO](#see-also)<br />
 
-
 # NAME #
 
 **pmemobj_tx_stage**(),
 
 **pmemobj_tx_begin**(), **pmemobj_tx_lock**(),
-**pmemobj_tx_abort**(), **pmemobj_tx_commit**(),
-**pmemobj_tx_end**(), **pmemobj_tx_errno**(),
-**pmemobj_tx_process**(),
+**pmemobj_tx_xlock**(), **pmemobj_tx_abort**(),
+**pmemobj_tx_commit**(), **pmemobj_tx_end**(),
+**pmemobj_tx_errno**(), **pmemobj_tx_process**(),
 
 **TX_BEGIN_PARAM**(), **TX_BEGIN_CB**(),
 **TX_BEGIN**(), **TX_ONABORT**,
 **TX_ONCOMMIT**, **TX_FINALLY**, **TX_END**,
 
-**pmemobj_tx_log_append_buffer**(), **pmemobj_tx_log_auto_alloc**(),
-**pmemobj_tx_log_snapshots_max_size**(), **pmemobj_tx_log_intents_max_size**()
-- transactional object manipulation
+**pmemobj_tx_log_append_buffer**(), **pmemobj_tx_xlog_append_buffer**(),
+**pmemobj_tx_log_auto_alloc**(), **pmemobj_tx_log_snapshots_max_size**(),
+**pmemobj_tx_log_intents_max_size**(),
 
+**pmemobj_tx_set_user_data**(),
+**pmemobj_tx_get_user_data**()
+- transactional object manipulation
 
 # SYNOPSIS #
 
@@ -71,6 +73,7 @@ enum tx_stage pmemobj_tx_stage(void);
 
 int pmemobj_tx_begin(PMEMobjpool *pop, jmp_buf *env, enum pobj_tx_param, ...);
 int pmemobj_tx_lock(enum tx_lock lock_type, void *lockp);
+int pmemobj_tx_xlock(enum tx_lock lock_type, void *lockp, uint64_t flags);
 void pmemobj_tx_abort(int errnum);
 void pmemobj_tx_commit(void);
 int pmemobj_tx_end(void);
@@ -86,11 +89,14 @@ TX_FINALLY
 TX_END
 
 int pmemobj_tx_log_append_buffer(enum pobj_log_type type, void *addr, size_t size);
+int pmemobj_tx_xlog_append_buffer(enum pobj_log_type type, void *addr, size_t size, uint64_t flags);
 int pmemobj_tx_log_auto_alloc(enum pobj_log_type type, int on_off);
 size_t pmemobj_tx_log_snapshots_max_size(size_t *sizes, size_t nsizes);
 size_t pmemobj_tx_log_intents_max_size(size_t nintents);
-```
 
+void pmemobj_tx_set_user_data(void *data);
+void *pmemobj_tx_get_user_data(void);
+```
 
 # DESCRIPTION #
 
@@ -180,7 +186,9 @@ operation after a stage change. It will also be called after each transaction;
 in this case the *stage* parameter will be set to **TX_STAGE_NONE**.
 *pmemobj_tx_callback* must be compatible with:
 
-```void func(PMEMobjpool *pop, enum pobj_tx_stage stage, void *arg)```
+```
+void func(PMEMobjpool *pop, enum pobj_tx_stage stage, void *arg)
+```
 
 *pop* is a pool identifier used in **pmemobj_tx_begin**(), *stage* is a current
 transaction stage and *arg* is the second parameter of **TX_PARAM_CB**.
@@ -211,6 +219,15 @@ The **pmemobj_tx_lock**() function acquires the lock *lockp* of type
 the lock is acquired for writing. If the lock is not successfully
 acquired, the function returns an error number. This function must be
 called during **TX_STAGE_WORK**.
+
+The **pmemobj_tx_xlock**() function behaves exactly the same as
+**pmemobj_tx_lock**() when *flags* equals **POBJ_XLOCK_NO_ABORT**.
+When *flags* equals 0 and if the lock is not successfully
+acquired,the transaction is aborted.
+*flags* is a bitmask of the following values:
+
++ **POBJ_XLOCK_NO_ABORT** - if the function does not end successfully,
+do not abort the transaction.
 
 **pmemobj_tx_abort**() aborts the current transaction and causes a transition
 to **TX_STAGE_ONABORT**. If *errnum* is equal to 0, the transaction
@@ -364,6 +381,7 @@ must internally allocate this space whenever it's needed. This has two downsides
 To solve both of these problems libpmemobj exposes the following functions:
 
 + **pmemobj_tx_log_append_buffer**(),
++ **pmemobj_tx_xlog_append_buffer**(),
 + **pmemobj_tx_log_auto_alloc**()
 
 **pmemobj_tx_log_append_buffer**() appends a given range of memory
@@ -377,6 +395,13 @@ The range of memory **must** belong to the same pool the transaction is on and
 **must not** be used by more than one thread at the same time. The latter
 condition can be verified with tx.debug.verify_user_buffers ctl (see
 **pmemobj_ctl_get**(3)).
+
+The **pmemobj_tx_xlog_append_buffer**() function behaves exactly the same as
+**pmemobj_tx_log_append_buffer**() when *flags* equals zero.
+*flags* is a bitmask of the following values:
+
++ **POBJ_XLOG_APPEND_BUFFER_NO_ABORT** - if the function does not end successfully,
+do not abort the transaction.
 
 **pmemobj_tx_log_snapshots_max_size** calculates the **maximum** size of
 a buffer which will be able to hold *nsizes* snapshots, each of size *sizes[i]*.
@@ -403,6 +428,14 @@ It can be used to verify that the buffer set with
 **pmemobj_tx_log_append_buffer**() is big enough to hold the log, without
 reaching out-of-space scenario.
 
+The **pmemobj_tx_set_user_data**() function associates custom volatile state,
+represented by pointer *data*, with the current transaction. This state can
+later be retrieved using **pmemobj_tx_get_user_data**() function.
+If **pmemobj_tx_set_user_data**() was not called for a current transaction,
+**pmemobj_tx_get_user_data**() will return NULL. These functions must be called
+during **TX_STAGE_WORK** or **TX_STAGE_ONABORT** or **TX_STAGE_ONCOMMIT** or
+**TX_STAGE_FINALLY**.
+
 # RETURN VALUE #
 
 The **pmemobj_tx_stage**() function returns the stage of the current transaction
@@ -411,9 +444,13 @@ stage for a thread.
 On success, **pmemobj_tx_begin**() returns 0. Otherwise, an error number is
 returned.
 
-The **pmemobj_tx_begin**() and **pmemobj_tx_lock**() functions return
-zero if *lockp* is successfully added to the transaction.
-Otherwise, an error number is returned.
+The **pmemobj_tx_begin**() and **pmemobj_tx_lock**() functions return zero
+if *lockp* is successfully added to the transaction. Otherwise, an error number
+is returned.
+
+The **pmemobj_tx_xlock**() function return zero if *lockp* is successfully
+added to the transaction. Otherwise, the error number is returned, **errno** is set
+and when flags do not contain **POBJ_XLOCK_NO_ABORT**, the transaction is aborted.
 
 The **pmemobj_tx_abort**() and **pmemobj_tx_commit**() functions return no value.
 
@@ -426,7 +463,12 @@ The **pmemobj_tx_errno**() function returns the error code of the last transacti
 The **pmemobj_tx_process**() function returns no value.
 
 On success, **pmemobj_tx_log_append_buffer**() returns 0. Otherwise,
-the transaction is aborted and an error number is returned.
+the stage is changed to **TX_STAGE_ONABORT**, **errno** is set appropriately
+and transaction is aborted.
+
+On success, **pmemobj_tx_xlog_append_buffer**() returns 0. Otherwise,
+the error number is returned, **errno** is set and when flags do not contain
+**POBJ_XLOG_NO_ABORT**, the transaction is aborted.
 
 On success, **pmemobj_tx_log_auto_alloc**() returns 0. Otherwise,
 the transaction is aborted and an error number is returned.
@@ -503,7 +545,6 @@ internally may call functions that are specified as cancellation points in POSIX
 thread. For this reason, all functions that might trigger destruction (e.g.
 **dlclose**(3)) should be called in the main thread. Otherwise some of the
 resources associated with that thread might not be cleaned up properly.
-
 
 # SEE ALSO #
 

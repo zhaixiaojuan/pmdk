@@ -7,7 +7,7 @@ header: PMDK
 date: pmreorder version 1.5
 ...
 
-[comment]: <> (Copyright 2018, Intel Corporation)
+[comment]: <> (Copyright 2018-2019, Intel Corporation)
 
 [comment]: <> (Redistribution and use in source and binary forms, with or without)
 [comment]: <> (modification, are permitted provided that the following conditions)
@@ -47,19 +47,16 @@ date: pmreorder version 1.5
 [EXAMPLE](#example)<br />
 [SEE ALSO](#see-also)<br />
 
-
 # NAME #
 
 **pmreorder** - performs a persistent consistency check
 		 using a store reordering mechanism
-
 
 # SYNOPSIS #
 
 ```
 $ python pmreorder <options>
 ```
-
 
 # DESCRIPTION #
 
@@ -76,7 +73,6 @@ consistent state.
 Considering that logging, replaying and reordering of operations
 are very time consuming, it is recommended to use as few stores as
 possible in test workloads.
-
 
 # OPTIONS #
 
@@ -141,6 +137,9 @@ Set the initial reorder engine. Default value is `NoReorderNoCheck`.
 
 Assign an engine types to the defined marker.
 
+`-v, --version`
+
+Prints current version of pmreorder.
 
 # ENGINES #
 
@@ -235,7 +234,6 @@ separately for any marked code sections.
 For more details about `-x` extended macros functionality see section
 INSTRUMENTATION below.
 
-
 # INSTRUMENTATION #
 
 The core of **pmreorder** is based on user-provided named markers.
@@ -283,7 +281,9 @@ through the **pmreorder** tool using the `-x` parameter.
 There are two ways to set macro options:
 
 + Using command line interface in format:
-```PMREORDER_MARKER_NAME1=ReorderName1,PMREORDER_MARKER_NAME2=ReorderName2```
+```
+PMREORDER_MARKER_NAME1=ReorderName1,PMREORDER_MARKER_NAME2=ReorderName2
+```
 
 + Using configuration file in .json format:
 ```
@@ -380,7 +380,6 @@ pmem_memcpy_persist
 pmem_memset_persist
 ```
 
-
 # PMEMCHECK STORE LOG #
 
 To generate *store_log* for **pmreorder** run pmemcheck
@@ -401,14 +400,12 @@ valgrind \
 
 For further details of pmemcheck parameters see [pmemcheck documentation](https://github.com/pmem/valgrind/blob/pmem-3.13/pmemcheck/docs/pmc-manual.xml)
 
-
 # ENVIRONMENT #
 
 By default all logging from PMDK libraries is disabled.
 To enable API macros logging set environment variable:
 
 + **PMREORDER_EMIT_LOG**=1
-
 
 # EXAMPLE #
 
@@ -426,7 +423,6 @@ Checker binary will be used to run consistency checks on
 "store_log.log", output of pmemcheck tool. Any inconsistent
 stores found during **pmreorder** analysis will be logged
 to `pmreorder_out.log`.
-
 
 # SEE ALSO #
 

@@ -1,5 +1,5 @@
 #
-# Copyright 2014-2019, Intel Corporation
+# Copyright 2014-2020, Intel Corporation
 # Copyright (c) 2016, Microsoft Corporation. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -35,6 +35,11 @@ set -e
 # make sure we have a well defined locale for string operations here
 export LC_ALL="C"
 #export LC_ALL="en_US.UTF-8"
+
+if ! [ -f ../envconfig.sh ]; then
+	echo >&2 "envconfig.sh is missing -- is the tree built?"
+	exit 1
+fi
 
 . ../testconfig.sh
 . ../envconfig.sh
@@ -114,7 +119,6 @@ fi
 
 export UNITTEST_LOG_LEVEL GREP TEST FS BUILD CHECK_TYPE CHECK_POOL VERBOSE SUFFIX
 
-VMMALLOC=libvmmalloc.so.1
 TOOLS=../tools
 LIB_TOOLS="../../tools"
 # Paths to some useful tools
@@ -142,7 +146,7 @@ shopt -s failglob
 # number of remote nodes required in the current unit test
 NODES_MAX=-1
 
-# sizes of aligments
+# sizes of alignments
 SIZE_4KB=4096
 SIZE_2MB=2097152
 
@@ -306,8 +310,6 @@ fi
 # The default is to turn on library logging to level 3 and save it to local files.
 # Tests that don't want it on, should override these environment variables.
 #
-export VMEM_LOG_LEVEL=3
-export VMEM_LOG_FILE=vmem$UNITTEST_NUM.log
 export PMEM_LOG_LEVEL=3
 export PMEM_LOG_FILE=pmem$UNITTEST_NUM.log
 export PMEMBLK_LOG_LEVEL=3
@@ -319,10 +321,6 @@ export PMEMOBJ_LOG_FILE=pmemobj$UNITTEST_NUM.log
 export PMEMPOOL_LOG_LEVEL=3
 export PMEMPOOL_LOG_FILE=pmempool$UNITTEST_NUM.log
 export PMREORDER_LOG_FILE=pmreorder$UNITTEST_NUM.log
-
-export VMMALLOC_POOL_SIZE=$((16 * 1024 * 1024))
-export VMMALLOC_LOG_LEVEL=3
-export VMMALLOC_LOG_FILE=vmmalloc$UNITTEST_NUM.log
 
 export OUT_LOG_FILE=out$UNITTEST_NUM.log
 export ERR_LOG_FILE=err$UNITTEST_NUM.log
@@ -836,16 +834,6 @@ function expect_normal_exit() {
 		export VALGRIND_OPTS="$VALGRIND_OPTS --suppressions=../memcheck-dlopen.supp"
 	fi
 
-	# in case of preloading libvmmalloc.so.1 force valgrind to not override malloc
-	if [ -n "$VALGRINDEXE" -a -n "$TEST_LD_PRELOAD" ]; then
-		if [ $(valgrind_version) -ge 312 ]; then
-			preload=`basename $TEST_LD_PRELOAD`
-		fi
-		if [ "$preload" == "$VMMALLOC" ]; then
-			export VALGRIND_OPTS="$VALGRIND_OPTS --soname-synonyms=somalloc=nouserintercepts"
-		fi
-	fi
-
 	local REMOTE_VALGRIND_LOG=0
 	if [ "$CHECK_TYPE" != "none" ]; then
 	        case "$1"
@@ -873,7 +861,7 @@ function expect_normal_exit() {
 
 	disable_exit_on_error
 
-	eval $ECHO LD_PRELOAD=$TEST_LD_PRELOAD $trace "$*"
+	eval $ECHO $trace "$*"
 	ret=$?
 
 	if [ $REMOTE_VALGRIND_LOG -eq 1 ]; then
@@ -952,23 +940,12 @@ function expect_abnormal_exit() {
 		esac
 	fi
 
-	# in case of preloading libvmmalloc.so.1 force valgrind to not override malloc
-	if [ -n "$VALGRINDEXE" -a -n "$TEST_LD_PRELOAD" ]; then
-		if [ $(valgrind_version) -ge 312 ]; then
-			preload=`basename $TEST_LD_PRELOAD`
-		fi
-		if [ "$preload" == "$VMMALLOC" ]; then
-			export VALGRIND_OPTS="$VALGRIND_OPTS --soname-synonyms=somalloc=nouserintercepts"
-		fi
-	fi
-
 	if [ "$CHECK_TYPE" = "drd" ]; then
 		export VALGRIND_OPTS="$VALGRIND_OPTS --suppressions=../drd-log.supp"
 	fi
 
 	disable_exit_on_error
-	eval $ECHO ASAN_OPTIONS="detect_leaks=0 ${ASAN_OPTIONS}" \
-		LD_PRELOAD=$TEST_LD_PRELOAD $TRACE "$*"
+	eval $ECHO ASAN_OPTIONS="detect_leaks=0 ${ASAN_OPTIONS}" $TRACE "$*"
 	ret=$?
 	restore_exit_on_error
 
@@ -1046,7 +1023,7 @@ function require_sudo_allowed() {
 		exit 0
 	fi
 
-	if ! timeout --signal=SIGKILL --kill-after=3s 3s sudo date >/dev/null 2>&1
+	if ! sh -c "timeout --signal=SIGKILL --kill-after=3s 3s sudo date" >/dev/null 2>&1
 	then
 		msg "$UNITTEST_NAME: SKIP required: sudo allowed"
 		exit 0
@@ -1099,14 +1076,50 @@ function require_procfs() {
 	exit 0
 }
 
-function get_arch() {
-	gcc -dumpmachine | awk -F'[/-]' '{print $1}'
+#
+# require_arch -- Skip tests if the running platform not matches
+# any of the input list.
+#
+function require_arch() {
+	for i in "$@"; do
+		[[ "$(arch)" == "$i" ]] && return
+	done
+	msg "$UNITTEST_NAME: SKIP: Only supported on $1"
+	exit 0
 }
 
+#
+# exclude_arch -- Skip tests if the running platform matches
+# any of the input list.
+#
+function exclude_arch() {
+	for i in "$@"; do
+		if [[ "$(arch)" == "$i" ]]; then
+			msg "$UNITTEST_NAME: SKIP: Not supported on $1"
+			exit 0
+		fi
+	done
+}
+
+#
+# require_x86_64 -- Skip tests if the running platform is not x86_64
+#
 function require_x86_64() {
-	[ $(get_arch) = "x86_64" ] && return
-	msg "$UNITTEST_NAME: SKIP: Not supported on arch != x86_64"
-	exit 0
+	require_arch x86_64
+}
+
+#
+# require_ppc64 -- Skip tests if the running platform is not ppc64 or ppc64le
+#
+function require_ppc64() {
+	require_arch "ppc64" "ppc64le" "ppc64el"
+}
+
+#
+# exclude_ppc64 -- Skip tests if the running platform is ppc64 or ppc64le
+#
+function exclude_ppc64() {
+	exclude_arch "ppc64" "ppc64le" "ppc64el"
 }
 
 #
@@ -1441,7 +1454,6 @@ require_dax_device_alignments() {
 	require_node_dax_device_alignments -1 $*
 }
 
-
 #
 # require_fs_type -- only allow script to continue for a certain fs type
 #
@@ -1457,7 +1469,6 @@ function require_fs_type() {
 	verbose_msg "$UNITTEST_NAME: SKIP fs-type $FS ($* required)"
 	exit 0
 }
-
 
 #
 # require_native_fallocate -- verify if filesystem supports fallocate
@@ -1951,29 +1962,6 @@ function require_binary() {
 }
 
 #
-# require_preload - continue script execution only if supplied
-#	executable does not generate SIGABRT
-#
-#	Used to check that LD_PRELOAD of, e.g., libvmmalloc is possible
-#
-#	usage: require_preload <errorstr> <executable> [<exec_args>]
-#
-function require_preload() {
-	msg=$1
-	shift
-	trap SIGABRT
-	disable_exit_on_error
-	ret=$(LD_PRELOAD=$TEST_LD_PRELOAD $* 2>&1 /dev/null)
-	ret=$?
-	restore_exit_on_error
-	if [ $ret == 134 ]; then
-		msg "$UNITTEST_NAME: SKIP: $msg not supported"
-		rm -f $1.core
-		exit 0
-	fi
-}
-
-#
 # require_sds -- continue script execution only if binary is compiled with
 #	shutdown state support
 #
@@ -2018,19 +2006,19 @@ function require_no_sds() {
 }
 
 #
-# is_ndctl_ge_63 -- check if binary is compiled with libndctl 63+
+# is_ndctl_enabled -- check if binary is compiled with libndctl
 #
-#	usage: is_ndctl_ge_63 <binary>
+#	usage: is_ndctl_enabled <binary>
 #
-function is_ndctl_ge_63() {
+function is_ndctl_enabled() {
 	local binary=$1
 	local dir=.
 	if [ -z "$binary" ]; then
-		fatal "is_ndctl_ge_63: error: no binary found"
+		fatal "is_ndctl_enabled: error: no binary found"
 	fi
 
 	strings ${binary} 2>&1 | \
-		grep -q "compiled with libndctl 63+" && true
+		grep -q "compiled with libndctl" && true
 
 	return $?
 }
@@ -2042,7 +2030,7 @@ function is_ndctl_ge_63() {
 #	usage: require_bb_enabled_by_default <binary>
 #
 function require_bb_enabled_by_default() {
-	if ! is_ndctl_ge_63 $1 &> /dev/null ; then
+	if ! is_ndctl_enabled $1 &> /dev/null ; then
 		msg "$UNITTEST_NAME: SKIP bad block checking feature disabled by default"
 		exit 0
 	fi
@@ -2057,7 +2045,7 @@ function require_bb_enabled_by_default() {
 #	usage: require_bb_disabled_by_default <binary>
 #
 function require_bb_disabled_by_default() {
-	if is_ndctl_ge_63 $1 &> /dev/null ; then
+	if is_ndctl_enabled $1 &> /dev/null ; then
 		msg "$UNITTEST_NAME: SKIP bad block checking feature enabled by default"
 		exit 0
 	fi
@@ -2578,6 +2566,39 @@ function kill_on_node() {
 }
 
 #
+# obj_pool_desc_size -- returns the obj_pool_desc_size macro value
+# in bytes which is two times the actual pagesize.
+#
+# This should be use to calculate the minimum zero size for pool
+# creation on some tests.
+#
+function obj_pool_desc_size() {
+	echo "$(expr $(getconf PAGESIZE) \* 2)"
+}
+
+#
+# log_pool_desc_size -- returns the minimum size of pool header
+# in bytes which is two times the actual pagesize.
+#
+# This should be use to calculate the minimum zero size for pool
+# creation on some tests.
+#
+function log_pool_desc_size() {
+	echo "$(expr $(getconf PAGESIZE) \* 2)"
+}
+
+#
+# blk_pool_desc_size -- returns the minimum size of pool header
+# in bytes which is two times the actual pagesize.
+#
+# This should be use to calculate the minimum zero size for pool
+# creation on some tests.
+#
+function blk_pool_desc_size() {
+	echo "$(expr $(getconf PAGESIZE) \* 2)"
+}
+
+#
 # create_holey_file_on_node -- create holey files of a given length
 #   usage: create_holey_file_on_node <node> <size>
 #
@@ -2630,7 +2651,6 @@ function require_mmap_under_valgrind() {
 function setup() {
 
 	DIR=$DIR$SUFFIX
-	export VMMALLOC_POOL_DIR="$DIR"
 
 	# writes test working directory to temporary file
 	# that allows read location of data after test failure
@@ -2808,7 +2828,7 @@ function pass() {
 SIG_LEN=8
 
 # Offset and length of pmemobj layout
-LAYOUT_OFFSET=4096
+LAYOUT_OFFSET=$(getconf PAGE_SIZE)
 LAYOUT_LEN=1024
 
 # Length of arena's signature
@@ -2818,7 +2838,7 @@ ARENA_SIG_LEN=16
 ARENA_SIG="BTT_ARENA_INFO"
 
 # Offset to first arena
-ARENA_OFF=8192
+ARENA_OFF=$(($(getconf PAGE_SIZE) * 2))
 
 #
 # check_file -- check if file exists and print error message if not

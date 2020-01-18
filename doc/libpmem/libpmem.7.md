@@ -47,11 +47,9 @@ date: pmem API version 1.1
 [ACKNOWLEDGEMENTS](#acknowledgements)<br />
 [SEE ALSO](#see-also)
 
-
 # NAME #
 
 **libpmem** - persistent memory support library
-
 
 # SYNOPSIS #
 
@@ -87,7 +85,6 @@ manual pages:
 
 + copying to persistent memory: **pmem_memmove_persist**(3)
 
-
 # DESCRIPTION #
 
 **libpmem** provides low-level *persistent memory* (pmem) support for
@@ -117,14 +114,12 @@ intentionally cause the process to exit.
 The only exception to this is the debugging information, when enabled,
 as described under **DEBUGGING AND ERROR HANDLING** below.
 
-
 # CAVEATS #
 
 **libpmem** relies on the library destructor being called from the main thread.
 For this reason, all functions that might trigger destruction (e.g.
 **dlclose**(3)) should be called in the main thread. Otherwise some of the
 resources associated with that thread might not be cleaned up properly.
-
 
 # LIBRARY API VERSIONING #
 
@@ -162,7 +157,6 @@ successful, the return value is NULL. Otherwise the return value is a
 static string describing the reason for failing the version check. The
 string returned by _UW(pmem_check_version) must not be modified or
 freed.
-
 
 # ENVIRONMENT #
 
@@ -261,15 +255,10 @@ affects all the PMDK libraries,** disabling mapping address randomization
 and causing the specified address to be used as a hint about where to
 place the mapping.
 
->NOTE:
-On Debian/Ubuntu systems, this extra debug version of the library is
-shipped in the respective **-debug** Debian package and placed in
-the **/usr/lib/$ARCH/pmdk_dbg/** directory.
-
 # DEBUGGING AND ERROR HANDLING #
 
 If an error is detected during the call to a **libpmem** function, the
-application may retrieve an error message describing the reason for the failure
+application may retrieve an error message describing the reason of the failure
 from _UW(pmem_errormsg). This function returns a pointer to a static buffer
 containing the last error message logged for the current thread. If *errno*
 was set, the error message may include a description of the corresponding
@@ -277,9 +266,9 @@ error code as returned by **strerror**(3). The error message buffer is
 thread-local; errors encountered in one thread do not affect its value in
 other threads. The buffer is never cleared by any library function; its
 content is significant only when the return value of the immediately preceding
-call to a **libpmem** function indicated an error, or if *errno* was set.
-The application must not modify or free the error message string, but it may
-be modified by subsequent calls to other library functions.
+call to a **libpmem** function indicated an error.
+The application must not modify or free the error message string.
+Subsequent calls to other library functions may modify the previous message.
 
 Two versions of **libpmem** are typically available on a development
 system. The normal version, accessed when a program is linked using the
@@ -293,6 +282,11 @@ typical way to access the debug version is to set the environment variable
 **LD_LIBRARY_PATH** to _LDLIBPATH(). Debugging output is
 controlled using the following environment variables. These variables have
 no effect on the non-debug version of the library.
+
+>NOTE:
+On Debian/Ubuntu systems, this extra debug version of the library is
+shipped in the respective **-debug** Debian package and placed in
+the **/usr/lib/$ARCH/pmdk_dbg/** directory.
 
 + **PMEM_LOG_LEVEL**
 
@@ -323,11 +317,6 @@ all logging information should be written. If the last character in the name
 is "-", the *PID* of the current process will be appended to the file name when
 the log file is created. If **PMEM_LOG_FILE** is not set, output is
 written to *stderr*.
-
->NOTE:
-On Debian/Ubuntu systems, this extra debug version of the library is
-shipped in the respective **-debug** Debian package and placed in
-the **/usr/lib/$ARCH/pmdk_dbg/** directory.
 
 # EXAMPLE #
 
@@ -392,13 +381,11 @@ main(int argc, char *argv[])
 See <http://pmem.io/pmdk/libpmem>
 for more examples using the **libpmem** API.
 
-
 # ACKNOWLEDGEMENTS #
 
 **libpmem** builds on the persistent memory programming model
 recommended by the SNIA NVM Programming Technical Work Group:
 <http://snia.org/nvmp>
-
 
 # SEE ALSO #
 

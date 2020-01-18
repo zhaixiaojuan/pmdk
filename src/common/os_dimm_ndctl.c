@@ -59,7 +59,6 @@
 		ndctl_region_foreach(bus, region)		\
 			ndctl_namespace_foreach(region, ndns)	\
 
-
 /*
  * os_dimm_match_devdax -- (internal) returns 1 if the devdax matches
  *                         with the given file, 0 if it doesn't match,
@@ -329,7 +328,6 @@ end:
 	return ret;
 }
 
-#ifdef NDCTL_GE_63
 static long long
 os_dimm_usc_dimm(struct ndctl_dimm *dimm)
 {
@@ -339,39 +337,7 @@ os_dimm_usc_dimm(struct ndctl_dimm *dimm)
 			"Cannot read unsafe shutdown count. For more information please check https://github.com/pmem/issues/issues/1039");
 	return ret;
 }
-#else
-/*
- * http://pmem.io/documents/NVDIMM_DSM_Interface-V1.6.pdf
- * Table 3-2 SMART amd Health Data - Validity flags
- * Bit[5] – If set to 1, indicates that Unsafe Shutdown Count
- * field is valid
- */
-#define USC_VALID_FLAG (1 << 5)
 
-static long long
-os_dimm_usc_dimm(struct ndctl_dimm *dimm)
-{
-	struct ndctl_cmd *cmd = ndctl_dimm_cmd_new_smart(dimm);
-
-	if (cmd == NULL) {
-		ERR("!ndctl_dimm_cmd_new_smart");
-		return -1;
-	}
-
-	if (ndctl_cmd_submit(cmd)) {
-		ERR("!ndctl_cmd_submit");
-		return -1;
-	}
-
-	if (!(ndctl_cmd_smart_get_flags(cmd) & USC_VALID_FLAG)) {
-		/* dimm doesn't support unsafe shutdown count */
-		return 0;
-	}
-
-	return ndctl_cmd_smart_get_shutdown_count(cmd);
-}
-#undef USC_VALID_FLAG
-#endif
 /*
  * os_dimm_usc -- returns unsafe shutdown count
  */
@@ -583,7 +549,6 @@ os_dimm_namespace_get_badblocks_by_region(struct ndctl_region *region,
 	return 0;
 }
 
-#ifdef NDCTL_GE_63
 /*
  * os_dimm_namespace_get_badblocks_by_namespace -- (internal) returns bad blocks
  *                                    in the given namespace using the
@@ -617,7 +582,6 @@ os_dimm_namespace_get_badblocks_by_namespace(struct ndctl_namespace *ndns,
 
 	return 0;
 }
-#endif
 
 /*
  * os_dimm_namespace_get_badblocks -- (internal) returns bad blocks in the given
@@ -629,7 +593,6 @@ os_dimm_namespace_get_badblocks(struct ndctl_region *region,
 				struct ndctl_namespace *ndns,
 				struct badblocks *bbs)
 {
-#ifdef NDCTL_GE_63
 	/*
 	 * Only the new NDCTL versions have the namespace badblock iterator,
 	 * when compiled with older versions, the library needs to rely on the
@@ -637,7 +600,7 @@ os_dimm_namespace_get_badblocks(struct ndctl_region *region,
 	 */
 	if (ndctl_namespace_get_mode(ndns) == NDCTL_NS_MODE_FSDAX)
 		return os_dimm_namespace_get_badblocks_by_namespace(ndns, bbs);
-#endif
+
 	return os_dimm_namespace_get_badblocks_by_region(region, ndns, bbs);
 }
 

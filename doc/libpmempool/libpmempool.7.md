@@ -45,11 +45,9 @@ date: pmempool API version 1.3
 [ACKNOWLEDGEMENTS](#acknowledgements)<br />
 [SEE ALSO](#see-also)<br />
 
-
 # NAME #
 
 **libpmempool** - persistent memory pool management library
-
 
 # SYNOPSIS #
 
@@ -87,7 +85,6 @@ manual pages:
 
 + toggle or query pool set features: **pmempool_feature_query**(3)
 
-
 # DESCRIPTION #
 
 **libpmempool**
@@ -106,7 +103,6 @@ purposes also.
 
 **libpmempool** introduces functionality of pool set health check,
 synchronization, transformation and removal.
-
 
 # CAVEATS #
 
@@ -156,7 +152,6 @@ return value is a static string describing the reason for
 failing the version check. The string returned by
 _UW(pmempool_check_version) must not be modified or freed.
 
-
 # DEBUGGING AND ERROR HANDLING #
 
 If an error is detected during the call to a **libpmempool** function, the
@@ -184,6 +179,11 @@ typical way to access the debug version is to set the environment variable
 **LD_LIBRARY_PATH** to _LDLIBPATH(). Debugging output is
 controlled using the following environment variables. These variables have
 no effect on the non-debug version of the library.
+
+>NOTE:
+On Debian/Ubuntu systems, this extra debug version of the library is
+shipped in the respective **-debug** Debian package and placed in
+the **/usr/lib/$ARCH/pmdk_dbg/** directory.
 
 + **PMEMPOOL_LOG_LEVEL**
 
@@ -213,11 +213,6 @@ all logging information should be written. If the last character in the name
 is "-", the *PID* of the current process will be appended to the file name when
 the log file is created. If **PMEMPOOL_LOG_FILE** is not set, output is
 written to *stderr*.
-
->NOTE:
-On Debian/Ubuntu systems, this extra debug version of the library is
-shipped in the respective **-debug** Debian package and placed in
-the **/usr/lib/$ARCH/pmdk_dbg/** directory.
 
 # EXAMPLE #
 
@@ -291,13 +286,11 @@ main(int argc, char *argv[])
 See <http://pmem.io/pmdk/libpmempool> for more examples using the
 **libpmempool** API.
 
-
 # ACKNOWLEDGEMENTS #
 
 **libpmempool** builds on the persistent memory programming model
 recommended by the SNIA NVM Programming Technical Work Group:
 <http://snia.org/nvmp>
-
 
 # SEE ALSO #
 

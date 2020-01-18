@@ -84,6 +84,7 @@ enum file_type util_fd_get_type(int fd);
 enum file_type util_file_get_type(const char *path);
 int util_ddax_region_find(const char *path);
 ssize_t util_file_get_size(const char *path);
+ssize_t util_fd_get_size(int fd);
 size_t util_file_device_dax_alignment(const char *path);
 void *util_file_map_whole(const char *path);
 int util_file_zero(const char *path, os_off_t off, size_t len);
@@ -107,9 +108,33 @@ int util_write_all(int fd, const char *buf, size_t count);
 #define util_read	read
 #define util_write	write
 #else
-/* XXX - consider adding an assertion on (count <= UINT_MAX) */
-#define util_read(fd, buf, count)	read(fd, buf, (unsigned)(count))
-#define util_write(fd, buf, count)	write(fd, buf, (unsigned)(count))
+static inline ssize_t
+util_read(int fd, void *buf, size_t count)
+{
+	/*
+	 * Simulate short read, because Windows' _read uses "unsigned" as
+	 * a type of the last argument and "int" as a return type.
+	 * We have to limit "count" to what _read can return as a success,
+	 * not what it can accept.
+	 */
+	if (count > INT_MAX)
+		count = INT_MAX;
+	return _read(fd, buf, (unsigned)count);
+}
+
+static inline ssize_t
+util_write(int fd, const void *buf, size_t count)
+{
+	/*
+	 * Simulate short write, because Windows' _write uses "unsigned" as
+	 * a type of the last argument and "int" as a return type.
+	 * We have to limit "count" to what _write can return as a success,
+	 * not what it can accept.
+	 */
+	if (count > INT_MAX)
+		count = INT_MAX;
+	return _write(fd, buf, (unsigned)count);
+}
 #define S_ISCHR(m)	(((m) & S_IFMT) == S_IFCHR)
 #define S_ISDIR(m)	(((m) & S_IFMT) == S_IFDIR)
 #endif

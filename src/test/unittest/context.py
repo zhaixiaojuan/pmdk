@@ -33,6 +33,7 @@
 (like build, filesystem, test type)"""
 
 import os
+import shlex
 import sys
 import itertools
 import shutil
@@ -202,15 +203,17 @@ class Context(ContextBase):
 
     def exec(self, cmd, *args, expected_exit=0):
         """Execute binary in current test context"""
-        cmd_args = ' '.join(args) if args else ''
 
         env = {**self.env, **os.environ.copy(), **self.test.utenv}
+
+        # change cmd into list for supbrocess type compliance
+        cmd = [cmd, ]
 
         if sys.platform == 'win32':
             env['PATH'] = self.build.libdir + os.pathsep +\
                 envconfig['GLOBAL_LIB_PATH'] + os.pathsep +\
                 env.get('PATH', '')
-            cmd = os.path.join(self.build.exedir, cmd) + '.exe'
+            cmd[0] = os.path.join(self.build.exedir, cmd[0]) + '.exe'
 
         else:
             if self.test.ld_preload:
@@ -220,13 +223,23 @@ class Context(ContextBase):
             env['LD_LIBRARY_PATH'] = self.build.libdir + os.pathsep +\
                 envconfig['GLOBAL_LIB_PATH'] + os.pathsep +\
                 env.get('LD_LIBRARY_PATH', '')
-            cmd = os.path.join(self.test.cwd, cmd) + self.build.exesuffix
-            cmd = '{} {}'.format(self.valgrind.cmd, cmd)
+            cmd[0] = os.path.join(self.test.cwd, cmd[0]) + self.build.exesuffix
 
-        cmd = '{} {}'.format(cmd, cmd_args)
-        proc = sp.run(cmd, env=env, cwd=self.test.cwd, shell=True,
-                      timeout=self.conf.timeout, stdout=sp.PIPE,
-                      stderr=sp.STDOUT, universal_newlines=True)
+            if self.valgrind:
+                cmd = self.valgrind.cmd + cmd
+
+        cmd = cmd + list(args)
+
+        if self.conf.tracer:
+            cmd = shlex.split(self.conf.tracer) + cmd
+
+            # process stdout and stderr are not redirected - this lets running
+            # tracer command in interactive session
+            proc = sp.run(cmd, env=env, cwd=self.test.cwd)
+        else:
+            proc = sp.run(cmd, env=env, cwd=self.test.cwd,
+                          timeout=self.conf.timeout, stdout=sp.PIPE,
+                          stderr=sp.STDOUT, universal_newlines=True)
 
         if proc.returncode != expected_exit:
             futils.fail(proc.stdout, exit_code=proc.returncode)
@@ -266,6 +279,9 @@ class _CtxType(type):
         setattr(cls, '__repr__', lambda cls: cls.__class__.__name__.lower())
 
     def __repr__(cls):
+        return cls.__name__.lower()
+
+    def __str__(cls):
         return cls.__name__.lower()
 
     def __iter__(cls):

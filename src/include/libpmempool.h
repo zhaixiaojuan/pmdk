@@ -33,7 +33,7 @@
 /*
  * libpmempool.h -- definitions of libpmempool entry points
  *
- * See libpmempool(3) for details.
+ * See libpmempool(7) for details.
  */
 
 #ifndef LIBPMEMPOOL_H
@@ -158,7 +158,6 @@ enum pmempool_check_result pmempool_check_end(PMEMpoolcheck *ppc);
 #define PMEMPOOL_RM_POOLSET_LOCAL	(1U << 1) /* remove local poolsets */
 #define PMEMPOOL_RM_POOLSET_REMOTE	(1U << 2) /* remove remote poolsets */
 
-
 /*
  * LIBPMEMPOOL SYNC
  */
@@ -172,7 +171,6 @@ enum pmempool_check_result pmempool_check_end(PMEMpoolcheck *ppc);
  */
 #define PMEMPOOL_SYNC_DRY_RUN		(1U << 1)
 
-
 /*
  * LIBPMEMPOOL TRANSFORM
  */
@@ -181,7 +179,6 @@ enum pmempool_check_result pmempool_check_end(PMEMpoolcheck *ppc);
  * do not apply changes, only check if operation is viable
  */
 #define PMEMPOOL_TRANSFORM_DRY_RUN	(1U << 1)
-
 
 /*
  * PMEMPOOL_MAJOR_VERSION and PMEMPOOL_MINOR_VERSION provide the current version

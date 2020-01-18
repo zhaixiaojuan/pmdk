@@ -47,11 +47,9 @@ date: pmemblk API version 1.1
 [ACKNOWLEDGEMENTS](#acknowledgements)<br />
 [SEE ALSO](#see-also)<br />
 
-
 # NAME #
 
 **libpmemblk** - persistent memory resident array of blocks
-
 
 # SYNOPSIS #
 
@@ -95,7 +93,6 @@ manual pages:
 **pmemblk_ctl_exec**(3), **pmemblk_ctl_get**(3), **pmemblk_ctl_set**(3),
 **pmemblk_read**(3), **pmemblk_set_zero**(3),
 
-
 # DESCRIPTION #
 
 **libpmemblk**
@@ -112,7 +109,7 @@ type of file system results in the load/store, non-paged access to pmem.
 This library is for applications that need a potentially large array of blocks,
 all the same size, where any given block is updated atomically (the update
 cannot be *torn* by program interruption such as power failures). This library
-builds on the low-level pmem support provided by **libpmem**(3), handling the
+builds on the low-level pmem support provided by **libpmem**(7), handling the
 transactional update of the blocks, flushing to persistence, and recovery for
 the application. **libpmemblk** is one of a collection of persistent memory
 libraries available, the others are:
@@ -141,14 +138,12 @@ on whether the memory pool appears to be persistent memory or a regular file
 There is no need for applications to flush changes directly when using the
 block memory API provided by **libpmemblk**.
 
-
 # CAVEATS #
 
 **libpmemblk** relies on the library destructor being called from the main
 thread. For this reason, all functions that might trigger destruction (e.g.
 **dlclose**(3)) should be called in the main thread. Otherwise some of the
 resources associated with that thread might not be cleaned up properly.
-
 
 # LIBRARY API VERSIONING #
 
@@ -159,7 +154,7 @@ The _UW(pmemblk_check_version) function is used to determine whether the
 installed **libpmemblk** supports the version of the library API required
 by an application. The easiest way to do this is for the application to
 supply the compile-time version information, supplied by defines in
-**\<ibpmemblk.h\>**, like this:
+**\<libpmemblk.h\>**, like this:
 
 ```c
 reason = _U(pmemblk_check_version)(PMEMBLK_MAJOR_VERSION,
@@ -185,7 +180,6 @@ the return value is NULL. Otherwise the return value is a static string
 describing the reason for failing the version check. The string returned by
 _UW(pmemblk_check_version) must not be modified or freed.
 
-
 # MANAGING LIBRARY BEHAVIOR #
 
 The **pmemblk_set_funcs**() function allows an application to override memory
@@ -194,7 +188,6 @@ Passing in NULL for any of the handlers will cause
 the **libpmemblk** default function to be used.
 The library does not make heavy use of the system malloc functions,
 but it does allocate approximately 4-8 kilobytes for each memory pool in use.
-
 
 # DEBUGGING AND ERROR HANDLING #
 
@@ -223,6 +216,11 @@ typical way to access the debug version is to set the  **LD_LIBRARY_PATH**
 environment variable to _LDLIBPATH(). Debugging output is
 controlled using the following environment variables. These variables have
 no effect on the non-debug version of the library.
+
+>NOTE:
+On Debian/Ubuntu systems, this extra debug version of the library is
+shipped in the respective **-debug** Debian package and placed in
+the **/usr/lib/$ARCH/pmdk_dbg/** directory.
 
 + **PMEMBLK_LOG_LEVEL**
 
@@ -256,11 +254,6 @@ output is written to *stderr*.
 
 See also **libpmem**(7) for information on other environment variables
 that may affect **libpmemblk** behavior.
-
->NOTE:
-On Debian/Ubuntu systems, this extra debug version of the library is
-shipped in the respective **-debug** Debian package and placed in
-the **/usr/lib/$ARCH/pmdk_dbg/** directory.
 
 # EXAMPLE #
 
@@ -330,19 +323,16 @@ main(int argc, char *argv[])
 
 See <http://pmem.io/pmdk/libpmemblk> for more examples using the **libpmemblk** API.
 
-
 # BUGS #
 
 Unlike **libpmemobj**(7), data replication is not supported in **libpmemblk**.
 Thus, specifying replica sections in pool set files is not allowed.
-
 
 # ACKNOWLEDGEMENTS #
 
 **libpmemblk** builds on the persistent memory programming model recommended
 by the SNIA NVM Programming Technical Work Group:
 <http://snia.org/nvmp>
-
 
 # SEE ALSO #
 

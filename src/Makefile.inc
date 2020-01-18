@@ -129,18 +129,7 @@ CFLAGS += -DFAULT_INJECTION=1
 CXXFLAGS += -DFAULT_INJECTION=1
 endif
 
-# On FreeBSD libvmmalloc defines pthread_create, which conflicts with asan
-tsanitize := $(SANITIZE)
-ifeq ($(OS_KERNEL_NAME),FreeBSD)
-ifeq ($(JEMALLOC_PMDKDIR),libvmmalloc)
-hasaddrcomma := address,
-tsanitize := $(subst address,,$(subst $(hasaddrcomma),,$(SANITIZE)))
-ifneq ($(tsanitize),$(SANITIZE))
-$(info SANITIZE=address not supported for libvmmalloc, ignored)
-endif
-endif
-endif
-ifneq ($(tsanitize),)
+ifneq ($(SANITIZE),)
 CFLAGS += -fsanitize=$(tsanitize)
 LDFLAGS += -fsanitize=$(tsanitize)
 endif
@@ -178,10 +167,8 @@ ifneq ($(TESTBUILD), 1)
 $(error "$(TESTCMD)" failed)
 endif
 
-ifneq ($(ARCH), x86_64)
-ifneq ($(ARCH), aarch64)
+ifeq ($(filter $(ARCH), x86_64 aarch64 ppc64),)
 $(error unsupported architecture: $(ARCH))
-endif
 endif
 
 LP64 := $(shell $(CC) $(CFLAGS) -dM -E -x c /dev/null | grep -Ec "__SIZEOF_LONG__.+8|__SIZEOF_POINTER__.+8" )

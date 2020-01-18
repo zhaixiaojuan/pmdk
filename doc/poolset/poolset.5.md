@@ -44,18 +44,15 @@ date: poolset API version 1.0
 [NOTES](#notes)<br />
 [SEE ALSO](#see-also)<br />
 
-
 # NAME #
 
 poolset - persistent memory pool configuration file format
-
 
 # SYNOPSIS #
 
 ```c
 mypool.set
 ```
-
 
 # DESCRIPTION #
 
@@ -189,7 +186,7 @@ REPLICA [<user>@]<hostname> [<relative-path>/]<remote-pool-set-file>
 client
 
 + *pathname* is relative to the root config directory on the target
-node - see **librpmem**(3)
+node - see **librpmem**(7)
 
 There are no other lines in the remote replica section - the REPLICA line
 defines a remote replica entirely.
@@ -221,7 +218,6 @@ $ pmempool create --layout="mylayout" obj myobjpool.set
 _WINUX(,
 =q=Remote replica cannot have replicas, i.e. a remote pool set file cannot
 define any replicas.=e=)
-
 
 # POOL SET OPTIONS #
 
@@ -256,7 +252,6 @@ as well as to every single remote pool set file.
 Using the *SINGLEHDR* and *NOHDRS* options has important implications for data
 integrity checking and recoverability in case of a pool set damage.
 See _UW(pmempool_sync) API for more information about pool set recovery.
-
 
 # DIRECTORIES #
 
@@ -296,11 +291,11 @@ be done with the **pmemobj_create**(3), **pmemblk_create**(3) or
 
 Restoring data from a local _WINUX(,or remote) replica can be done by using the
 **pmempool-sync**(1) command or the _UW(pmempool_sync) API from the
-**libpmempool**(3) library.
+**libpmempool**(7) library.
 
 Modifications of a pool set file configuration can be done by using the
 **pmempool-transform**(1) command or the _UW(pmempool_transform) API from the
-**libpmempool**(3) library.
+**libpmempool**(7) library.
 
 When creating a pool set consisting of multiple files, or when creating
 a replicated pool set, the *path* argument passed to **pmemobj_create**(3),
@@ -312,7 +307,6 @@ When opening a pool set consisting of multiple files, or when opening a
 replicated pool set, the *path* argument passed to **pmemobj_open**(3),
 **pmemblk_open**(3) or **pmemlog_open**(3) must point to the same *set* file
 that was used for pool set creation.
-
 
 # SEE ALSO #
 

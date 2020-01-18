@@ -42,18 +42,15 @@ date: pmem Tools version 1.4
 [EXAMPLE](#example)<br />
 [SEE ALSO](#see-also)<br />
 
-
 # NAME #
 
 **pmempool-check** - check and repair persistent memory pool
-
 
 # SYNOPSIS #
 
 ```
 $ pmempool check [<options>] <file>
 ```
-
 
 # DESCRIPTION #
 
@@ -83,9 +80,13 @@ Try to repair a pool file if possible.
 
 Answer yes on all questions.
 
-`-N, --no-exec`
+`-d, --dry-run`
 
 Don't execute, just show what would be done. Not supported on Device DAX.
+
+`-N, --no-exec`
+
+Deprecated alias for `dry-run`.
 
 `-b, --backup <file>`
 
@@ -109,7 +110,6 @@ Be more verbose.
 
 Display help message and exit.
 
-
 # EXAMPLE #
 
 ```
@@ -131,7 +131,6 @@ $ pmempool check -rvN pool.bin
 
 Check consistency of "pool.bin" pool file, print what would be repaired with
 increased verbosity level.
-
 
 # SEE ALSO #
 

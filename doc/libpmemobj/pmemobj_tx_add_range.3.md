@@ -7,7 +7,7 @@ header: PMDK
 date: pmemobj API version 2.3
 ...
 
-[comment]: <> (Copyright 2017-2018, Intel Corporation)
+[comment]: <> (Copyright 2017-2019, Intel Corporation)
 
 [comment]: <> (Redistribution and use in source and binary forms, with or without)
 [comment]: <> (modification, are permitted provided that the following conditions)
@@ -42,7 +42,6 @@ date: pmemobj API version 2.3
 [RETURN VALUE](#return-value)<br />
 [SEE ALSO](#see-also)<br />
 
-
 # NAME #
 
 **pmemobj_tx_add_range**(), **pmemobj_tx_add_range_direct**(),
@@ -57,7 +56,6 @@ date: pmemobj API version 2.3
 **TX_SET**(), **TX_SET_DIRECT**(),
 **TX_MEMCPY**(), **TX_MEMSET**()
 - transactional object manipulation
-
 
 # SYNOPSIS #
 
@@ -85,7 +83,6 @@ TX_MEMCPY(void *dest, const void *src, size_t num)
 TX_MEMSET(void *dest, int c, size_t num)
 ```
 
-
 # DESCRIPTION #
 
 **pmemobj_tx_add_range**() takes a "snapshot" of the memory block of given
@@ -100,8 +97,8 @@ The **pmemobj_tx_xadd_range**() function behaves exactly the same as
 **pmemobj_tx_add_range**() when *flags* equals zero.
 *flags* is a bitmask of the following values:
 
-+ **POBJ_XADD_NO_FLUSH** - skip flush on commit
-when application deals with flushing or uses pmemobj_memcpy_persist)
++ **POBJ_XADD_NO_FLUSH** - skip flush on commit (when application deals
+with flushing or uses pmemobj_memcpy_persist)
 
 + **POBJ_XADD_NO_SNAPSHOT** - added range will not be "snapshotted", i.e. any
 changes made within it during the transaction will not be rolled backed after
@@ -110,6 +107,9 @@ abort
 + **POBJ_XADD_ASSUME_INITIALIZED** - added range is assumed to be initialized.
 If this flag is not specified, passing uninitialized memory will result in an
 error when run under Valgrind memcheck.
+
++ **POBJ_XADD_NO_ABORT** - if the function does not end successfully,
+do not abort the transaction.
 
 **pmemobj_tx_add_range_direct**() behaves the same as
 **pmemobj_tx_add_range**() with the exception that it operates on virtual
@@ -125,8 +125,19 @@ The **pmemobj_tx_xadd_range_direct**() function behaves exactly the same as
 **pmemobj_tx_add_range_direct**() when *flags* equals zero. *flags* is a
 bitmask of the following values:
 
-+ **POBJ_XADD_NO_FLUSH** - skip flush on commit
-(when application deals with flushing or uses pmemobj_memcpy_persist)
++ **POBJ_XADD_NO_FLUSH** - skip flush on commit (when application deals
+with flushing or uses pmemobj_memcpy_persist)
+
++ **POBJ_XADD_NO_SNAPSHOT** - added range will not be "snapshotted", i.e. any
+changes made within it during the transaction will not be rolled backed after
+abort
+
++ **POBJ_XADD_ASSUME_INITIALIZED** - added range is assumed to be initialized.
+If this flag is not specified, passing uninitialized memory will result in an
+error when run under Valgrind memcheck.
+
++ **POBJ_XADD_NO_ABORT** - if the function does not end successfully,
+do not abort the transaction.
 
 Similarly to the macros controlling the transaction flow, **libpmemobj**
 defines a set of macros that simplify the transactional operations on
@@ -190,14 +201,15 @@ undo log and then fills the first *num* bytes of its memory area with the
 constant byte *c*. In case of a failure or abort, the saved value will be
 restored.
 
-
 # RETURN VALUE #
 
-On success, **pmemobj_tx_add_range**(), **pmemobj_tx_xadd_range**(),
-**pmemobj_tx_add_range_direct**() and **pmemobj_tx_xadd_range_direct**()
-return 0. Otherwise, the stage is changed to **TX_STAGE_ONABORT** and an error
-number is returned.
+On success, **pmemobj_tx_add_range**() and **pmemobj_tx_add_range_direct**()
+return 0. Otherwise, the stage is changed to **TX_STAGE_ONABORT**,
+**errno** is set appropriately and transaction is aborted.
 
+On success, **pmemobj_tx_xadd_range**() and **pmemobj_tx_xadd_range_direct**()
+returns 0. Otherwise, the error number is returned, **errno** is set and
+when flags do not contain **POBJ_XADD_NO_ABORT**, the transaction is aborted.
 
 # SEE ALSO #
 

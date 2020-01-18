@@ -110,8 +110,8 @@ util_mmap_fini(void)
  * appropriate arguments and includes our trace points.
  */
 void *
-util_map(int fd, size_t len, int flags, int rdonly, size_t req_align,
-	int *map_sync)
+util_map(int fd, os_off_t off, size_t len, int flags, int rdonly,
+	size_t req_align, int *map_sync)
 {
 	LOG(3, "fd %d len %zu flags %d rdonly %d req_align %zu map_sync %p",
 			fd, len, flags, rdonly, req_align, map_sync);
@@ -127,7 +127,7 @@ util_map(int fd, size_t len, int flags, int rdonly, size_t req_align,
 		ASSERTeq((uintptr_t)addr % req_align, 0);
 
 	int proto = rdonly ? PROT_READ : PROT_READ|PROT_WRITE;
-	base = util_map_sync(addr, len, proto, flags, fd, 0, map_sync);
+	base = util_map_sync(addr, len, proto, flags, fd, off, map_sync);
 	if (base == MAP_FAILED) {
 		ERR("!mmap %zu bytes", len);
 		return NULL;
@@ -164,51 +164,6 @@ util_unmap(void *addr, size_t len)
 		ERR("!munmap");
 
 	return retval;
-}
-
-/*
- * util_map_tmpfile -- reserve space in an unlinked file and memory-map it
- *
- * size must be multiple of page size.
- */
-void *
-util_map_tmpfile(const char *dir, size_t size, size_t req_align)
-{
-	int oerrno;
-
-	if (((os_off_t)size) < 0) {
-		ERR("invalid size (%zu) for os_off_t", size);
-		errno = EFBIG;
-		return NULL;
-	}
-
-	int fd = util_tmpfile(dir, OS_DIR_SEP_STR "vmem.XXXXXX", O_EXCL);
-	if (fd == -1) {
-		LOG(2, "cannot create temporary file in dir %s", dir);
-		goto err;
-	}
-
-	if ((errno = os_posix_fallocate(fd, 0, (os_off_t)size)) != 0) {
-		ERR("!posix_fallocate");
-		goto err;
-	}
-
-	void *base;
-	if ((base = util_map(fd, size, MAP_SHARED,
-			0, req_align, NULL)) == NULL) {
-		LOG(2, "cannot mmap temporary file");
-		goto err;
-	}
-
-	(void) os_close(fd);
-	return base;
-
-err:
-	oerrno = errno;
-	if (fd != -1)
-		(void) os_close(fd);
-	errno = oerrno;
-	return NULL;
 }
 
 /*

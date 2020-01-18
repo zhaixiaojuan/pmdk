@@ -203,7 +203,6 @@ list_set_oid_redo_log(PMEMobjpool *pop,
 	return 0;
 }
 
-
 /*
  * list_update_head -- (internal) update pe_first entry in list head
  */
@@ -670,6 +669,7 @@ list_insert(PMEMobjpool *pop,
 	list_fill_entry_redo_log(pop, ctx,
 			&args_common, next_offset, prev_offset, 1);
 
+	operation_process(ctx);
 	operation_finish(ctx, 0);
 
 	pmemobj_mutex_unlock_nofail(pop, &head->lock);
@@ -821,6 +821,7 @@ list_remove(PMEMobjpool *pop,
 	list_fill_entry_redo_log(pop, ctx,
 			&args_common, 0, 0, 0);
 
+	operation_process(ctx);
 	operation_finish(ctx, 0);
 
 	pmemobj_mutex_unlock_nofail(pop, &head->lock);
@@ -956,6 +957,7 @@ list_move(PMEMobjpool *pop,
 
 redo_last:
 unlock:
+	operation_process(ctx);
 	operation_finish(ctx, 0);
 	list_mutexes_unlock(pop, head_new, head_old);
 err:

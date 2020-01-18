@@ -13,7 +13,6 @@ testconfig.sh.example provides more detail.  The script RUNTESTS, when run with
 no arguments, will run all unit tests through all the combinations of fs-types
 and build-types, running the "check" level test.
 
-
 DETAILS ON HOW TO RUN UNIT TESTS
 
 See the top-level README for instructions on building, installing, running
@@ -131,7 +130,6 @@ unit test framework also looks for several other variables:
 	Display test run times:
 		$ TM=1 ./TEST0
 
-
 DETAILS ON HOW TO WRITE UNIT TESTS
 
 A minimal unit test consists of a sub-directory here with an executable called
@@ -198,7 +196,6 @@ produce:
 	out0.log	log of stdout
 	trace0.log	trace points from unittest library
 	pmem0.log	trace from libpmem (PMEM_LOG_FILE points here)
-	vmem0.log	trace from libvmem (VMEM_LOG_FILE points here)
 
 Although the above log files are the common case, the TEST* scripts are free to
 create any files.  It is recommended, however, that the script creates files

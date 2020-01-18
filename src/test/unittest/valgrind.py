@@ -38,7 +38,6 @@ from enum import Enum, unique
 from os import path
 
 import futils
-from utils import VMMALLOC
 
 
 DISABLE = -1
@@ -66,6 +65,9 @@ class _Tool(Enum):
     HELGRIND = 3
     DRD = 4
     NONE = 5
+
+    def __str__(self):
+        return self.name.lower()
 
 
 TOOLS = tuple(t for t in _Tool if t != _Tool.NONE)
@@ -118,7 +120,7 @@ class Valgrind:
         if self.valgrind_exe is None:
             return
 
-        self.opts = ''
+        self.opts = []
         self.memcheck_check_leaks = memcheck_check_leaks
 
         self.add_suppression('ld.supp')
@@ -160,9 +162,11 @@ class Valgrind:
     def cmd(self):
         """Get Valgrind command with specified arguments"""
         if self.tool == NONE:
-            return ''
-        return '{} --tool={} --log-file={} {} '.format(
-            self.valgrind_exe, self.tool_name, self.log_file, self.opts)
+            return []
+
+        cmd = [self.valgrind_exe, '--tool={}'.format(self.tool_name),
+               '--log-file={}'.format(self.log_file)] + self.opts
+        return cmd
 
     def _get_valgrind_exe(self):
         """
@@ -182,10 +186,9 @@ class Valgrind:
             return valgrind_bin
         return 'valgrind'
 
-    def add_opt(self, opt, tool=None):
+    def add_opt(self, opt):
         """Add option to Valgrind command"""
-        if tool is None or tool == self.tool:
-            self.opts = '{} {}'.format(self.opts, opt)
+        self.opts.append(opt)
 
     def _get_version(self):
         """
@@ -197,19 +200,13 @@ class Valgrind:
         version_as_int = int(version.rsplit('.', 1)[0].replace('.', ''))
         return version_as_int
 
-    def handle_ld_preload(self, ld_preload):
-        """Handle Valgrind setup for given LD_PRELOAD value"""
-        if self._get_version() >= 312 and \
-           path.basename(ld_preload) == VMMALLOC:
-            self.add_opt('--soname-synonyms=somalloc=nouserintercepts')
-
     def add_suppression(self, f):
         """
         Add suppression file. Provided file path is
         relative to tests root directory (pmdk/src/test)
         """
-        self.opts = '{} --suppressions={}'.format(
-            self.opts, path.join(futils.ROOTDIR, f))
+        self.opts.append('--suppressions={}'
+                         .format(path.join(futils.ROOTDIR, f)))
 
     def validate_log(self):
         """

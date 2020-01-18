@@ -1,5 +1,5 @@
 /*
- * Copyright 2018-2019, Intel Corporation
+ * Copyright 2018-2020, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -53,7 +53,6 @@ enum fail_types {
 };
 
 struct test_object {
-	uint8_t padding[CACHELINE_SIZE - 16]; /* align to a cacheline */
 	struct ULOG(TEST_ENTRIES) redo;
 	struct ULOG(TEST_ENTRIES) undo;
 	uint64_t values[TEST_VALUES];
@@ -71,7 +70,10 @@ redo_log_constructor(void *ctx, void *ptr, size_t usable_size, void *arg)
 	PMEMobjpool *pop = ctx;
 	const struct pmem_ops *p_ops = &pop->p_ops;
 
-	ulog_construct(OBJ_PTR_TO_OFF(ctx, ptr), TEST_ENTRIES,
+	size_t capacity = ALIGN_DOWN(usable_size - sizeof(struct ulog),
+					CACHELINE_SIZE);
+
+	ulog_construct(OBJ_PTR_TO_OFF(ctx, ptr), capacity,
 			*(uint64_t *)arg, 1, 0, p_ops);
 
 	return 0;
@@ -80,7 +82,7 @@ redo_log_constructor(void *ctx, void *ptr, size_t usable_size, void *arg)
 static int
 pmalloc_redo_extend(void *base, uint64_t *redo, uint64_t gen_num)
 {
-	size_t s = SIZEOF_ULOG(TEST_ENTRIES);
+	size_t s = SIZEOF_ALIGNED_ULOG(TEST_ENTRIES);
 
 	return pmalloc_construct(base, redo, s, redo_log_constructor, &gen_num,
 		0, OBJ_INTERNAL_OBJECT_MASK, 0);
@@ -95,14 +97,14 @@ test_free_entry(void *base, uint64_t *next)
 static void
 test_set_entries(PMEMobjpool *pop,
 	struct operation_context *ctx, struct test_object *object,
-	size_t nentries, enum fail_types fail)
+	size_t nentries, enum fail_types fail, enum operation_log_type type)
 {
 	operation_start(ctx);
 
 	for (size_t i = 0; i < nentries; ++i) {
 		operation_add_typed_entry(ctx,
 			&object->values[i], i + 1,
-			ULOG_OPERATION_SET, LOG_PERSISTENT);
+			ULOG_OPERATION_SET, type);
 	}
 
 	operation_reserve(ctx, nentries * 16);
@@ -131,6 +133,7 @@ test_set_entries(PMEMobjpool *pop,
 		for (size_t i = 0; i < nentries; ++i)
 			UT_ASSERTeq(object->values[i], 0);
 	} else {
+		operation_process(ctx);
 		operation_finish(ctx, 0);
 
 		for (size_t i = 0; i < nentries; ++i)
@@ -159,6 +162,7 @@ test_merge_op(struct operation_context *ctx, struct test_object *object)
 		&object->values[0], 0b01,
 		ULOG_OPERATION_OR, LOG_PERSISTENT);
 
+	operation_process(ctx);
 	operation_finish(ctx, 0);
 
 	UT_ASSERTeq(object->values[0], 0b01);
@@ -176,6 +180,7 @@ test_same_twice(struct operation_context *ctx, struct test_object *object)
 		ULOG_OPERATION_SET, LOG_PERSISTENT);
 	operation_process(ctx);
 	UT_ASSERTeq(object->values[0], 10);
+	operation_cancel(ctx);
 }
 
 static void
@@ -186,37 +191,55 @@ test_redo(PMEMobjpool *pop, struct test_object *object)
 		pmalloc_redo_extend, (ulog_free_fn)pfree,
 		&pop->p_ops, LOG_TYPE_REDO);
 
-	test_set_entries(pop, ctx, object, 10, FAIL_NONE);
+	/*
+	 * Keep this test first.
+	 * It tests a situation where the number of objects being added
+	 * is equal to the capacity of the log.
+	 */
+	test_set_entries(pop, ctx, object, TEST_ENTRIES - 1,
+		FAIL_NONE, LOG_PERSISTENT);
+	clear_test_values(object);
+
+	test_set_entries(pop, ctx, object, 100, FAIL_NONE, LOG_TRANSIENT);
+	clear_test_values(object);
+	test_set_entries(pop, ctx, object, 10, FAIL_NONE, LOG_PERSISTENT);
 	clear_test_values(object);
 	test_merge_op(ctx, object);
 	clear_test_values(object);
-	test_set_entries(pop, ctx, object, 100, FAIL_NONE);
+	test_set_entries(pop, ctx, object, 100, FAIL_NONE, LOG_PERSISTENT);
 	clear_test_values(object);
-	test_set_entries(pop, ctx, object, 100, FAIL_CHECKSUM);
+	test_set_entries(pop, ctx, object, 100, FAIL_CHECKSUM, LOG_PERSISTENT);
 	clear_test_values(object);
-	test_set_entries(pop, ctx, object, 10, FAIL_CHECKSUM);
+	test_set_entries(pop, ctx, object, 10, FAIL_CHECKSUM, LOG_PERSISTENT);
 	clear_test_values(object);
-	test_set_entries(pop, ctx, object, 100, FAIL_MODIFY_VALUE);
+	test_set_entries(pop, ctx, object, 100, FAIL_MODIFY_VALUE,
+		LOG_PERSISTENT);
 	clear_test_values(object);
-	test_set_entries(pop, ctx, object, 10, FAIL_MODIFY_VALUE);
+	test_set_entries(pop, ctx, object, 10, FAIL_MODIFY_VALUE,
+		LOG_PERSISTENT);
 	clear_test_values(object);
 	test_same_twice(ctx, object);
 	clear_test_values(object);
-
 	operation_delete(ctx);
 
-	/* verify that rebuilding redo_next works */
+	/*
+	 * Verify that rebuilding redo_next works. This requires that
+	 * object->redo->next is != 0 - to achieve that, this test must
+	 * be preceded by a test that fails to finish the ulog's operation.
+	 */
 	ctx = operation_new(
 		(struct ulog *)&object->redo, TEST_ENTRIES,
 		NULL, test_free_entry, &pop->p_ops, LOG_TYPE_REDO);
 
-	test_set_entries(pop, ctx, object, 100, 0);
+	test_set_entries(pop, ctx, object, 100, 0, LOG_PERSISTENT);
 	clear_test_values(object);
 
 	/* FAIL_MODIFY_NEXT tests can only happen after redo_next test */
-	test_set_entries(pop, ctx, object, 100, FAIL_MODIFY_NEXT);
+	test_set_entries(pop, ctx, object, 100, FAIL_MODIFY_NEXT,
+		LOG_PERSISTENT);
 	clear_test_values(object);
-	test_set_entries(pop, ctx, object, 10, FAIL_MODIFY_NEXT);
+	test_set_entries(pop, ctx, object, 10, FAIL_MODIFY_NEXT,
+		LOG_PERSISTENT);
 	clear_test_values(object);
 
 	operation_delete(ctx);
@@ -381,7 +404,6 @@ test_undo_large_copy(PMEMobjpool *pop, struct operation_context *ctx,
 	for (uint64_t i = 0; i < TEST_VALUES; ++i)
 		UT_ASSERTeq(object->values[i], i + 1);
 
-
 	operation_finish(ctx, ULOG_INC_FIRST_GEN_NUM);
 
 	for (uint64_t i = 0; i < TEST_VALUES; ++i)
@@ -480,9 +502,9 @@ test_undo_log_reuse()
 		.memset = memset_libc,
 		.base = NULL,
 	};
-	struct ULOG(ULOG_SIZE) *first = util_aligned_malloc(64,
+	struct ULOG(ULOG_SIZE) *first = util_aligned_malloc(CACHELINE_SIZE,
 		SIZEOF_ULOG(ULOG_SIZE));
-	struct ULOG(ULOG_SIZE) *second = util_aligned_malloc(64,
+	struct ULOG(ULOG_SIZE) *second = util_aligned_malloc(CACHELINE_SIZE,
 		SIZEOF_ULOG(ULOG_SIZE));
 	ulog_construct((uint64_t)(first), ULOG_SIZE, 0, 0, 0, &ops);
 	ulog_construct((uint64_t)(second), ULOG_SIZE, 0, 0, 0, &ops);
@@ -538,6 +560,38 @@ test_undo_log_reuse()
 #undef ULOG_SIZE
 }
 
+/*
+ * test_undo_log_reuse -- test for correct reuse of log space
+ */
+static void
+test_redo_cleanup_same_size(PMEMobjpool *pop, struct test_object *object)
+{
+#define ULOG_SIZE 1024
+	struct operation_context *ctx = operation_new(
+		(struct ulog *)&object->redo, TEST_ENTRIES,
+		pmalloc_redo_extend, (ulog_free_fn)pfree,
+		&pop->p_ops, LOG_TYPE_REDO);
+
+	int ret = pmalloc(pop, &object->redo.next, ULOG_SIZE, 0, 0);
+	UT_ASSERTeq(ret, 0);
+
+	/* undo logs are clobbered at the end, which shrinks their size */
+	size_t capacity = ulog_capacity((struct ulog *)&object->undo,
+		TEST_ENTRIES, &pop->p_ops);
+
+	/* builtin log + one next */
+	UT_ASSERTeq(capacity, TEST_ENTRIES * 2 + CACHELINE_SIZE);
+
+	operation_start(ctx); /* initialize a new operation */
+
+	struct pobj_action act;
+	pmemobj_reserve(pop, &act, ULOG_SIZE, 0);
+	palloc_publish(&pop->heap, &act, 1, ctx);
+
+	operation_delete(ctx);
+#undef ULOG_SIZE
+}
+
 static void
 test_undo(PMEMobjpool *pop, struct test_object *object)
 {
@@ -559,7 +613,7 @@ test_undo(PMEMobjpool *pop, struct test_object *object)
 		TEST_ENTRIES, &pop->p_ops);
 
 	/* builtin log + one next */
-	UT_ASSERTeq(capacity, TEST_ENTRIES * 2);
+	UT_ASSERTeq(capacity, TEST_ENTRIES * 2 + CACHELINE_SIZE);
 
 	operation_delete(ctx);
 }
@@ -570,7 +624,7 @@ main(int argc, char *argv[])
 	START(argc, argv, "obj_memops");
 
 	if (argc != 2)
-		UT_FATAL("usage: %s file-name", argv[0]);
+	UT_FATAL("usage: %s file-name", argv[0]);
 
 	const char *path = argv[1];
 
@@ -580,14 +634,36 @@ main(int argc, char *argv[])
 			PMEMOBJ_MIN_POOL * 10, S_IWUSR | S_IRUSR)) == NULL)
 		UT_FATAL("!pmemobj_create: %s", path);
 
-	struct test_object *object =
-		pmemobj_direct(pmemobj_root(pop, sizeof(struct test_object)));
+	/*
+	 * The ulog API requires cacheline alignment. A cacheline aligned new
+	 * new allocator is created here to properly test the ulog api.
+	 * A aligned object can then be allocated using pmemobj_xalloc.
+	 */
+	struct pobj_alloc_class_desc new_ac = {
+		.unit_size = sizeof(struct test_object),
+		.alignment = CACHELINE_SIZE,
+		.units_per_block = 1,
+		.header_type = POBJ_HEADER_NONE,
+	};
+	if (pmemobj_ctl_set(pop, "heap.alloc_class.new.desc", &new_ac) == -1)
+		UT_FATAL("Failed to set allocation class");
+
+	PMEMoid pobject;
+	if (pmemobj_xalloc(pop, &pobject, sizeof(struct test_object), 0,
+		POBJ_CLASS_ID(new_ac.class_id), NULL, NULL) == -1)
+		UT_FATAL("Failed to allocate object");
+
+	struct test_object *object = pmemobj_direct(pobject);
+
 	UT_ASSERTne(object, NULL);
 	ulog_construct(OBJ_PTR_TO_OFF(pop, &object->undo),
-		TEST_ENTRIES, 0, 0, 0, &pop->p_ops);
+			TEST_ENTRIES, 0, 0, 0, &pop->p_ops);
+	ulog_construct(OBJ_PTR_TO_OFF(pop, &object->redo),
+			TEST_ENTRIES, 0, 0, 0, &pop->p_ops);
 
 	test_redo(pop, object);
 	test_undo(pop, object);
+	test_redo_cleanup_same_size(pop, object);
 	test_undo_log_reuse();
 
 	pmemobj_close(pop);

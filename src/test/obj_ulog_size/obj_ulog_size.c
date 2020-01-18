@@ -40,6 +40,7 @@
 
 #include "unittest.h"
 
+#include "util.h"
 /*
  * tx.h -- needed for TX_SNAPSHOT_LOG_ENTRY_ALIGNMENT,
  * TX_SNAPSHOT_LOG_BUFFER_OVERHEAD, TX_SNAPSHOT_LOG_ENTRY_OVERHEAD,
@@ -71,6 +72,8 @@
  */
 #define REDO_OVERFLOW ((size_t)((LANE_REDO_EXTERNAL_SIZE\
 		/ TX_INTENT_LOG_ENTRY_OVERHEAD) + 1))
+
+#define APPEND_SIZE SIZEOF_ALIGNED_ULOG(CACHELINE_SIZE)
 
 /*
  * free_pool -- frees the pool from all allocated objects
@@ -151,6 +154,16 @@ do_tx_max_alloc_tx_publish_abort(PMEMobjpool *pop)
 		UT_OUT("!Cannot extend redo log - the pool is full");
 	} TX_ONCOMMIT {
 		UT_FATAL("Can extend redo log despite the pool is full");
+	} TX_END
+
+	/* it should fail without abort transaction */
+	TX_BEGIN(pop) {
+		pmemobj_tx_xpublish(act, REDO_OVERFLOW, POBJ_XPUBLISH_NO_ABORT);
+	} TX_ONABORT {
+		ASSERT(0);
+	} TX_ONCOMMIT {
+		UT_ASSERTeq(errno, ENOMEM);
+		UT_OUT("!Cannot extend redo log - the pool is full");
 	} TX_END
 
 	free_pool(allocated, nallocated);
@@ -408,6 +421,18 @@ do_tx_max_alloc_wrong_pop_addr(PMEMobjpool *pop, PMEMobjpool *pop2)
 			"Can append an undo log buffer from a different memory pool");
 	} TX_END
 
+	/* it should fail without abort transaction */
+	TX_BEGIN(pop) {
+		pmemobj_tx_xlog_append_buffer(TX_LOG_TYPE_SNAPSHOT, buff2_addr,
+				buff2_size, POBJ_XLOG_APPEND_BUFFER_NO_ABORT);
+	} TX_ONABORT {
+		UT_ASSERT(0);
+	} TX_ONCOMMIT {
+		UT_ASSERTeq(errno, EINVAL);
+		UT_OUT(
+			"!Cannot append an undo log buffer from a different memory pool");
+	} TX_END
+
 	free_pool(allocated, nallocated);
 	pmemobj_free(&oid2);
 }
@@ -595,9 +620,9 @@ do_tx_buffer_overlapping(PMEMobjpool *pop)
 
 	TX_BEGIN(pop) {
 		pmemobj_tx_log_append_buffer(TX_LOG_TYPE_INTENT,
-			ptr + 256, 256);
+			ptr + APPEND_SIZE, APPEND_SIZE);
 		pmemobj_tx_log_append_buffer(TX_LOG_TYPE_INTENT,
-			ptr, 256);
+			ptr, APPEND_SIZE);
 	} TX_ONABORT {
 		UT_ASSERT(0);
 	} TX_ONCOMMIT {
@@ -606,9 +631,9 @@ do_tx_buffer_overlapping(PMEMobjpool *pop)
 
 	TX_BEGIN(pop) {
 		pmemobj_tx_log_append_buffer(TX_LOG_TYPE_INTENT,
-			ptr, 256);
+			ptr, APPEND_SIZE);
 		pmemobj_tx_log_append_buffer(TX_LOG_TYPE_INTENT,
-			ptr + 256, 256);
+			ptr + APPEND_SIZE, APPEND_SIZE);
 	} TX_ONABORT {
 		UT_ASSERT(0);
 	} TX_ONCOMMIT {
@@ -617,9 +642,9 @@ do_tx_buffer_overlapping(PMEMobjpool *pop)
 
 	TX_BEGIN(pop) {
 		pmemobj_tx_log_append_buffer(TX_LOG_TYPE_INTENT,
-			ptr, 256);
+			ptr, APPEND_SIZE);
 		pmemobj_tx_log_append_buffer(TX_LOG_TYPE_INTENT,
-			ptr, 256);
+			ptr, APPEND_SIZE);
 	} TX_ONABORT {
 		UT_OUT("Overlap detected");
 	} TX_ONCOMMIT {
@@ -628,9 +653,9 @@ do_tx_buffer_overlapping(PMEMobjpool *pop)
 
 	TX_BEGIN(pop) {
 		pmemobj_tx_log_append_buffer(TX_LOG_TYPE_INTENT,
-			ptr, 256);
+			ptr, APPEND_SIZE);
 		pmemobj_tx_log_append_buffer(TX_LOG_TYPE_INTENT,
-			ptr + 128, 256);
+			ptr + 128, APPEND_SIZE);
 	} TX_ONABORT {
 		UT_OUT("Overlap detected");
 	} TX_ONCOMMIT {
@@ -639,9 +664,9 @@ do_tx_buffer_overlapping(PMEMobjpool *pop)
 
 	TX_BEGIN(pop) {
 		pmemobj_tx_log_append_buffer(TX_LOG_TYPE_INTENT,
-			ptr + 128, 256);
+			ptr + 128, APPEND_SIZE);
 		pmemobj_tx_log_append_buffer(TX_LOG_TYPE_INTENT,
-			ptr, 256);
+			ptr, APPEND_SIZE);
 	} TX_ONABORT {
 		UT_OUT("Overlap detected");
 	} TX_ONCOMMIT {
