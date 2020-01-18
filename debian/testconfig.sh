@@ -9,3 +9,7 @@ TEST_BUILD="debug nondebug"
 TM=1
 # Be nice to slow hardware.
 TEST_TIMEOUT=30m
+# We want all failures, not just the first one.
+KEEP_GOING=y
+# Fails can fill the disk, and we can't investigate them anyway.
+CLEAN_FAILED=y
