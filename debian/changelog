@@ -1,3 +1,15 @@
+pmdk (1.8~rc1-1) experimental; urgency=medium
+
+  * New upstream pre-release.
+  * Drop vmem and vmmalloc.
+  * Enable ppc64el.
+  * Enable KEEP_GOING to list all test failures.
+  * Temporarily disable out_err_mt tests.
+  * Patch away differences between 1.8-rc1 tarball and tag.
+  * Update symbols.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 20 Jan 2020 12:41:24 +0100
+
 pmdk (1.7-1) unstable; urgency=medium
 
   * Upstream release.
