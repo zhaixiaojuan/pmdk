@@ -1,0 +1,11 @@
+--- pmdk-1.8~rc1.orig/Makefile
++++ pmdk-1.8~rc1/Makefile
+@@ -79,7 +79,7 @@ rpm : override DESTDIR="$(CURDIR)/$(RPM_
+ dpkg: override DESTDIR="$(CURDIR)/$(DPKG_BUILDDIR)"
+ rpm dpkg: override prefix=/usr
+ 
+-all:
++all: doc
+ 	$(MAKE) -C src $@
+ 
+ doc:
