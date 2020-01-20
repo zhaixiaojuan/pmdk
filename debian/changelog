@@ -1,3 +1,10 @@
+pmdk (1.8~rc1-2) experimental; urgency=medium
+
+  * Pick pre-release fixes.
+  * Re-enable out_err_mt tests.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Tue, 21 Jan 2020 17:17:23 +0100
+
 pmdk (1.8~rc1-1) experimental; urgency=medium
 
   * New upstream pre-release.
