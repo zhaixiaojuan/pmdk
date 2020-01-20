@@ -1,2 +1,2 @@
-doc/generated/pmempool_*.3
-doc/generated/libpmempool.7
+doc/libpmempool/*.3
+doc/libpmempool/*.7
