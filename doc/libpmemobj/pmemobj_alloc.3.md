@@ -46,7 +46,7 @@ date: pmemobj API version 2.3
 
 **pmemobj_alloc**(), **pmemobj_xalloc**(), **pmemobj_zalloc**(),
 **pmemobj_realloc**(), **pmemobj_zrealloc**(), **pmemobj_strdup**(),
-**pmemobj_wcsdup**(), **pmemobj_alloc_usable_size**(),
+**pmemobj_wcsdup**(), **pmemobj_alloc_usable_size**(), **pmemobj_defrag**(),
 **POBJ_NEW**(), **POBJ_ALLOC**(), **POBJ_ZNEW**(), **POBJ_ZALLOC**(),
 **POBJ_REALLOC**(), **POBJ_ZREALLOC**(), **POBJ_FREE**()
 - non-transactional atomic allocations
@@ -297,4 +297,4 @@ through due to lack of resources), -1 is returned.
 
 **free**(3), **POBJ_FOREACH**(3), **realloc**(3),
 **strdup**(3), **wcsdup**(3), **libpmemobj**(7)
-and **<http://pmem.io>**
+and **<https://pmem.io>**
