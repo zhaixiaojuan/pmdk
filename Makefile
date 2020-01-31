@@ -83,18 +83,18 @@ all: doc
 	$(MAKE) -C src $@
 
 doc:
-	$(MAKE) -C doc all
+	test -f .skip-doc || $(MAKE) -C doc all
 
 clean:
 	$(MAKE) -C src $@
-	$(MAKE) -C doc $@
+	test -f .skip-doc || $(MAKE) -C doc $@
 	$(MAKE) -C utils $@
 	$(RM) -r $(RPM_BUILDDIR) $(DPKG_BUILDDIR)
 	$(RM) -f $(GIT_VERSION)
 
 clobber:
 	$(MAKE) -C src $@
-	$(MAKE) -C doc $@
+	test -f .skip-doc || $(MAKE) -C doc $@
 	$(MAKE) -C utils $@
 	$(RM) -r $(RPM_BUILDDIR) $(DPKG_BUILDDIR) rpm dpkg
 	$(RM) -f $(GIT_VERSION)
@@ -134,7 +134,7 @@ check-license:
 sparse:
 	$(MAKE) -C src sparse
 
-source:
+source: clobber
 	$(if "$(DESTDIR)", , $(error Please provide DESTDIR variable))
 	+utils/copy-source.sh "$(DESTDIR)" $(SRCVERSION)
 
@@ -146,6 +146,8 @@ rpm dpkg: pkg-clean
 	+utils/build-$@.sh -t $(SRCVERSION) -s "$(DESTDIR)"/pmdk -w "$(DESTDIR)" -o $(CURDIR)/$@\
 			-e $(EXPERIMENTAL) -c $(BUILD_PACKAGE_CHECK) -r $(BUILD_RPMEM)\
 			-f $(TEST_CONFIG_FILE) -n $(NDCTL_ENABLE) -p $(PMEM2_INSTALL)
+
+install: all
 
 install uninstall:
 	$(MAKE) -C src $@
