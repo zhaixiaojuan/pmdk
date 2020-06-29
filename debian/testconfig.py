@@ -68,7 +68,7 @@ config = {
     # If keep_going is set to True, execution continues despite test failures.
     #
 
-    'keep_going': False,
+    'keep_going': True,
 
     #
     # Set timeout
@@ -110,4 +110,9 @@ config = {
     # is enough, but some might require more
     #
     'device_dax_path' : [],
+    'cacheline_fs_dir': '/tmp',
+    'force_cacheline': True,
+    'granularity': 'cacheline',
+    'fail_on_skip': False,
+    'enable_admin_tests': False,
 }
