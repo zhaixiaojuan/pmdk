@@ -1,34 +1,5 @@
-/*
- * Copyright 2014-2019, Intel Corporation
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *
- *     * Neither the name of the copyright holder nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2014-2020, Intel Corporation */
 
 /*
  * ut.c -- unit test support routines
@@ -77,8 +48,16 @@ ut_strerror(int errnum, char *buff, size_t bufflen)
 }
 void ut_suppress_errmsg(void) {}
 void ut_unsuppress_errmsg(void) {}
+void ut_suppress_crt_assert(void) {}
+void ut_unsuppress_crt_assert(void) {}
 #else
+#include <crtdbg.h>
+
 #pragma comment(lib, "rpcrt4.lib")
+
+static DWORD ErrMode;
+static BOOL Err_suppressed = FALSE;
+static UINT AbortBehave;
 
 void
 ut_suppress_errmsg(void)
@@ -88,17 +67,54 @@ ut_suppress_errmsg(void)
 		SEM_FAILCRITICALERRORS);
 	AbortBehave = _set_abort_behavior(0, _WRITE_ABORT_MSG |
 		_CALL_REPORTFAULT);
-	Suppressed = TRUE;
+	Err_suppressed = TRUE;
 }
 
 void
 ut_unsuppress_errmsg(void)
 {
-	if (Suppressed) {
+	if (Err_suppressed) {
 		SetErrorMode(ErrMode);
 		_set_abort_behavior(AbortBehave, _WRITE_ABORT_MSG |
 			_CALL_REPORTFAULT);
-		Suppressed = FALSE;
+		Err_suppressed = FALSE;
+	}
+}
+
+static _invalid_parameter_handler OldHandler;
+static BOOL Crt_suppressed = FALSE;
+static int Old_crt_assert_mode;
+
+/*
+ * empty_parameter_handler -- empty, non aborting invalid parameter handler
+ */
+static void
+empty_parameter_handler(const wchar_t *expression, const wchar_t *function,
+	const wchar_t *file, unsigned line, uintptr_t pReserved)
+{
+}
+
+/*
+ * ut_suppress_crt_assert -- suppress crt raport message box
+ */
+void
+ut_suppress_crt_assert(void)
+{
+	OldHandler = _set_invalid_parameter_handler(empty_parameter_handler);
+	Old_crt_assert_mode = _CrtSetReportMode(_CRT_ASSERT, 0);
+	Crt_suppressed = TRUE;
+}
+
+/*
+ * ut_suppress_crt_assert -- unsuppress crt raport message box
+ */
+void
+ut_unsuppress_crt_assert(void)
+{
+	if (Crt_suppressed) {
+		_set_invalid_parameter_handler(OldHandler);
+		_CrtSetReportMode(_CRT_ASSERT, Old_crt_assert_mode);
+		Crt_suppressed = FALSE;
 	}
 }
 
@@ -235,7 +251,7 @@ vout(int flags, const char *prepend, const char *fmt, va_list ap)
 		nl = "";
 
 	if (flags & OF_NAME && Testname) {
-		sn = snprintf(&buf[cc], MAXPRINT - cc, "%s: ", Testname);
+		sn = util_snprintf(&buf[cc], MAXPRINT - cc, "%s: ", Testname);
 		if (sn < 0)
 			abort();
 		cc += (unsigned)sn;
@@ -247,7 +263,8 @@ vout(int flags, const char *prepend, const char *fmt, va_list ap)
 		if (fmt)
 			colon = ": ";
 
-		sn = snprintf(&buf[cc], MAXPRINT - cc, "%s%s", prepend, colon);
+		sn = util_snprintf(&buf[cc], MAXPRINT - cc, "%s%s", prepend,
+				colon);
 		if (sn < 0)
 			abort();
 		cc += (unsigned)sn;
@@ -265,10 +282,10 @@ vout(int flags, const char *prepend, const char *fmt, va_list ap)
 		cc += (unsigned)sn;
 	}
 
-	int ret = snprintf(&buf[cc], MAXPRINT - cc,
+	int ret = util_snprintf(&buf[cc], MAXPRINT - cc,
 		"%s%s%s", sep, errstr, nl);
-	if (ret < 0 || ret >= MAXPRINT - (int)cc)
-		UT_FATAL("snprintf: %d", ret);
+	if (ret < 0)
+		UT_FATAL("snprintf: %d", errno);
 
 	/* buf has the fully-baked output, send it everywhere it goes... */
 	fputs(buf, Tracefp);
@@ -785,25 +802,26 @@ ut_start_common(const char *file, int line, const char *func,
 	if (os_getenv("UNITTEST_LOG_APPEND") != NULL)
 		fmode = "a";
 
-	int ret = snprintf(logname, MAXLOGFILENAME, "out%s.log", logsuffix);
-	if (ret < 0 || ret >= MAXLOGFILENAME)
-		UT_FATAL("snprintf: %d", ret);
+	int ret = util_snprintf(logname, MAXLOGFILENAME, "out%s.log",
+			logsuffix);
+	if (ret < 0)
+		UT_FATAL("snprintf: %d", errno);
 	if ((Outfp = os_fopen(logname, fmode)) == NULL) {
 		perror(logname);
 		exit(1);
 	}
 
-	ret = snprintf(logname, MAXLOGFILENAME, "err%s.log", logsuffix);
-	if (ret < 0 || ret >= MAXLOGFILENAME)
-		UT_FATAL("snprintf: %d", ret);
+	ret = util_snprintf(logname, MAXLOGFILENAME, "err%s.log", logsuffix);
+	if (ret < 0)
+		UT_FATAL("snprintf: %d", errno);
 	if ((Errfp = os_fopen(logname, fmode)) == NULL) {
 		perror(logname);
 		exit(1);
 	}
 
-	ret = snprintf(logname, MAXLOGFILENAME, "trace%s.log", logsuffix);
-	if (ret < 0 || ret >= MAXLOGFILENAME)
-		UT_FATAL("snprintf: %d", ret);
+	ret = util_snprintf(logname, MAXLOGFILENAME, "trace%s.log", logsuffix);
+	if (ret < 0)
+		UT_FATAL("snprintf: %d", errno);
 	if ((Tracefp = os_fopen(logname, fmode)) == NULL) {
 		perror(logname);
 		exit(1);
@@ -817,7 +835,15 @@ ut_start_common(const char *file, int line, const char *func,
 	prefix(file, line, func, 0);
 	vout(OF_NAME, "START", fmt, ap);
 
-#ifdef __FreeBSD__
+#ifdef _WIN32
+	/*
+	 * XXX To generate error string Windows will silently load
+	 * KernelBase.dll.mui. To prevent counting it as an opened file, it is
+	 * loaded here by force.
+	 */
+	char buff[1000];
+	util_strwinerror(1, buff, 1000);
+#elif __FreeBSD__
 	/* XXX Record the fd that will be leaked by uuid_generate */
 	uuid_t u;
 	uuid_generate(u);
@@ -1173,4 +1199,25 @@ fatal:
 	ut_fatal(file, line, func,
 		"!strtoll: nptr=%s, endptr=%s, base=%d",
 		nptr, endptr ? *endptr : "NULL", base);
+}
+
+int
+ut_snprintf(const char *file, int line, const char *func,
+		char *str, size_t size, const char *format, ...)
+{
+	va_list ap;
+	va_start(ap, format);
+	int ret = vsnprintf(str, size, format, ap);
+	va_end(ap);
+
+	if (ret < 0) {
+		if (!errno)
+			errno = EIO;
+		ut_fatal(file, line, func, "!snprintf");
+	} else if ((size_t)ret >= size) {
+		errno = ENOBUFS;
+		ut_fatal(file, line, func, "!snprintf");
+	}
+
+	return ret;
 }

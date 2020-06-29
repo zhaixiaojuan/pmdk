@@ -1,34 +1,5 @@
-/*
- * Copyright 2014-2019, Intel Corporation
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *
- *     * Neither the name of the copyright holder nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2014-2020, Intel Corporation */
 
 /*
  * pmem.c -- pmem entry points for libpmem
@@ -142,9 +113,9 @@
  * initialization time.  This is achieved using function pointers that are
  * setup by pmem_init() when the library loads.
  *
- *	Func_predrain_fence is used by pmem_drain() to call one of:
- *		predrain_fence_empty()
- *		predrain_memory_barrier()
+ *	Func_fence is used by pmem_drain() to call one of:
+ *		fence_empty()
+ *		memory_barrier()
  *
  *	Func_flush is used by pmem_flush() to call one of:
  *		flush_dcache()
@@ -173,15 +144,26 @@
 
 #include "libpmem.h"
 #include "pmem.h"
+#include "pmem2_arch.h"
 #include "out.h"
 #include "os.h"
 #include "mmap.h"
 #include "file.h"
 #include "valgrind_internal.h"
 #include "os_deep.h"
-#include "os_auto_flush.h"
+#include "auto_flush.h"
+
+struct pmem_funcs {
+	memmove_nodrain_func memmove_nodrain;
+	memset_nodrain_func memset_nodrain;
+
+	flush_func deep_flush;
+	flush_func flush;
+	fence_func fence;
+};
 
 static struct pmem_funcs Funcs;
+static is_pmem_func Is_pmem = NULL;
 
 /*
  * pmem_has_hw_drain -- return whether or not HW drain was found
@@ -204,7 +186,7 @@ pmem_drain(void)
 {
 	LOG(15, NULL);
 
-	Funcs.predrain_fence();
+	Funcs.fence();
 }
 
 /*
@@ -215,7 +197,7 @@ pmem_has_auto_flush()
 {
 	LOG(3, NULL);
 
-	return os_auto_flush();
+	return pmem2_auto_flush();
 }
 
 /*
@@ -362,17 +344,17 @@ pmem_is_pmem_init(void)
 			int val = atoi(ptr);
 
 			if (val == 0)
-				Funcs.is_pmem = is_pmem_never;
+				Is_pmem = is_pmem_never;
 			else if (val == 1)
-				Funcs.is_pmem = is_pmem_always;
+				Is_pmem = is_pmem_always;
 
-			VALGRIND_ANNOTATE_HAPPENS_BEFORE(&Funcs.is_pmem);
+			VALGRIND_ANNOTATE_HAPPENS_BEFORE(&Is_pmem);
 
 			LOG(4, "PMEM_IS_PMEM_FORCE=%d", val);
 		}
 
-		if (Funcs.is_pmem == NULL)
-			Funcs.is_pmem = is_pmem_never;
+		if (Funcs.deep_flush == NULL)
+			Is_pmem = is_pmem_never;
 
 		if (!util_bool_compare_and_swap32(&init, 1, 2))
 			FATAL("util_bool_compare_and_swap32");
@@ -395,8 +377,8 @@ pmem_is_pmem(const void *addr, size_t len)
 		util_fetch_and_add32(&once, 1);
 	}
 
-	VALGRIND_ANNOTATE_HAPPENS_AFTER(&Funcs.is_pmem);
-	return Funcs.is_pmem(addr, len);
+	VALGRIND_ANNOTATE_HAPPENS_AFTER(&Is_pmem);
+	return Is_pmem(addr, len);
 }
 
 #define PMEM_FILE_ALL_FLAGS\
@@ -525,7 +507,7 @@ pmem_map_fileU(const char *path, size_t len, int flags,
 			}
 		}
 	} else {
-		ssize_t actual_size = util_file_get_size(path);
+		ssize_t actual_size = util_fd_get_size(fd);
 		if (actual_size < 0) {
 			ERR("stat %s: negative size", path);
 			errno = EINVAL;
@@ -620,7 +602,8 @@ pmem_memmove(void *pmemdest, const void *src, size_t len, unsigned flags)
 		ERR("invalid flags 0x%x", flags);
 #endif
 	PMEM_API_START();
-	Funcs.memmove_nodrain(pmemdest, src, len, flags & ~PMEM_F_MEM_NODRAIN);
+	Funcs.memmove_nodrain(pmemdest, src, len, flags & ~PMEM_F_MEM_NODRAIN,
+			Funcs.flush);
 
 	if ((flags & (PMEM_F_MEM_NODRAIN | PMEM_F_MEM_NOFLUSH)) == 0)
 		pmem_drain();
@@ -643,7 +626,8 @@ pmem_memcpy(void *pmemdest, const void *src, size_t len, unsigned flags)
 		ERR("invalid flags 0x%x", flags);
 #endif
 	PMEM_API_START();
-	Funcs.memmove_nodrain(pmemdest, src, len, flags & ~PMEM_F_MEM_NODRAIN);
+	Funcs.memmove_nodrain(pmemdest, src, len, flags & ~PMEM_F_MEM_NODRAIN,
+			Funcs.flush);
 
 	if ((flags & (PMEM_F_MEM_NODRAIN | PMEM_F_MEM_NOFLUSH)) == 0)
 		pmem_drain();
@@ -667,7 +651,8 @@ pmem_memset(void *pmemdest, int c, size_t len, unsigned flags)
 #endif
 
 	PMEM_API_START();
-	Funcs.memset_nodrain(pmemdest, c, len, flags & ~PMEM_F_MEM_NODRAIN);
+	Funcs.memset_nodrain(pmemdest, c, len, flags & ~PMEM_F_MEM_NODRAIN,
+			Funcs.flush);
 
 	if ((flags & (PMEM_F_MEM_NODRAIN | PMEM_F_MEM_NOFLUSH)) == 0)
 		pmem_drain();
@@ -686,7 +671,7 @@ pmem_memmove_nodrain(void *pmemdest, const void *src, size_t len)
 
 	PMEM_API_START();
 
-	Funcs.memmove_nodrain(pmemdest, src, len, 0);
+	Funcs.memmove_nodrain(pmemdest, src, len, 0, Funcs.flush);
 
 	PMEM_API_END();
 	return pmemdest;
@@ -702,7 +687,7 @@ pmem_memcpy_nodrain(void *pmemdest, const void *src, size_t len)
 
 	PMEM_API_START();
 
-	Funcs.memmove_nodrain(pmemdest, src, len, 0);
+	Funcs.memmove_nodrain(pmemdest, src, len, 0, Funcs.flush);
 
 	PMEM_API_END();
 	return pmemdest;
@@ -718,7 +703,7 @@ pmem_memmove_persist(void *pmemdest, const void *src, size_t len)
 
 	PMEM_API_START();
 
-	Funcs.memmove_nodrain(pmemdest, src, len, 0);
+	Funcs.memmove_nodrain(pmemdest, src, len, 0, Funcs.flush);
 	pmem_drain();
 
 	PMEM_API_END();
@@ -735,7 +720,7 @@ pmem_memcpy_persist(void *pmemdest, const void *src, size_t len)
 
 	PMEM_API_START();
 
-	Funcs.memmove_nodrain(pmemdest, src, len, 0);
+	Funcs.memmove_nodrain(pmemdest, src, len, 0, Funcs.flush);
 	pmem_drain();
 
 	PMEM_API_END();
@@ -752,7 +737,7 @@ pmem_memset_nodrain(void *pmemdest, int c, size_t len)
 
 	PMEM_API_START();
 
-	Funcs.memset_nodrain(pmemdest, c, len, 0);
+	Funcs.memset_nodrain(pmemdest, c, len, 0, Funcs.flush);
 
 	PMEM_API_END();
 	return pmemdest;
@@ -768,11 +753,69 @@ pmem_memset_persist(void *pmemdest, int c, size_t len)
 
 	PMEM_API_START();
 
-	Funcs.memset_nodrain(pmemdest, c, len, 0);
+	Funcs.memset_nodrain(pmemdest, c, len, 0, Funcs.flush);
 	pmem_drain();
 
 	PMEM_API_END();
 	return pmemdest;
+}
+
+/*
+ * memmove_nodrain_libc -- (internal) memmove to pmem using libc
+ */
+static void *
+memmove_nodrain_libc(void *pmemdest, const void *src, size_t len,
+		unsigned flags, flush_func flush)
+{
+	LOG(15, "pmemdest %p src %p len %zu flags 0x%x", pmemdest, src, len,
+			flags);
+
+	memmove(pmemdest, src, len);
+
+	if (!(flags & PMEM_F_MEM_NOFLUSH))
+		flush(pmemdest, len);
+
+	return pmemdest;
+}
+
+/*
+ * memset_nodrain_libc -- (internal) memset to pmem using libc
+ */
+static void *
+memset_nodrain_libc(void *pmemdest, int c, size_t len, unsigned flags,
+		flush_func flush)
+{
+	LOG(15, "pmemdest %p c 0x%x len %zu flags 0x%x", pmemdest, c, len,
+			flags);
+
+	memset(pmemdest, c, len);
+
+	if (!(flags & PMEM_F_MEM_NOFLUSH))
+		flush(pmemdest, len);
+
+	return pmemdest;
+}
+
+/*
+ * flush_empty -- (internal) do not flush the CPU cache
+ */
+static void
+flush_empty(const void *addr, size_t len)
+{
+	LOG(15, "addr %p len %zu", addr, len);
+
+	flush_empty_nolog(addr, len);
+}
+
+/*
+ * fence_empty -- (internal) issue the fence instruction
+ */
+static void
+fence_empty(void)
+{
+	LOG(15, NULL);
+
+	VALGRIND_DO_FENCE;
 }
 
 /*
@@ -783,8 +826,82 @@ pmem_init(void)
 {
 	LOG(3, NULL);
 
-	pmem_init_funcs(&Funcs);
-	pmem_os_init();
+	struct pmem2_arch_info info;
+	info.memmove_nodrain = NULL;
+	info.memset_nodrain = NULL;
+	info.flush = NULL;
+	info.fence = NULL;
+	info.flush_has_builtin_fence = 0;
+
+	pmem2_arch_init(&info);
+
+	int flush;
+	char *e = os_getenv("PMEM_NO_FLUSH");
+	if (e && (strcmp(e, "1") == 0)) {
+		flush = 0;
+		LOG(3, "Forced not flushing CPU_cache");
+	} else if (e && (strcmp(e, "0") == 0)) {
+		flush = 1;
+		LOG(3, "Forced flushing CPU_cache");
+	} else if (pmem2_auto_flush() == 1) {
+		flush = 0;
+		LOG(3, "Not flushing CPU_cache, eADR detected");
+	} else {
+		flush = 1;
+		LOG(3, "Flushing CPU cache");
+	}
+
+	Funcs.deep_flush = info.flush;
+	if (flush) {
+		Funcs.flush = info.flush;
+		Funcs.memmove_nodrain = info.memmove_nodrain;
+		Funcs.memset_nodrain = info.memset_nodrain;
+		if (info.flush_has_builtin_fence)
+			Funcs.fence = fence_empty;
+		else
+			Funcs.fence = info.fence;
+	} else {
+		Funcs.memmove_nodrain = info.memmove_nodrain_eadr;
+		Funcs.memset_nodrain = info.memset_nodrain_eadr;
+		Funcs.flush = flush_empty;
+		Funcs.fence = info.fence;
+	}
+
+	char *ptr = os_getenv("PMEM_NO_GENERIC_MEMCPY");
+	long long no_generic = 0;
+	if (ptr)
+		no_generic = atoll(ptr);
+
+	if (info.memmove_nodrain == NULL) {
+		if (no_generic) {
+			Funcs.memmove_nodrain = memmove_nodrain_libc;
+			LOG(3, "using libc memmove");
+		} else {
+			Funcs.memmove_nodrain = memmove_nodrain_generic;
+			LOG(3, "using generic memmove");
+		}
+	} else {
+		Funcs.memmove_nodrain = info.memmove_nodrain;
+	}
+
+	if (info.memset_nodrain == NULL) {
+		if (no_generic) {
+			Funcs.memset_nodrain = memset_nodrain_libc;
+			LOG(3, "using libc memset");
+		} else {
+			Funcs.memset_nodrain = memset_nodrain_generic;
+			LOG(3, "using generic memset");
+		}
+	} else {
+		Funcs.memset_nodrain = info.memset_nodrain;
+	}
+
+	if (Funcs.flush == flush_empty)
+		LOG(3, "not flushing CPU cache");
+	else if (Funcs.flush != Funcs.deep_flush)
+		FATAL("invalid flush function address");
+
+	pmem_os_init(&Is_pmem);
 }
 
 /*
@@ -829,12 +946,12 @@ void
 pmem_inject_fault_at(enum pmem_allocation_type type, int nth,
 						const char *at)
 {
-	common_inject_fault_at(type, nth, at);
+	core_inject_fault_at(type, nth, at);
 }
 
 int
 pmem_fault_injection_enabled(void)
 {
-	return common_fault_injection_enabled();
+	return core_fault_injection_enabled();
 }
 #endif

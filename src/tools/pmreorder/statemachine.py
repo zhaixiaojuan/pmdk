@@ -1,32 +1,5 @@
-# Copyright 2018-2019, Intel Corporation
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in
-#       the documentation and/or other materials provided with the
-#       distribution.
-#
-#     * Neither the name of the copyright holder nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2018-2020, Intel Corporation
 
 import memoryoperations as memops
 import reorderengines
@@ -147,7 +120,7 @@ class CollectingState(State):
         :rtype: subclass of :class:`State`
         """
         if isinstance(in_op, memops.Fence) and \
-                self._inner_state is "flush":
+                self._inner_state == "flush":
             return ReplayingState(self._ops_list, self._context)
         else:
             return self
@@ -265,16 +238,16 @@ class CollectingState(State):
         :return: None
         """
         if isinstance(in_op, memops.Store) and \
-                self._inner_state is "init":
+                self._inner_state == "init":
             self._inner_state = "dirty"
         elif isinstance(in_op, memops.FlushBase) and \
-                self._inner_state is "dirty":
+                self._inner_state == "dirty":
             self._inner_state = "flush"
         elif isinstance(in_op, memops.Fence) and \
-                self._inner_state is "flush":
+                self._inner_state == "flush":
             self._inner_state = "fence"
         elif isinstance(in_op, memops.Flush) and \
-                self._inner_state is "init":
+                self._inner_state == "init":
             self._inner_state = "flush"
 
 
@@ -324,14 +297,9 @@ class ReplayingState(State):
         # consider only flushed stores
         flushed_stores = list(filter(lambda x: x.flushed, self._ops_list))
 
-        # already flushed stores should be removed from the transitive list
-        common_part = list(set(flushed_stores) & set(State.trans_stores))
-        State.trans_stores = list(set(State.trans_stores) - set(common_part))
-
-        # do not add redundant stores
-        State.trans_stores = list(set(State.trans_stores) |
-                                  set(list(filter(lambda x: x.flushed is False,
-                                      self._ops_list))))
+        # not-flushed stores should be passed to next state
+        State.trans_stores = list(filter(lambda x: x.flushed is False,
+                                         self._ops_list))
 
         if self._context.test_on_barrier:
             for seq in self._context.reorder_engine.generate_sequence(

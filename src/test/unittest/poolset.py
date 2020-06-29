@@ -1,46 +1,18 @@
-#
+# SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2019, Intel Corporation
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in
-#       the documentation and/or other materials provided with the
-#       distribution.
-#
-#     * Neither the name of the copyright holder nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 """Tools which allows to easily create poolset files"""
 
 
 from enum import Enum, unique
-import sys
 import os
 
 import futils
-from utils import KiB, MiB, GiB, TiB
+from utils import KiB, MiB, GiB
 
 POOL_MIN_SIZE = 8 * MiB
 PART_MIN_SIZE = 2 * MiB
+
 
 @unique
 class CREATE(Enum):
@@ -133,11 +105,11 @@ class _Poolset:
         """
         self._check_pools_size()
         required_size = self._get_required_size()
-        free_space = ctx.get_free_space()
+        free_space = self.ctx.get_free_space()
         if required_size > free_space:
-            futils.fail('Not enough space available to create parts files. There is '
-                 '{}, and poolset requires {}'.format(free_space,
-                                                      required_size))
+            futils.fail('Not enough space available to create parts '
+                        'files. There is {}, and poolset requires {}'
+                        .format(free_space, required_size))
 
         for part in self.parts:
             part._process(self.ctx)
@@ -277,7 +249,7 @@ class DDax(_Part):
     def __init__(self, ctx, path):
         if not ctx.is_devdax(path):
             futils.fail('Part with path "{}" does not point to dax device'
-                 ''.format(path))
+                        .format(path))
         _Part.__init__(self, path, ctx.get_size(path))
 
 

@@ -1,32 +1,5 @@
-# Copyright 2014-2019, Intel Corporation
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in
-#       the documentation and/or other materials provided with the
-#       distribution.
-#
-#     * Neither the name of the copyright holder nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2014-2020, Intel Corporation
 #
 # src/common.inc -- common Makefile rules for PMDK
 #
@@ -66,11 +39,15 @@ $(error Cannot evaluate version)
 endif
 
 ifeq ($(CLANG_FORMAT),)
-ifeq ($(shell command -v clang-format-6.0 > /dev/null && echo y || echo n), y)
-export CLANG_FORMAT ?= clang-format-6.0
+ifeq ($(shell command -v clang-format-9 > /dev/null && echo y || echo n), y)
+export CLANG_FORMAT ?= clang-format-9
 else
 export CLANG_FORMAT ?= clang-format
 endif
+endif
+
+ifeq ($(FLAKE8),)
+export FLAKE8 ?= flake8
 endif
 
 GCOV_CFLAGS=-fprofile-arcs -ftest-coverage --coverage
@@ -196,6 +173,12 @@ else
 export WSTRINGOP_TRUNCATION_AVAILABLE
 endif
 
+ifeq ($(OG_AVAILABLE),)
+export OG_AVAILABLE := $(call check_flag, -Og)
+else
+export OG_AVAILABLE
+endif
+
 install_recursive = $(shell cd $(1) && find . -type f -exec install -m $(2) -D {} $(3)/{} \;)
 
 install_recursive_filter = $(shell cd $(1) && find . -type f -name "$(2)" -exec install -m $(3) -D {} $(4)/{} \;)
@@ -227,6 +210,7 @@ export man5dir := $(mandir)/man5
 export man7dir := $(mandir)/man7
 export cstyle_bin := $(CSTYLE)
 export clang_format_bin := $(CLANG_FORMAT)
+export flake8_bin := $(FLAKE8)
 
 ifneq ($(wildcard $(exec_prefix)/x86_64-linux-gnu),)
 LIB_PREFIX ?= x86_64-linux-gnu/lib
@@ -241,7 +225,7 @@ LIB_PREFIX ?= lib
 all:
 
 cstyle-%:
-	$(STYLE_CHECK) $* $(wildcard *.[ch]) $(wildcard *.[ch]pp)
+	$(STYLE_CHECK) $* $(wildcard *.[ch]) $(wildcard *.[ch]pp) $(wildcard *.py)
 
 cstyle: cstyle-check
 
@@ -326,12 +310,22 @@ LIBFABRIC_MIN_VERSION := 1.4.2
 # Keep in sync with requirements in src/test/unittest/unittest.sh and
 # utils/docker/images/install-libfabric.sh.
 ifeq ($(BUILD_RPMEM),)
-export BUILD_RPMEM := $(call check_package, libfabric --atleast-version=$(LIBFABRIC_MIN_VERSION))
+BUILD_RPMEM := $(call check_package, libfabric --atleast-version=$(LIBFABRIC_MIN_VERSION))
 ifneq ($(BUILD_RPMEM),y)
 export BUILD_RPMEM_INFO := libfabric (version >= $(LIBFABRIC_MIN_VERSION)) is missing -- \
 see src/librpmem/README for details
+else
+LIBFABRIC_CFLAGS := $(shell $(PKG_CONFIG) --cflags libfabric)
+LIBFABRIC_LD_LIBRARY_PATHS := $(shell $(PKG_CONFIG) --variable=libdir libfabric)
+LIBFABRIC_LIBS := $(shell $(PKG_CONFIG) --libs libfabric)
+LIBFABRIC_PATH := $(shell $(PKG_CONFIG) --variable=exec_prefix libfabric)/bin
 endif
 endif
+export BUILD_RPMEM
+export LIBFABRIC_CFLAGS
+export LIBFABRIC_LD_LIBRARY_PATHS
+export LIBFABRIC_LIBS
+export LIBFABRIC_PATH
 
 # unsafe shutdown count and badblock access without root (depends on kernel 4.20)
 NDCTL_MIN_VERSION := 63

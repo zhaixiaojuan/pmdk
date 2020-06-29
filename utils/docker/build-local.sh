@@ -1,34 +1,6 @@
 #!/usr/bin/env bash
-#
-# Copyright 2017-2019, Intel Corporation
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in
-#       the documentation and/or other materials provided with the
-#       distribution.
-#
-#     * Neither the name of the copyright holder nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2017-2020, Intel Corporation
 
 #
 # build-local.sh - runs a Docker container from a Docker image with environment
@@ -79,7 +51,7 @@ if [[ "$KEEP_CONTAINER" != "1" ]]; then
 	RM_SETTING=" --rm"
 fi
 
-imageName=${DOCKERHUB_REPO}:1.8-${OS}-${OS_VER}
+imageName=${DOCKERHUB_REPO}:1.9-${OS}-${OS_VER}-${CI_CPU_ARCH}
 containerName=pmdk-${OS}-${OS_VER}
 
 if [[ $MAKE_PKG -eq 1 ]] ; then
@@ -94,13 +66,23 @@ if [ -z "$NDCTL_ENABLE" ]; then ndctl_enable=; else ndctl_enable="--env NDCTL_EN
 WORKDIR=/pmdk
 SCRIPTSDIR=$WORKDIR/utils/docker
 
+# Check if we are running on a CI (Travis or GitHub Actions)
+[ -n "$GITHUB_ACTIONS" -o -n "$TRAVIS" ] && CI_RUN="YES" || CI_RUN="NO"
+
 echo Building ${OS}-${OS_VER}
 
 # Run a container with
 #  - environment variables set (--env)
 #  - host directory containing PMDK source mounted (-v)
+#  - a tmpfs /tmp with the necessary size and permissions (--tmpfs)*
 #  - working directory set (-w)
-docker run --privileged=true --name=$containerName -ti \
+#
+# * We need a tmpfs /tmp inside docker but we cannot run it with --privileged
+#   and do it from inside, so we do using this docker-run option.
+#   By default --tmpfs add nosuid,nodev,noexec to the mount flags, we don't
+#   want that and just to make sure we add the usually default rw,relatime just
+#   in case docker change the defaults.
+docker run --name=$containerName -ti \
 	$RM_SETTING \
 	$DNS_SETTING \
 	--env http_proxy=$http_proxy \
@@ -110,6 +92,7 @@ docker run --privileged=true --name=$containerName -ti \
 	--env VALGRIND=$VALGRIND \
 	--env EXTRA_CFLAGS=$EXTRA_CFLAGS \
 	--env EXTRA_CXXFLAGS=$EXTRA_CXXFLAGS \
+	--env EXTRA_LDFLAGS=$EXTRA_LDFLAGS \
 	--env REMOTE_TESTS=$REMOTE_TESTS \
 	--env CONFIGURE_TESTS=$CONFIGURE_TESTS \
 	--env TEST_BUILD=$TEST_BUILD \
@@ -117,7 +100,10 @@ docker run --privileged=true --name=$containerName -ti \
 	--env EXPERIMENTAL=$EXPERIMENTAL \
 	--env SCRIPTSDIR=$SCRIPTSDIR \
 	--env KEEP_TEST_CONFIG=$KEEP_TEST_CONFIG \
+	--env CI_RUN=$CI_RUN \
+	--env BLACKLIST_FILE=$BLACKLIST_FILE \
 	$ndctl_enable \
+	--tmpfs /tmp:rw,relatime,suid,dev,exec,size=6G \
 	-v $HOST_WORKDIR:$WORKDIR \
 	-v /etc/localtime:/etc/localtime \
 	$DAX_SETTING \

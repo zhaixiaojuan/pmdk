@@ -1,34 +1,6 @@
 #!/usr/bin/env bash
-#
-# Copyright 2016-2018, Intel Corporation
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in
-#       the documentation and/or other materials provided with the
-#       distribution.
-#
-#     * Neither the name of the copyright holder nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2016-2020, Intel Corporation
 #
 # utils/style_check.sh -- common style checking script
 #
@@ -37,10 +9,11 @@ set -e
 ARGS=("$@")
 CSTYLE_ARGS=()
 CLANG_ARGS=()
+FLAKE8_ARGS=()
 CHECK_TYPE=$1
 
-[ -z "$clang_format_bin" ] && which clang-format-6.0 >/dev/null &&
-	clang_format_bin=clang-format-6.0
+[ -z "$clang_format_bin" ] && which clang-format-9 >/dev/null &&
+	clang_format_bin=clang-format-9
 [ -z "$clang_format_bin" ] && which clang-format >/dev/null &&
 	clang_format_bin=clang-format
 [ -z "$clang_format_bin" ] && clang_format_bin=clang-format
@@ -53,15 +26,15 @@ function usage() {
 }
 
 #
-# require clang-format version 6.0
+# require clang-format version 9.0
 #
 function check_clang_version() {
 	set +e
 	which ${clang_format_bin} &> /dev/null && ${clang_format_bin} --version |\
-	grep "version 6\.0"\
+	grep "version 9\.0"\
 	&> /dev/null
 	if [ $? -ne 0 ]; then
-		echo "SKIP: requires clang-format version 6.0"
+		echo "SKIP: requires clang-format version 9.0"
 		exit 0
 	fi
 	set -e
@@ -109,6 +82,13 @@ function run_clang_format() {
 	${clang_format_bin} -style=file -i $@
 }
 
+function run_flake8() {
+	if [ $# -eq 0 ]; then
+		return
+	fi
+	${flake8_bin} --exclude=testconfig.py,envconfig.py $@
+}
+
 for ((i=1; i<$#; i++)) {
 
 	IGNORE="$(dirname ${ARGS[$i]})/.cstyleignore"
@@ -127,6 +107,10 @@ for ((i=1; i<$#; i++)) {
 			CSTYLE_ARGS+="${ARGS[$i]} "
 			;;
 
+		*.py)
+			FLAKE8_ARGS+="${ARGS[$i]} "
+			;;
+
 		*)
 			echo "Unknown argument"
 			exit 1
@@ -138,6 +122,7 @@ case $CHECK_TYPE in
 	check)
 		run_cstyle ${CSTYLE_ARGS}
 		run_clang_check ${CLANG_ARGS}
+		run_flake8 ${FLAKE8_ARGS}
 		;;
 
 	format)

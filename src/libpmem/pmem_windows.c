@@ -1,5 +1,6 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2016-2019, Intel Corporation */
 /*
- * Copyright 2016-2019, Intel Corporation
  * Copyright (c) 2016, Microsoft Corporation. All rights reserved.
  *
  * Redistribution and use in source and binary forms, with or without
@@ -201,9 +202,11 @@ pmem_map_register(int fd, size_t len, const char *path, int is_dev_dax)
  * pmem_os_init -- os-dependent part of pmem initialization
  */
 void
-pmem_os_init(void)
+pmem_os_init(is_pmem_func *func)
 {
 	LOG(3, NULL);
+
+	*func = is_pmem_detect;
 #if NTDDI_VERSION >= NTDDI_WIN10_RS1
 	Func_qvmi = (PQVM)GetProcAddress(
 			GetModuleHandle(TEXT("KernelBase.dll")),

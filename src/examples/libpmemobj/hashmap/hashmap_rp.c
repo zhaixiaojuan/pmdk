@@ -1,34 +1,5 @@
-/*
- * Copyright 2018, Intel Corporation
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *
- *     * Neither the name of the copyright holder nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2018, Intel Corporation */
 
 /*
  * Integer hash set implementation with open addressing Robin Hood collision
@@ -136,7 +107,7 @@ increment_pos(const struct hashmap_rp *hashmap, uint64_t pos)
  * probe_distance -- returns probe number, an indicator how far from
  * desired position given hash is stored in hashmap
  */
-static int
+static uint64_t
 probe_distance(const struct hashmap_rp *hashmap, uint64_t hash_key,
 	uint64_t slot_index)
 {
@@ -304,7 +275,7 @@ insert_helper(PMEMobjpool *pop, struct hashmap_rp *hashmap, uint64_t key,
 		args.actv_cnt = 0;
 	}
 
-	int dist = 0;
+	uint64_t dist = 0;
 	struct entry *entry_p = NULL;
 #ifdef DEBUG
 	int swaps = 0;
@@ -341,7 +312,7 @@ insert_helper(PMEMobjpool *pop, struct hashmap_rp *hashmap, uint64_t key,
 		 * current element. Swap them (or put into tombstone slot) and
 		 * keep going to find another slot for that element.
 		 */
-		int existing_dist = probe_distance(hashmap, entry_p->hash,
+		uint64_t existing_dist = probe_distance(hashmap, entry_p->hash,
 							args.pos);
 		if (existing_dist < dist) {
 			if (entry_is_deleted(entry_p->hash)) {
@@ -685,7 +656,7 @@ hm_rp_debug(PMEMobjpool *pop, TOID(struct hashmap_rp) hashmap, FILE *out)
 			probe_distance(D_RO(hashmap), hash, i),
 			swaps_array[i]);
 #else
-		fprintf(out, "%zu: %" PRIu64 " dist:%u \n", i, key,
+		fprintf(out, "%zu: %" PRIu64 " dist:%" PRIu64 "\n", i, key,
 			probe_distance(D_RO(hashmap), hash, i));
 #endif
 	}

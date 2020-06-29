@@ -1,34 +1,5 @@
-/*
- * Copyright 2017-2020, Intel Corporation
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *
- *     * Neither the name of the copyright holder nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2017-2020, Intel Corporation */
 
 /*
  * obj_fragmentation.c -- measures average heap external fragmentation
@@ -41,13 +12,14 @@
  */
 
 #include <stdlib.h>
+#include <math.h>
 #include "rand.h"
 #include "unittest.h"
 
 #define LAYOUT_NAME "obj_fragmentation"
 
-#define MEGABYTE (1UL << 20)
-#define GIGABYTE (1UL << 30)
+#define MEGABYTE (1ULL << 20)
+#define GIGABYTE (1ULL << 30)
 
 #define RRAND(max, min)\
 ((min) == (max) ? (min) : (rnd64() % ((max) - (min)) + (min)))
@@ -87,13 +59,79 @@ remove_last()
 }
 
 static void
+delete_objects(PMEMobjpool *pop, float pct)
+{
+	size_t nfree = (size_t)(nobjects * pct);
+
+	PMEMoid oid = pmemobj_root(pop, 1);
+
+	shuffle_objects(0, nobjects);
+	while (nfree--) {
+		oid = remove_last();
+
+		allocated_current -= pmemobj_alloc_usable_size(oid);
+
+		pmemobj_free(&oid);
+	}
+}
+
+/*
+ * object_next_size -- generates random sizes in range with
+ *	exponential distribution
+ */
+static size_t
+object_next_size(size_t max, size_t min)
+{
+	float fmax = (float)max;
+	float fmin = (float)min;
+
+	float n = (float)rnd64() / ((float)UINT64_MAX / 1.0f);
+	return (size_t)(fmin + (fmax - fmin) * (float)exp(n * - 4.0));
+}
+
+/*
+ * allocate_exponential -- allocates objects from a large range of sizes.
+ *
+ * This is designed to stress the recycler subsystem that will have to
+ * constantly look for freed/empty runs and reuse them.
+ *
+ * For small pools (single digit gigabytes), this test will show large
+ * fragmentation because it can use a large number of runs - which is fine.
+ */
+static void
+allocate_exponential(PMEMobjpool *pop, size_t size_min, size_t size_max)
+{
+	size_t allocated_total = 0;
+
+	PMEMoid oid;
+
+	while (allocated_total < ALLOC_TOTAL) {
+		size_t s = object_next_size(size_max, size_min);
+		int ret = pmemobj_alloc(pop, &oid, s, 0, NULL, NULL);
+		if (ret != 0) {
+			/* delete a random percentage of allocated objects */
+			float delete_pct = (float)RRAND(90, 10) / 100.0f;
+			delete_objects(pop, delete_pct);
+			continue;
+		}
+
+		s = pmemobj_alloc_usable_size(oid);
+
+		objects[nobjects++] = oid;
+		UT_ASSERT(nobjects < MAX_OBJECTS);
+		allocated_total += s;
+		allocated_current += s;
+	}
+}
+
+static void
 allocate_objects(PMEMobjpool *pop, size_t size_min, size_t size_max)
 {
 	size_t allocated_total = 0;
 
 	size_t sstart = 0;
 
-	PMEMoid oid = pmemobj_root(pop, 1);
+	PMEMoid oid;
 
 	while (allocated_total < ALLOC_TOTAL) {
 		size_t s = RRAND(size_max, size_min);
@@ -117,23 +155,6 @@ allocate_objects(PMEMobjpool *pop, size_t size_min, size_t size_max)
 			}
 			sstart = nobjects;
 		}
-	}
-}
-
-static void
-delete_objects(PMEMobjpool *pop, float pct)
-{
-	size_t nfree = (size_t)(nobjects * pct);
-
-	PMEMoid oid = pmemobj_root(pop, 1);
-
-	shuffle_objects(0, nobjects);
-	while (nfree--) {
-		oid = remove_last();
-
-		allocated_current -= pmemobj_alloc_usable_size(oid);
-
-		pmemobj_free(&oid);
 	}
 }
 
@@ -187,25 +208,32 @@ static void w8(PMEMobjpool *pop) {
 	allocate_objects(pop, 2 * MEGABYTE, 2 * MEGABYTE);
 }
 
+static void w9(PMEMobjpool *pop) {
+	allocate_exponential(pop, 1, 5 * MEGABYTE);
+}
+
 static workload *workloads[] = {
-	w0, w1, w2, w3, w4, w5, w6, w7, w8
+	w0, w1, w2, w3, w4, w5, w6, w7, w8, w9
 };
 
 static float workloads_target[] = {
-	0.01f, 0.01f, 0.01f, 0.9f, 0.8f, 0.7f, 0.3f, 0.8f, 0.73f
+	0.01f, 0.01f, 0.01f, 0.9f, 0.8f, 0.7f, 0.3f, 0.8f, 0.73f, 3.0f
 };
 
 static float workloads_defrag_target[] = {
-	0.01f, 0.01f, 0.01f, 0.01f, 0.01f, 0.05f, 0.09f, 0.13f, 0.01f
+	0.01f, 0.01f, 0.01f, 0.01f, 0.01f, 0.05f, 0.09f, 0.13f, 0.01f, 0.16f
 };
 
-/* last workload operates only on huge chunks, so run stats are useless */
+/*
+ * Last two workloads operates mostly on huge chunks, so run
+ * stats are useless.
+ */
 static float workloads_stat_target[] = {
-	0.01f, 1.1f, 1.1f, 0.86f, 0.76f, 1.01f, 0.23f, 1.24f, 2100.f
+	0.01f, 1.1f, 1.1f, 0.86f, 0.76f, 1.01f, 0.23f, 1.24f, 2100.f, 2100.f
 };
 
 static float workloads_defrag_stat_target[] = {
-	0.01f, 0.01f, 0.01f, 0.02f, 0.02f, 0.04f, 0.08f, 0.12f, 2100.f
+	0.01f, 0.01f, 0.01f, 0.02f, 0.02f, 0.04f, 0.08f, 0.12f, 2100.f, 2100.f
 };
 
 int
@@ -245,8 +273,11 @@ main(int argc, char *argv[])
 	size_t allocated = 0;
 	pmemobj_ctl_get(pop, "stats.heap.run_active", &active);
 	pmemobj_ctl_get(pop, "stats.heap.run_allocated", &allocated);
-	float stat_frag = ((float)active / allocated) - 1.f;
-	UT_ASSERT(stat_frag <= workloads_stat_target[w]);
+	float stat_frag = 0;
+	if (active != 0 && allocated != 0) {
+		stat_frag = ((float)active / allocated) - 1.f;
+		UT_ASSERT(stat_frag <= workloads_stat_target[w]);
+	}
 
 	if (defrag) {
 		PMEMoid **objectsf = ZALLOC(sizeof(PMEMoid) * nobjects);
@@ -265,8 +296,10 @@ main(int argc, char *argv[])
 
 		pmemobj_ctl_get(pop, "stats.heap.run_active", &active);
 		pmemobj_ctl_get(pop, "stats.heap.run_allocated", &allocated);
-		stat_frag = ((float)active / allocated) - 1.f;
-		UT_ASSERT(stat_frag <= workloads_defrag_stat_target[w]);
+		if (active != 0 && allocated != 0) {
+			stat_frag = ((float)active / allocated) - 1.f;
+			UT_ASSERT(stat_frag <= workloads_defrag_stat_target[w]);
+		}
 	}
 
 	PMEMoid oid;

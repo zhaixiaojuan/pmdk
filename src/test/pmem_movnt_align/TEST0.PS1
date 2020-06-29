@@ -1,5 +1,7 @@
 #
-# Copyright 2015-2019, Intel Corporation
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2015-2020, Intel Corporation
+#
 # Copyright (c) 2016, Microsoft Corporation. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -66,11 +68,11 @@ function test_all {
 
 test_all
 
-$Env:PMEM_AVX512F = 1
+$Env:PMEM_AVX512F = 0
 
 test_all
 
-$Env:PMEM_AVX = 1
+$Env:PMEM_AVX = 0
 
 test_all
 

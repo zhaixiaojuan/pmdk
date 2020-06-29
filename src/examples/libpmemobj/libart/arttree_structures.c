@@ -1,6 +1,7 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2016-2017, Intel Corporation */
 /*
  * Copyright 2016, FUJITSU TECHNOLOGY SOLUTIONS GMBH
- * Copyright 2016-2017, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -252,8 +253,7 @@ print_help(char *appname)
 	printf("  -h, --help           display this help and exit\n");
 	printf("\n");
 	printf("The available commands are:\n");
-	int i;
-	for (i = 0; i < COMMANDS_NUMBER; i++)
+	for (size_t i = 0; i < COMMANDS_NUMBER; i++)
 		printf("%s\t- %s\n", commands[i].name, commands[i].brief);
 	printf("\n");
 }
@@ -481,13 +481,11 @@ arttree_info_func(char *appname, struct pmem_context *ctx, int ac, char *av[])
 static struct command *
 get_command(char *cmd_str)
 {
-	int i;
-
 	if (cmd_str == NULL) {
 		return NULL;
 	}
 
-	for (i = 0; i < COMMANDS_NUMBER; i++) {
+	for (size_t i = 0; i < COMMANDS_NUMBER; i++) {
 		if (strcmp(cmd_str, commands[i].name) == 0)
 			return &commands[i];
 	}

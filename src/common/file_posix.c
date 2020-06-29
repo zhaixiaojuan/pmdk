@@ -1,34 +1,5 @@
-/*
- * Copyright 2014-2019, Intel Corporation
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *
- *     * Neither the name of the copyright holder nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2014-2020, Intel Corporation */
 
 /*
  * file_posix.c -- Posix versions of file APIs
@@ -50,9 +21,9 @@
 #include "os.h"
 #include "file.h"
 #include "out.h"
-
-#define MAX_SIZE_LENGTH 64
-#define DAX_REGION_ID_LEN 6 /* 5 digits + \0 */
+#include "libpmem2.h"
+#include "../libpmem2/pmem2_utils.h"
+#include "../libpmem2/region_namespace.h"
 
 /*
  * util_tmpfile_mkstemp --  (internal) create temporary file
@@ -114,7 +85,7 @@ util_tmpfile(const char *dir, const char *templ, int flags)
 	ASSERT(flags == 0 || flags == O_EXCL);
 
 #ifdef O_TMPFILE
-	int fd = open(dir, O_TMPFILE | O_RDWR | flags, S_IRUSR | S_IWUSR);
+	int fd = os_open(dir, O_TMPFILE | O_RDWR | flags, S_IRUSR | S_IWUSR);
 	/*
 	 * Open can fail if underlying file system does not support O_TMPFILE
 	 * flag.
@@ -209,104 +180,31 @@ util_file_dir_remove(const char *path)
 static size_t
 device_dax_alignment(const char *path)
 {
-	char spath[PATH_MAX];
 	size_t size = 0;
-	char *daxpath;
-	os_stat_t st;
-	int olderrno;
 
 	LOG(3, "path \"%s\"", path);
 
-	if (os_stat(path, &st) < 0) {
-		ERR("!stat \"%s\"", path);
-		return 0;
+	struct pmem2_source *src;
+
+	int fd = os_open(path, O_RDONLY);
+	if (fd == -1) {
+		LOG(1, "Cannot open file %s", path);
+		return size;
 	}
 
-	snprintf(spath, PATH_MAX, "/sys/dev/char/%u:%u",
-		os_major(st.st_rdev), os_minor(st.st_rdev));
+	int ret = pmem2_source_from_fd(&src, fd);
+	if (ret)
+		goto end;
 
-	daxpath = realpath(spath, NULL);
-	if (!daxpath) {
-		ERR("!realpath \"%s\"", spath);
-		return 0;
+	ret = pmem2_device_dax_alignment(src, &size);
+	if (ret) {
+		size = 0;
+		goto end;
 	}
 
-	if (util_safe_strcpy(spath, daxpath, sizeof(spath))) {
-		ERR("util_safe_strcpy failed");
-		free(daxpath);
-		return 0;
-	}
-
-	free(daxpath);
-
-	while (spath[0] != '\0') {
-		char sizebuf[MAX_SIZE_LENGTH + 1];
-		char *pos = strrchr(spath, '/');
-		char *endptr;
-		size_t len;
-		ssize_t rc;
-		int fd;
-
-		if (strcmp(spath, "/sys/devices") == 0)
-			break;
-
-		if (!pos)
-			break;
-
-		*pos = '\0';
-		len = strlen(spath);
-
-		snprintf(&spath[len], sizeof(spath) - len, "/dax_region/align");
-		fd = os_open(spath, O_RDONLY);
-		*pos = '\0';
-
-		if (fd < 0)
-			continue;
-
-		LOG(4, "device align path \"%s\"", spath);
-
-		rc = read(fd, sizebuf, MAX_SIZE_LENGTH);
-		os_close(fd);
-
-		if (rc < 0) {
-			ERR("!read");
-			return 0;
-		}
-
-		sizebuf[rc] = 0; /* null termination */
-
-		olderrno = errno;
-		errno = 0;
-
-		/* 'align' is in decimal format */
-		size = strtoull(sizebuf, &endptr, 10);
-		if (endptr == sizebuf || *endptr != '\n' ||
-				(size == ULLONG_MAX && errno == ERANGE)) {
-			ERR("invalid device alignment %s", sizebuf);
-			size = 0;
-			errno = olderrno;
-			break;
-		}
-
-		/*
-		 * If the alignment value is not a power of two, try with
-		 * hex format, as this is how it was printed in older kernels.
-		 * Just in case someone is using kernel <4.9.
-		 */
-		if ((size & (size - 1)) != 0) {
-			size = strtoull(sizebuf, &endptr, 16);
-			if (endptr == sizebuf || *endptr != '\n' ||
-					(size == ULLONG_MAX &&
-					errno == ERANGE)) {
-				ERR("invalid device alignment %s", sizebuf);
-				size = 0;
-			}
-		}
-
-		errno = olderrno;
-		break;
-	}
-	LOG(4, "device alignment %zu", size);
+end:
+	pmem2_source_delete(&src);
+	os_close(fd);
 	return size;
 }
 
@@ -325,80 +223,42 @@ util_file_device_dax_alignment(const char *path)
  * util_ddax_region_find -- returns Device DAX region id
  */
 int
-util_ddax_region_find(const char *path)
+util_ddax_region_find(const char *path, unsigned *region_id)
 {
 	LOG(3, "path \"%s\"", path);
 
-	int dax_reg_id_fd;
-	char dax_region_path[PATH_MAX];
-	char reg_id[DAX_REGION_ID_LEN];
-	char *end_addr;
 	os_stat_t st;
+	int ret;
 
-	ASSERTne(path, NULL);
 	if (os_stat(path, &st) < 0) {
 		ERR("!stat \"%s\"", path);
 		return -1;
 	}
 
-	dev_t dev_id = st.st_rdev;
+	enum pmem2_file_type ftype;
+	if ((ret = pmem2_get_type_from_stat(&st, &ftype)) < 0) {
+		errno = pmem2_err_to_errno(ret);
+		return -1;
+	}
 
-	unsigned major = os_major(dev_id);
-	unsigned minor = os_minor(dev_id);
-	int ret = snprintf(dax_region_path, PATH_MAX,
-		"/sys/dev/char/%u:%u/device/dax_region/id",
-		major, minor);
+	/*
+	 * XXX: this is a hack to workaround the fact that common is using
+	 * non-public APIs of libpmem2, and there's often no way to properly
+	 * create the required structures...
+	 * This needs to go away together with refactoring that untangles
+	 * these internal dependencies.
+	 */
+	struct pmem2_source src;
+	src.type = PMEM2_SOURCE_FD;
+	src.value.ftype = ftype;
+	src.value.st_rdev = st.st_rdev;
+	src.value.st_dev = st.st_dev;
+
+	ret = pmem2_get_region_id(&src, region_id);
 	if (ret < 0) {
-		ERR("snprintf(%p, %d, /sys/dev/char/%u:%u/device/"
-			"dax_region/id, %u, %u): %d",
-			dax_region_path, PATH_MAX, major, minor, major, minor,
-			ret);
+		errno = pmem2_err_to_errno(ret);
 		return -1;
 	}
 
-	if ((dax_reg_id_fd = os_open(dax_region_path, O_RDONLY)) < 0) {
-		LOG(1, "!open(\"%s\", O_RDONLY)", dax_region_path);
-		return -1;
-	}
-
-	ssize_t len = read(dax_reg_id_fd, reg_id, DAX_REGION_ID_LEN);
-
-	if (len == -1) {
-		ERR("!read(%d, %p, %d)", dax_reg_id_fd,
-			reg_id, DAX_REGION_ID_LEN);
-		goto err;
-	} else if (len < 2 || reg_id[len - 1] != '\n') {
-		errno = EINVAL;
-		ERR("!read(%d, %p, %d) invalid format", dax_reg_id_fd,
-			reg_id, DAX_REGION_ID_LEN);
-		goto err;
-	}
-
-	int olderrno = errno;
-	errno = 0;
-	long reg_num = strtol(reg_id, &end_addr, 10);
-	if ((errno == ERANGE && (reg_num == LONG_MAX || reg_num == LONG_MIN)) ||
-			(errno != 0 && reg_num == 0)) {
-		ERR("!strtol(%p, %p, 10)", reg_id, end_addr);
-		goto err;
-	}
-	errno = olderrno;
-
-	if (end_addr == reg_id) {
-		ERR("!strtol(%p, %p, 10) no digits were found",
-			reg_id, end_addr);
-		goto err;
-	}
-	if (*end_addr != '\n') {
-		ERR("!strtol(%s, %s, 10) invalid format",
-			reg_id, end_addr);
-		goto err;
-	}
-
-	os_close(dax_reg_id_fd);
-	return (int)reg_num;
-
-err:
-	os_close(dax_reg_id_fd);
-	return -1;
+	return ret;
 }

@@ -1,34 +1,6 @@
 #!/usr/bin/env bash
-#
-# Copyright 2016-2019, Intel Corporation
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in
-#       the documentation and/or other materials provided with the
-#       distribution.
-#
-#     * Neither the name of the copyright holder nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2016-2020, Intel Corporation
 
 #
 # install-valgrind.sh - installs valgrind for persistent memory
@@ -36,13 +8,32 @@
 
 set -e
 
-git clone https://github.com/pmem/valgrind.git
-cd valgrind
-# valgrind v3.15 with pmemcheck
-git checkout c27a8a2f973414934e63f1e94bc84c0a580e3840
-./autogen.sh
-./configure
-make
-make install
-cd ..
-rm -rf valgrind
+OS=$1
+
+install_upstream_from_distro() {
+  case "$OS" in
+    fedora) dnf install -y valgrind ;;
+    ubuntu) apt-get install -y --no-install-recommends valgrind ;;
+    *) return 1 ;;
+  esac
+}
+
+install_custom-pmem_from_source() {
+  git clone https://github.com/pmem/valgrind.git
+  cd valgrind
+  # valgrind v3.15 with pmemcheck
+  # 2020.04.01 Merge pull request #78 from marcinslusarz/opt3
+  git checkout 759686fd66cc0105df8311cfe676b0b2f9e89196
+  ./autogen.sh
+  ./configure
+  make -j$(nproc)
+  make -j$(nproc) install
+  cd ..
+  rm -rf valgrind
+}
+
+ARCH=$(uname -m)
+case "$ARCH" in
+  ppc64le) install_upstream_from_distro ;;
+  *) install_custom-pmem_from_source ;;
+esac

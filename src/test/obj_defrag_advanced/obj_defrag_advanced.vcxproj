@@ -14,7 +14,7 @@
     <ProjectGuid>{AE952763-5C84-43FC-B344-CACC950F056C}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>obj_defrag_advanced</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
@@ -91,12 +91,12 @@
     <ClCompile Include="pgraph.c" />
     <ClCompile Include="vgraph.c" />
     <ClCompile Include="..\..\common\rand.c" />
-    <ClCompile Include="..\..\common\os_thread_windows.c" />
+    <ClCompile Include="..\..\core\os_thread_windows.c" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="pgraph.h" />
     <ClInclude Include="vgraph.h" />
-    <ClInclude Include="..\..\common\os_thread.h" />
+    <ClInclude Include="..\..\core\os_thread.h" />
     <ClInclude Include="..\..\common\rand.h" />
     <ClInclude Include="..\unittest\unittest.h" />
   </ItemGroup>

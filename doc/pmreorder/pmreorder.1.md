@@ -7,32 +7,8 @@ header: PMDK
 date: pmreorder version 1.5
 ...
 
-[comment]: <> (Copyright 2018-2019, Intel Corporation)
-
-[comment]: <> (Redistribution and use in source and binary forms, with or without)
-[comment]: <> (modification, are permitted provided that the following conditions)
-[comment]: <> (are met:)
-[comment]: <> (    * Redistributions of source code must retain the above copyright)
-[comment]: <> (      notice, this list of conditions and the following disclaimer.)
-[comment]: <> (    * Redistributions in binary form must reproduce the above copyright)
-[comment]: <> (      notice, this list of conditions and the following disclaimer in)
-[comment]: <> (      the documentation and/or other materials provided with the)
-[comment]: <> (      distribution.)
-[comment]: <> (    * Neither the name of the copyright holder nor the names of its)
-[comment]: <> (      contributors may be used to endorse or promote products derived)
-[comment]: <> (      from this software without specific prior written permission.)
-
-[comment]: <> (THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS)
-[comment]: <> ("AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT)
-[comment]: <> (LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR)
-[comment]: <> (A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT)
-[comment]: <> (OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,)
-[comment]: <> (SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT)
-[comment]: <> (LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,)
-[comment]: <> (DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY)
-[comment]: <> (THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT)
-[comment]: <> ((INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE)
-[comment]: <> (OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.)
+[comment]: <> (SPDX-License-Identifier: BSD-3-Clause)
+[comment]: <> (Copyright 2018-2020, Intel Corporation)
 
 [comment]: <> (pmreorder.1 -- man page for pmreorder)
 
@@ -282,21 +258,21 @@ There are two ways to set macro options:
 
 + Using command line interface in format:
 ```
-PMREORDER_MARKER_NAME1=ReorderName1,PMREORDER_MARKER_NAME2=ReorderName2
+PMREORDER_MARKER_NAME1=Marker1,PMREORDER_MARKER_NAME2=Marker2
 ```
 
 + Using configuration file in .json format:
 ```
 {
-    "PMREORDER_MARKER_NAME1":"ReorderName1",
-    "PMREORDER_MARKER_NAME2":"ReorderName2"
+    "PMREORDER_MARKER_NAME1":"Marker1",
+    "PMREORDER_MARKER_NAME2":"Marker2"
 }
 ```
 
 For more details about available
 engines types, see ENGINES section above.
 
-**libpmemobj**(7) and **libpmem**(7) also provide set of macros
+**libpmemobj**(7), **libpmem**(7) and **libpmem2**(7) also provide set of macros
 that allow to change reordering engine on library or function level:
 
 `<library_name|api_function_name>`
@@ -380,6 +356,15 @@ pmem_memcpy_persist
 pmem_memset_persist
 ```
 
+List of **libpmem2**(7) API functions, which return marked functions:
+
+```
+pmem2_get_memcpy_fn (marker for the returned function has "pmem2_memmove" name)
+pmem2_get_memmove_fn (marker for the returned function has "pmem2_memmove" name)
+pmem2_get_memset_fn (marker for the returned function has "pmem2_memset" name)
+
+```
+
 # PMEMCHECK STORE LOG #
 
 To generate *store_log* for **pmreorder** run pmemcheck
@@ -398,7 +383,8 @@ valgrind \
 	test_binary writer_parameter
 ```
 
-For further details of pmemcheck parameters see [pmemcheck documentation](https://github.com/pmem/valgrind/blob/pmem-3.13/pmemcheck/docs/pmc-manual.xml)
+For further details of pmemcheck parameters see
+[pmemcheck documentation](https://pmem.io/valgrind/generated/pmc-manual.html)
 
 # ENVIRONMENT #
 

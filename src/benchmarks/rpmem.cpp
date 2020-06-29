@@ -1,34 +1,5 @@
-/*
- * Copyright 2016-2019, Intel Corporation
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *      * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *      * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *
- *      * Neither the name of the copyright holder nor the names of its
- *        contributors may be used to endorse or promote products derived
- *        from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2016-2020, Intel Corporation */
 
 /*
  * rpmem.cpp -- rpmem benchmarks definition
@@ -65,13 +36,13 @@
  * rpmem_args -- benchmark specific command line options
  */
 struct rpmem_args {
-	char *mode;	/* operation mode: stat, seq, rand */
-	bool no_warmup;    /* do not do warmup */
-	bool no_memset;    /* do not call memset before each persist */
+	char *mode;	   /* operation mode: stat, seq, rand */
+	bool no_warmup;	   /* do not do warmup */
+	bool no_memset;	   /* do not call memset before each persist */
 	size_t chunk_size; /* elementary chunk size */
 	size_t dest_off;   /* destination address offset */
 	bool relaxed; /* use RPMEM_PERSIST_RELAXED / RPMEM_FLUSH_RELAXED flag */
-	char *workload;	/* workload */
+	char *workload;	       /* workload */
 	int flushes_per_drain; /* # of flushes between drains */
 };
 
@@ -81,20 +52,20 @@ struct rpmem_args {
 struct rpmem_bench {
 	struct rpmem_args *pargs; /* benchmark specific arguments */
 	size_t *offsets;	  /* random/sequential address offsets */
-	size_t n_offsets;	 /* number of random elements */
-	size_t *offsets_pos;      /* position within offsets */
+	size_t n_offsets;	  /* number of random elements */
+	size_t *offsets_pos;	  /* position within offsets */
 	int const_b;		  /* memset() value */
 	size_t min_size;	  /* minimum file size */
 	void *addrp;		  /* mapped file address */
 	void *pool;		  /* memory pool address */
-	size_t pool_size;	 /* size of memory pool */
-	size_t mapped_len;	/* mapped length */
+	size_t pool_size;	  /* size of memory pool */
+	size_t mapped_len;	  /* mapped length */
 	RPMEMpool **rpp;	  /* rpmem pool pointers */
-	unsigned *nlanes;	 /* number of lanes for each remote replica */
-	unsigned nreplicas;       /* number of remote replicas */
-	size_t csize_align;       /* aligned elementary chunk size */
+	unsigned *nlanes;	  /* number of lanes for each remote replica */
+	unsigned nreplicas;	  /* number of remote replicas */
+	size_t csize_align;	  /* aligned elementary chunk size */
 	unsigned *flags;	  /* flags for ops */
-	size_t workload_len;      /* length of the workload */
+	size_t workload_len;	  /* length of the workload */
 	unsigned n_flushing_ops_per_thread; /* # of operation which require
 					    offsets per thread */
 };
@@ -104,9 +75,9 @@ struct rpmem_bench {
  */
 enum operation_mode {
 	OP_MODE_UNKNOWN,
-	OP_MODE_STAT,      /* always use the same chunk */
-	OP_MODE_SEQ,       /* use consecutive chunks */
-	OP_MODE_RAND,      /* use random chunks */
+	OP_MODE_STAT,	   /* always use the same chunk */
+	OP_MODE_SEQ,	   /* use consecutive chunks */
+	OP_MODE_RAND,	   /* use random chunks */
 	OP_MODE_SEQ_WRAP,  /* use consecutive chunks, but use file size */
 	OP_MODE_RAND_WRAP, /* use random chunks, but use file size */
 };
@@ -206,7 +177,8 @@ init_offsets(struct benchmark_args *args, struct rpmem_bench *mb,
 		return -1;
 	}
 
-	unsigned seed = args->seed;
+	rng_t rng;
+	randomize_r(&rng, args->seed);
 
 	for (size_t i = 0; i < args->n_threads; i++) {
 		for (size_t j = 0; j < mb->n_flushing_ops_per_thread; j++) {
@@ -224,7 +196,7 @@ init_offsets(struct benchmark_args *args, struct rpmem_bench *mb,
 				case OP_MODE_RAND:
 					chunk_idx =
 						i * mb->n_flushing_ops_per_thread +
-						os_rand_r(&seed) %
+						rnd64_r(&rng) %
 							mb->n_flushing_ops_per_thread;
 					break;
 				case OP_MODE_SEQ_WRAP:
@@ -233,8 +205,7 @@ init_offsets(struct benchmark_args *args, struct rpmem_bench *mb,
 					break;
 				case OP_MODE_RAND_WRAP:
 					chunk_idx = i * n_ops_by_size +
-						os_rand_r(&seed) %
-							n_ops_by_size;
+						rnd64_r(&rng) % n_ops_by_size;
 					break;
 				default:
 					assert(0);
@@ -425,7 +396,7 @@ rpmem_mixed_op(struct benchmark *bench, struct operation_info *info)
 			case 'g':
 				mb->flags[info->worker->index] =
 					RPMEM_FLUSH_RELAXED;
-				/* no break here */
+				/* FALLTHROUGH */
 			case 'f':
 				ret |= rpmem_mixed_op_flush(mb, info);
 				break;
@@ -435,7 +406,7 @@ rpmem_mixed_op(struct benchmark *bench, struct operation_info *info)
 			case 'r':
 				mb->flags[info->worker->index] =
 					RPMEM_PERSIST_RELAXED;
-				/* no break here */
+				/* FALLTHROUGH */
 			case 'p':
 				ret |= rpmem_persist_op(bench, info);
 				break;

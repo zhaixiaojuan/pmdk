@@ -1,6 +1,7 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2016-2017, Intel Corporation */
 /*
  * Copyright 2016, FUJITSU TECHNOLOGY SOLUTIONS GMBH
- * Copyright 2016-2017, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -190,8 +191,8 @@ initialize_context(struct ds_context *ctx, int ac, char *av[])
 				break;
 			}
 			case 's': {
-				long poolsize;
-				poolsize = strtol(optarg, NULL, 0);
+				unsigned long poolsize;
+				poolsize = strtoul(optarg, NULL, 0);
 				if (poolsize >= PMEMOBJ_MIN_POOL) {
 					ctx->psize = poolsize;
 				}

@@ -8,9 +8,6 @@
     <Filter Include="Test Scripts">
       <UniqueIdentifier>{2064aaf4-2eca-4fa2-99dc-b24c1acfe798}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Match Files">
-      <UniqueIdentifier>{5a608e2a-cf74-4ed4-b4e5-f232ec859a2e}</UniqueIdentifier>
-    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pmem_movnt.c">

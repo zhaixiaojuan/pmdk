@@ -1,5 +1,5 @@
 version: 1.4.{build}
-os: Visual Studio 2017
+os: Visual Studio 2019
 platform: x64
 
 install:
@@ -19,7 +19,7 @@ matrix:
 
 before_build:
 - ps: >-
-    if ($Env:CONFIGURATION -eq "Debug") {
+    if ($Env:CONFIGURATION -eq "Release") {
         utils/CSTYLE.ps1
         if ($LASTEXITCODE -ne 0) {
                 exit 1
@@ -29,10 +29,6 @@ before_build:
                 exit 1
         }
         utils/ps_analyze.ps1
-        if ($LASTEXITCODE -ne 0) {
-                exit 1
-        }
-        perl utils/sort_solution check
         if ($LASTEXITCODE -ne 0) {
                 exit 1
         }
@@ -62,16 +58,22 @@ test_script:
 
         write-output "config = {
     'unittest_log_level': 1,
-    'pmem_fs_dir': 'C:\\temp',
-    'non_pmem_fs_dir': 'C:\\temp',
+    'cacheline_fs_dir': 'C:\\temp',
+    'force_cacheline': True,
+    'page_fs_dir': 'C:\\temp',
+    'force_page': False,
+    'byte_fs_dir': 'C:\\temp',
+    'force_byte': True,
     'tm': True,
     'test_type': 'check',
-    'fs': 'all',
+    'granularity': 'all',
     'fs_dir_force_pmem': 1,
     'keep_going': False,
     'timeout': '4m',
     'build': 'debug',
     'force_enable': None,
+    'fail_on_skip': False,
+    'enable_admin_tests': False,
     }" | out-file "testconfig.py" -encoding utf8
 
         if ($Env:CONFIGURATION -eq "Debug") {

@@ -1,33 +1,5 @@
-#
-# Copyright 2016, Intel Corporation
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in
-#       the documentation and/or other materials provided with the
-#       distribution.
-#
-#     * Neither the name of the copyright holder nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2016-2020, Intel Corporation
 
 #
 # SRCVERSION.PS1 -- script to create SCRVERSION macro and generate srcversion.h
@@ -70,19 +42,14 @@ if (Test-Path $file_path) {
 }
 
 $git_version = ""
-$git_version_tag = ""
 $git_version_hash = ""
 
 if (Test-Path $git_version_file) {
     $git_version = Get-Content $git_version_file
-    if ($git_version -eq "`$Format:%h %d`$") {
+    if ($git_version -eq "`$Format:%h`$") {
         $git_version = ""
-    } elseif ($git_version -match "tag: ") {
-       if ($git_version -match "tag: (?<tag>[0-9a-z.+-]*)") {
-           $git_version_tag = $matches["tag"];
-       }
     } else {
-        $git_version_hash = ($git_version -split " ")[0]
+        $git_version_hash = $git_version
     }
 }
 
@@ -97,12 +64,6 @@ if ($null -ne $args[0]) {
 } elseif (Test-Path $version_file) {
     $version = Get-Content $version_file
     $ver_array = $version.split("-+")
-} elseif ($null -ne $git) {
-    $version = $(git describe)
-    $ver_array = $(git describe --long).split("-+")
-} elseif ($git_version_tag -ne "") {
-    $version = $git_version_tag
-    $ver_array = $git_version_tag.split("-+")
 } elseif ($git_version_hash -ne "") {
     $MAJOR = 0
     $MINOR = 0
@@ -112,6 +73,9 @@ if ($null -ne $args[0]) {
     $version = $git_version_hash
     $CUSTOM = $true
     $version_custom_msg = "#define VERSION_CUSTOM_MSG `"$git_version_hash`""
+} elseif ($null -ne $git) {
+    $version = $(git describe)
+    $ver_array = $(git describe --long).split("-+")
 } else {
     $MAJOR = 0
     $MINOR = 0

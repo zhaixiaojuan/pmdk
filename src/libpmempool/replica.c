@@ -1,34 +1,5 @@
-/*
- * Copyright 2016-2019, Intel Corporation
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *
- *     * Neither the name of the copyright holder nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2016-2020, Intel Corporation */
 
 /*
  * replica.c -- groups all commands for replica manipulation
@@ -56,8 +27,8 @@
 #include "util.h"
 #include "uuid.h"
 #include "shutdown_state.h"
-#include "os_dimm.h"
-#include "badblock.h"
+#include "badblocks.h"
+#include "set_badblocks.h"
 
 /*
  * check_flags_sync -- (internal) check if flags are supported for sync
@@ -160,7 +131,7 @@ replica_remove_part(struct pool_set *set, unsigned repn, unsigned partn,
 
 	/* if the part is a device dax, clear its bad blocks */
 	if (type == TYPE_DEVDAX && fix_bad_blocks &&
-	    os_dimm_devdax_clear_badblocks_all(part->path)) {
+	    badblocks_clear_all(part->path)) {
 		ERR("clearing bad blocks in device dax failed -- '%s'",
 			part->path);
 		errno = EIO;
@@ -763,7 +734,7 @@ replica_badblocks_recovery_file_save(struct part_health_status *part_hs)
 	/* save bad blocks */
 	for (unsigned i = 0; i < bbs->bb_cnt; i++) {
 		ASSERT(bbs->bbv[i].length != 0);
-		fprintf(recovery_file_name, "%llu %u\n",
+		fprintf(recovery_file_name, "%zu %zu\n",
 			bbs->bbv[i].offset, bbs->bbv[i].length);
 	}
 
@@ -827,7 +798,7 @@ replica_part_badblocks_recovery_file_read(struct part_health_status *part_hs)
 	unsigned long long min_offset = 0; /* minimum possible offset */
 
 	do {
-		if (fscanf(recovery_file, "%llu %u\n",
+		if (fscanf(recovery_file, "%zu %zu\n",
 				&bb.offset, &bb.length) < 2) {
 			LOG(1, "incomplete bad block recovery file -- '%s'",
 				path);
@@ -1167,7 +1138,7 @@ replica_badblocks_get(struct pool_set *set,
 			if (!exists)
 				continue;
 
-			int ret = os_badblocks_get(path, &part_hs->bbs);
+			int ret = badblocks_get(path, &part_hs->bbs);
 			if (ret < 0) {
 				ERR(
 					"!checking the pool part for bad blocks failed -- '%s'",
@@ -1248,7 +1219,7 @@ replica_badblocks_clear(struct pool_set *set,
 					rep_hs->flags |= HAS_CORRUPTED_HEADER;
 			}
 
-			ret = os_badblocks_clear(path, &part_hs->bbs);
+			ret = badblocks_clear(path, &part_hs->bbs);
 			if (ret < 0) {
 				LOG(1,
 					"clearing bad blocks in replica failed -- '%s'",
@@ -1484,19 +1455,11 @@ check_shutdown_state(struct pool_set *set,
 		struct shutdown_state curr_sds;
 		shutdown_state_init(&curr_sds, NULL);
 		for (unsigned p = 0; p < rep->nparts; ++p) {
-			const char *path = PART(rep, p)->path;
-			const int exists = util_file_exists(path);
-			if (exists < 0)
-				return -1;
-
-			/*
-			 * skip missing parts to avoid false positive shutdown
-			 * state failure detection
-			 */
-			if (!exists)
+			if (PART(rep, p)->fd < 0)
 				continue;
 
-			if (shutdown_state_add_part(&curr_sds, path, NULL)) {
+			if (shutdown_state_add_part(&curr_sds,
+					PART(rep, p)->fd, NULL)) {
 				rep_hs->flags |= IS_BROKEN;
 				break;
 			}

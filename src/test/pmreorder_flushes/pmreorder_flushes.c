@@ -1,34 +1,5 @@
-/*
- * Copyright 2019, Intel Corporation
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *
- *     * Neither the name of the copyright holder nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2019-2020, Intel Corporation */
 
 /*
  * pmreorder_flushes.c -- test for store reordering with flushes
@@ -89,17 +60,24 @@ write_consistent(struct stores_fields *sf)
 	pmem_drain();
 
 	/*
-	 * STORE (D)
+	 * There are two transitive stores now: A (which does not change
+	 * it's value) and C (which is modified).
 	 *
-	 * FLUSH (C, D) (still no flush A)
+	 * STORE (D)
+	 * STORE (C)
+	 *
+	 * FLUSH (D) (still no flush A and C)
 	 * FENCE
 	 */
 	pmem_memset(sf->D, 5, sizeof(sf->D), PMEM_F_MEM_NODRAIN);
-	pmem_flush(sf->C, sizeof(sf->C));
+	pmem_memset(sf->C, 8, sizeof(sf->C), PMEM_F_MEM_NOFLUSH);
 	pmem_drain();
 
 	/*
-	 * STORE (E) to verify if A will be finally persisted
+	 * E is modified just to add additional step to the log.
+	 * Values of A and C should still be -1, 2.
+	 *
+	 * STORE (E)
 	 * FLUSH (E)
 	 * FENCE
 	 */
@@ -107,10 +85,11 @@ write_consistent(struct stores_fields *sf)
 	pmem_drain();
 
 	/*
-	 * FLUSH (A)
+	 * FLUSH (A, C)
 	 * FENCE
 	 */
 	pmem_flush(sf->A, sizeof(sf->A));
+	pmem_flush(sf->C, sizeof(sf->C));
 	pmem_drain();
 }
 
@@ -155,7 +134,7 @@ main(int argc, char *argv[])
 			write_consistent(sf);
 			break;
 		case 'c':
-			fp = fopen(argv[3], "a");
+			fp = os_fopen(argv[3], "a");
 			if (fp == NULL)
 				UT_FATAL("!fopen");
 			int ret;

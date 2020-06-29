@@ -10,10 +10,10 @@
     </Filter>
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\common\badblock.c">
+    <ClCompile Include="..\..\common\set_badblocks.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\common\badblock_none.c">
+    <ClCompile Include="..\..\common\bad_blocks.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\common\ctl.c">
@@ -25,7 +25,7 @@
     <ClCompile Include="..\..\common\file_windows.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\common\fs_windows.c">
+    <ClCompile Include="..\..\core\fs_windows.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\common\mmap.c">
@@ -34,19 +34,16 @@
     <ClCompile Include="..\..\common\mmap_windows.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\common\os_auto_flush_windows.c">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="..\..\common\os_deep_windows.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\common\os_thread_windows.c">
+    <ClCompile Include="..\..\core\os_thread_windows.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\common\os_windows.c">
+    <ClCompile Include="..\..\core\os_windows.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\common\out.c">
+    <ClCompile Include="..\..\core\out.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\common\pool_hdr.c">
@@ -58,10 +55,10 @@
     <ClCompile Include="..\..\common\shutdown_state.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\common\util.c">
+    <ClCompile Include="..\..\core\util.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\common\util_windows.c">
+    <ClCompile Include="..\..\core\util_windows.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\common\uuid.c">
@@ -115,7 +112,7 @@
     <ClCompile Include="..\..\libpmemobj\pmalloc.c">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="..\..\libpmemobj\ravl.c">
+    <ClCompile Include="..\..\common\ravl.c">
       <Filter>Source Files</Filter>
     </ClCompile>
     <ClCompile Include="..\..\libpmemobj\recycler.c">

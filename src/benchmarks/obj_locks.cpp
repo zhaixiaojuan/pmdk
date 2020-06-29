@@ -1,34 +1,5 @@
-/*
- * Copyright 2015-2018, Intel Corporation
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *      * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *      * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *
- *      * Neither the name of the copyright holder nor the names of its
- *        contributors may be used to endorse or promote products derived
- *        from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2015-2020, Intel Corporation */
 
 /*
  * obj_locks.cpp -- main source file for PMEM locks benchmark
@@ -52,8 +23,8 @@
 
 struct prog_args {
 	bool use_system_threads; /* use system locks instead of PMEM locks */
-	unsigned n_locks;	/* number of mutex/rwlock objects */
-	bool run_id_increment;   /* increment run_id after each lock/unlock */
+	unsigned n_locks;	 /* number of mutex/rwlock objects */
+	bool run_id_increment;	 /* increment run_id after each lock/unlock */
 	uint64_t runid_initial_value; /* initial value of run_id */
 	char *lock_mode;	      /* "1by1" or "all-lock" */
 	char *lock_type;	      /* "mutex", "rwlock" or "ram-mutex" */
@@ -95,7 +66,7 @@ struct my_root {
  * lock usage
  */
 enum operation_mode {
-	OP_MODE_1BY1,     /* lock and unlock one lock at a time */
+	OP_MODE_1BY1,	  /* lock and unlock one lock at a time */
 	OP_MODE_ALL_LOCK, /* grab all locks, then unlock them all */
 	OP_MODE_MAX,
 };
@@ -104,8 +75,8 @@ enum operation_mode {
  * lock type
  */
 enum benchmark_mode {
-	BENCH_MODE_MUTEX,	  /* PMEMmutex vs. os_mutex_t */
-	BENCH_MODE_RWLOCK,	 /* PMEMrwlock vs. os_rwlock_t */
+	BENCH_MODE_MUTEX,	   /* PMEMmutex vs. os_mutex_t */
+	BENCH_MODE_RWLOCK,	   /* PMEMrwlock vs. os_rwlock_t */
 	BENCH_MODE_VOLATILE_MUTEX, /* PMEMmutex with os_thread mutex in RAM */
 	BENCH_MODE_MAX
 };
@@ -122,9 +93,9 @@ struct bench_ops {
  * mutex_bench -- stores variables used in benchmark, passed within functions
  */
 struct mutex_bench {
-	PMEMobjpool *pop;	      /* pointer to the persistent pool */
+	PMEMobjpool *pop;	       /* pointer to the persistent pool */
 	TOID(struct my_root) root;     /* OID of the root object */
-	struct prog_args *pa;	  /* prog_args structure */
+	struct prog_args *pa;	       /* prog_args structure */
 	enum operation_mode lock_mode; /* lock usage mode */
 	enum benchmark_mode lock_type; /* lock type */
 	lock_t *locks;		       /* pointer to the array of locks */

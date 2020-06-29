@@ -1,34 +1,5 @@
-/*
- * Copyright 2016-2019, Intel Corporation
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *
- *     * Neither the name of the copyright holder nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2016-2020, Intel Corporation */
 
 /*
  * ctrld.c -- simple application which helps running tests on remote node.
@@ -54,6 +25,7 @@
 #include <stdarg.h>
 
 #include "os.h"
+#include "util.h"
 
 #ifdef __FreeBSD__
 #include "signals_freebsd.h"
@@ -450,8 +422,8 @@ get_inodes(pid_t pid, struct inodes *inodes)
 	int ret;
 
 	/* set a path to opened files of specified process */
-	if ((ret = snprintf(path, PATH_MAX, "/proc/%d/fd", pid)) < 0) {
-		CTRLD_LOG("snprintf: %d", ret);
+	if (util_snprintf(path, PATH_MAX, "/proc/%d/fd", pid) < 0) {
+		CTRLD_LOG("snprintf: %d", errno);
 		return -1;
 	}
 
@@ -467,9 +439,9 @@ get_inodes(pid_t pid, struct inodes *inodes)
 	struct dirent *dent;
 	while ((dent = readdir(d)) != NULL) {
 		/* create a full path to file */
-		if ((ret = snprintf(path, PATH_MAX,
-			"/proc/%d/fd/%s", pid, dent->d_name)) < 0) {
-			CTRLD_LOG("snprintf: %d", ret);
+		if (util_snprintf(path, PATH_MAX,
+			"/proc/%d/fd/%s", pid, dent->d_name) < 0) {
+			CTRLD_LOG("snprintf: %d", errno);
 			ret = -1;
 			goto out_dir;
 		}
@@ -612,10 +584,10 @@ log_run(const char *pid_file, char *cmd, char *argv[])
 	size_t i = 0;
 	char *arg = argv[0];
 	while (arg) {
-		int ret = snprintf(&buff[cnt], BUFF_SIZE - cnt,
+		int ret = util_snprintf(&buff[cnt], BUFF_SIZE - cnt,
 				" %s", arg);
 		if (ret < 0) {
-			CTRLD_LOG("snprintf: %d", ret);
+			CTRLD_LOG("snprintf: %d", errno);
 			exit(EXIT_FAILURE);
 		}
 
@@ -665,7 +637,7 @@ main(int argc, char *argv[])
 	char *cmd = argv[2];
 
 	char buff[BUFF_SIZE];
-	if (snprintf(buff, BUFF_SIZE, "%s.%s.%s.log",
+	if (util_snprintf(buff, BUFF_SIZE, "%s.%s.%s.log",
 			pid_file, cmd, APP_NAME) < 0) {
 		perror("snprintf");
 		return -1;

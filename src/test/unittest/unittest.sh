@@ -1,5 +1,7 @@
 #
+# SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2014-2020, Intel Corporation
+#
 # Copyright (c) 2016, Microsoft Corporation. All rights reserved.
 #
 # Redistribution and use in source and binary forms, with or without
@@ -149,6 +151,7 @@ NODES_MAX=-1
 # sizes of alignments
 SIZE_4KB=4096
 SIZE_2MB=2097152
+readonly PAGE_SIZE=$(getconf PAGESIZE)
 
 # PMEMOBJ limitations
 PMEMOBJ_MAX_ALLOC_SIZE=17177771968
@@ -222,6 +225,12 @@ esac
 
 export LD_LIBRARY_PATH=$PMDK_LIB_PATH:$GLOBAL_LIB_PATH:$LD_LIBRARY_PATH
 export REMOTE_LD_LIBRARY_PATH=$REMOTE_PMDK_LIB_PATH:$GLOBAL_LIB_PATH:\$LD_LIBRARY_PATH
+
+export PATH=$GLOBAL_PATH:$PATH
+export REMOTE_PATH=$GLOBAL_PATH:\$PATH
+
+export PKG_CONFIG_PATH=$GLOBAL_PKG_CONFIG_PATH:$PKG_CONFIG_PATH
+export REMOTE_PKG_CONFIG_PATH=$GLOBAL_PKG_CONFIG_PATH:\$PKG_CONFIG_PATH
 
 #
 # When running static binary tests, append the build type to the binary
@@ -547,7 +556,7 @@ function create_holey_file() {
 #            x - do nothing (may be skipped if there's no 'fsize', 'mode')
 #            z - create zeroed (holey) file
 #            n - create non-zeroed file
-#            h - create non-zeroed file, but with zeroed header (first 4KB)
+#            h - create non-zeroed file, but with zeroed header (first page)
 #            d - create directory
 #   fsize - (optional) the actual size of the part file (if 'cmd' is not 'x')
 #   mode  - (optional) same format as for 'chmod' command
@@ -643,8 +652,8 @@ function create_poolset() {
 			$DD if=/dev/zero bs=$asize count=1 2>>$PREP_LOG_FILE | tr '\0' '\132' >> $fpath
 			;;
 		h)
-			# non-zeroed file, except 4K header
-			truncate -s 4K $fpath >> prep$UNITTEST_NUM.log
+			# non-zeroed file, except page size header
+			truncate -s $PAGE_SIZE $fpath >> prep$UNITTEST_NUM.log
 			$DD if=/dev/zero bs=$asize count=1 2>>$PREP_LOG_FILE | tr '\0' '\132' >> $fpath
 			truncate -s $asize $fpath >> $PREP_LOG_FILE
 			;;
@@ -1082,7 +1091,7 @@ function require_procfs() {
 #
 function require_arch() {
 	for i in "$@"; do
-		[[ "$(arch)" == "$i" ]] && return
+		[[ "$(uname -m)" == "$i" ]] && return
 	done
 	msg "$UNITTEST_NAME: SKIP: Only supported on $1"
 	exit 0
@@ -1094,7 +1103,7 @@ function require_arch() {
 #
 function exclude_arch() {
 	for i in "$@"; do
-		if [[ "$(arch)" == "$i" ]]; then
+		if [[ "$(uname -m)" == "$i" ]]; then
 			msg "$UNITTEST_NAME: SKIP: Not supported on $1"
 			exit 0
 		fi
@@ -1561,7 +1570,7 @@ function require_build_type() {
 # require_command -- only allow script to continue if specified command exists
 #
 function require_command() {
-	if ! which $1 &>/dev/null; then
+	if ! which $1 >/dev/null 2>&1; then
 		msg "$UNITTEST_NAME: SKIP: '$1' command required"
 		exit 0
 	fi
@@ -1573,7 +1582,7 @@ function require_command() {
 # usage: require_command_node <node-number>
 #
 function require_command_node() {
-	if ! run_on_node $1 "which $2 &>/dev/null"; then
+	if ! run_on_node $1 "which $2 >/dev/null 2>&1"; then
 		msg "$UNITTEST_NAME: SKIP: node $1: '$2' command required"
 		exit 0
 	fi
@@ -1693,6 +1702,7 @@ function require_node_pkg() {
 		COMMAND="$COMMAND PKG_CONFIG_PATH=\$PKG_CONFIG_PATH:$PKG_CONFIG_PATH"
 	fi
 
+	COMMAND="$COMMAND PKG_CONFIG_PATH=$REMOTE_PKG_CONFIG_PATH"
 	COMMAND="$COMMAND pkg-config $1"
 	MSG="$UNITTEST_NAME: SKIP NODE $N: '$1' package"
 	if [ "$#" -eq "2" ]; then
@@ -2459,6 +2469,7 @@ function run_on_node() {
 	local COMMAND="UNITTEST_NUM=$UNITTEST_NUM UNITTEST_NAME=$UNITTEST_NAME"
 	COMMAND="$COMMAND UNITTEST_LOG_LEVEL=1"
 	COMMAND="$COMMAND ${NODE_ENV[$N]}"
+	COMMAND="$COMMAND PATH=$REMOTE_PATH"
 	COMMAND="$COMMAND LD_LIBRARY_PATH=${NODE_LD_LIBRARY_PATH[$N]}:$REMOTE_LD_LIBRARY_PATH $*"
 
 	run_command ssh $SSH_OPTS ${NODE[$N]} "cd $DIR && $COMMAND"
@@ -2491,6 +2502,7 @@ function run_on_node_background() {
 	local COMMAND="UNITTEST_NUM=$UNITTEST_NUM UNITTEST_NAME=$UNITTEST_NAME"
 	COMMAND="$COMMAND UNITTEST_LOG_LEVEL=1"
 	COMMAND="$COMMAND ${NODE_ENV[$N]}"
+	COMMAND="$COMMAND PATH=$REMOTE_PATH"
 	COMMAND="$COMMAND LD_LIBRARY_PATH=${NODE_LD_LIBRARY_PATH[$N]}:$REMOTE_LD_LIBRARY_PATH"
 	COMMAND="$COMMAND ../ctrld $PID_FILE run $RUNTEST_TIMEOUT $*"
 
@@ -3103,6 +3115,7 @@ function init_rpmem_on_node() {
 		[ "$RPMEM_PM" == "APM" ] && CMD="$CMD PMEM_IS_PMEM_FORCE=1"
 
 		CMD="$CMD ${NODE_ENV[$slave]}"
+		CMD="$CMD PATH=$REMOTE_PATH"
 		CMD="$CMD LD_LIBRARY_PATH=${NODE_LD_LIBRARY_PATH[$slave]}:$REMOTE_LD_LIBRARY_PATH"
 		CMD="$CMD $trace ../rpmemd"
 		CMD="$CMD --log-file=$RPMEMD_LOG_FILE"
@@ -3712,6 +3725,8 @@ function require_badblock_tests_enabled_node() {
 #
 # Usage: create_recovery_file <file> [<offset_1> <length_1> ...]
 #
+# Offsets and length should be in page sizes.
+#
 function create_recovery_file() {
 	[ $# -lt 1 ] && fatal "create_recovery_file(): not enough parameters: $*"
 
@@ -3723,7 +3738,7 @@ function create_recovery_file() {
 		OFFSET=$1
 		LENGTH=$2
 		shift 2
-		echo "$(($OFFSET * 512)) $(($LENGTH * 512))" >> $FILE
+		echo "$(($OFFSET * $PAGE_SIZE)) $(($LENGTH * $PAGE_SIZE))" >> $FILE
 	done
 
 	# write the finish flag
@@ -3735,6 +3750,8 @@ function create_recovery_file() {
 #
 # Usage: zero_blocks <file> <offset> <length>
 #
+# Offsets and length should be in page sizes.
+#
 function zero_blocks() {
 	[ $# -lt 3 ] && fatal "zero_blocks(): not enough parameters: $*"
 
@@ -3745,7 +3762,7 @@ function zero_blocks() {
 		OFFSET=$1
 		LENGTH=$2
 		shift 2
-		dd if=/dev/zero of=$FILE bs=512 seek=$OFFSET count=$LENGTH conv=notrunc status=none
+		dd if=/dev/zero of=$FILE bs=$PAGE_SIZE seek=$OFFSET count=$LENGTH conv=notrunc status=none
 	done
 }
 

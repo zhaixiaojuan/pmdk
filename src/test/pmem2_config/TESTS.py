@@ -1,75 +1,119 @@
 #!../env.py
-#
-# Copyright 2019, Intel Corporation
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in
-#       the documentation and/or other materials provided with the
-#       distribution.
-#
-#     * Neither the name of the copyright holder nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2019-2020, Intel Corporation
 #
 
 
 import testframework as t
+from testframework import granularity as g
 
-class PMEM2_CONFIG(t.BaseTest):
+
+@g.require_granularity(g.ANY)
+class Pmem2Config(t.Test):
     test_type = t.Short
 
     def run(self, ctx):
         filepath = ctx.create_holey_file(16 * t.MiB, 'testfile1')
         ctx.exec('pmem2_config', self.test_case, filepath)
 
-class TEST0(PMEM2_CONFIG):
+
+@g.no_testdir()
+class Pmem2ConfigNoDir(t.Test):
+    test_type = t.Short
+
+    def run(self, ctx):
+        ctx.exec('pmem2_config', self.test_case)
+
+
+class TEST0(Pmem2ConfigNoDir):
     """allocation and dealocation of pmem2_config"""
-    test_case = "cfg_create_and_delete_valid"
+    test_case = "test_cfg_create_and_delete_valid"
 
-class TEST1(PMEM2_CONFIG):
-    """setting a read + write file descriptor in pmem2_config"""
-    test_case = "set_rw_fd"
 
-class TEST2(PMEM2_CONFIG):
-    """setting a read only file descriptor in pmem2_config"""
-    test_case = "set_ro_fd"
-
-class TEST3(PMEM2_CONFIG):
-    """resetting file descriptor in pmem2_config"""
-    test_case = "set_negative_fd"
-
-@t.windows_exclude
-class TEST4(PMEM2_CONFIG):
-    """setting invalid (closed) file descriptor in pmem2_config"""
-    test_case = "set_invalid_fd"
-
-class TEST5(PMEM2_CONFIG):
-    """setting a write only file descriptor in pmem2_config"""
-    test_case = "set_wronly_fd"
-
-class TEST6(PMEM2_CONFIG):
+class TEST1(Pmem2ConfigNoDir):
     """allocation of pmem2_config in case of missing memory in system"""
-    test_case = "alloc_cfg_enomem"
+    test_case = "test_alloc_cfg_enomem"
 
-class TEST7(PMEM2_CONFIG):
+
+class TEST2(Pmem2ConfigNoDir):
     """deleting null pmem2_config"""
-    test_case = "delete_null_config"
+    test_case = "test_delete_null_config"
+
+
+class TEST3(Pmem2ConfigNoDir):
+    """set valid granularity in the config"""
+    test_case = "test_config_set_granularity_valid"
+
+
+class TEST4(Pmem2ConfigNoDir):
+    """set invalid granularity in the config"""
+    test_case = "test_config_set_granularity_invalid"
+
+
+class TEST5(Pmem2ConfigNoDir):
+    """setting offset which is too large"""
+    test_case = "test_set_offset_too_large"
+
+
+class TEST6(Pmem2ConfigNoDir):
+    """setting a valid offset"""
+    test_case = "test_set_offset_success"
+
+
+class TEST7(Pmem2ConfigNoDir):
+    """setting a valid length"""
+    test_case = "test_set_length_success"
+
+
+class TEST8(Pmem2ConfigNoDir):
+    """setting maximum possible offset"""
+    test_case = "test_set_offset_max"
+
+
+class TEST9(Pmem2ConfigNoDir):
+    """setting a valid sharing"""
+    test_case = "test_set_sharing_valid"
+
+
+class TEST10(Pmem2ConfigNoDir):
+    """setting a invalid sharing"""
+    test_case = "test_set_sharing_invalid"
+
+
+class TEST11(Pmem2Config):
+    """setting unaligned addr and validating it"""
+    test_case = "test_validate_unaligned_addr"
+
+
+class TEST12(Pmem2ConfigNoDir):
+    """setting wrong addr request type"""
+    test_case = "test_set_wrong_addr_req_type"
+
+
+class TEST13(Pmem2ConfigNoDir):
+    """
+    setting null addr when request type PMEM2_ADDRESS_FIXED_NOREPLACE
+    is used
+    """
+    test_case = "test_null_addr_noreplace"
+
+
+class TEST14(Pmem2ConfigNoDir):
+    """
+    using pmem2_config_clear_address func
+    """
+    test_case = "test_clear_address"
+
+
+class TEST15(Pmem2ConfigNoDir):
+    """
+    setting a valid protection flags
+    """
+    test_case = "test_set_valid_prot_flag"
+
+
+class TEST16(Pmem2ConfigNoDir):
+    """
+    setting a invalid protection flags
+    """
+    test_case = "test_set_invalid_prot_flag"

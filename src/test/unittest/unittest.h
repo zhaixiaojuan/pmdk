@@ -1,34 +1,5 @@
-/*
- * Copyright 2014-2020, Intel Corporation
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *
- *     * Neither the name of the copyright holder nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2014-2020, Intel Corporation */
 
 /*
  * unittest.h -- the mundane stuff shared by all unit tests
@@ -230,7 +201,7 @@ void ut_err(const char *file, int line, const char *func,
 /* assertion with extra info printed if assertion fails at runtime */
 #define UT_ASSERTinfo_rt(cnd, info) \
 	((void)((cnd) || (ut_fatal(__FILE__, __LINE__, __func__,\
-	"assertion failure: %s (%s = %s)", #cnd, #info, info), 0)))
+	"assertion failure: %s (%s)", #cnd, info), 0)))
 
 /* assert two integer values are equal at runtime */
 #define UT_ASSERTeq_rt(lhs, rhs)\
@@ -446,6 +417,9 @@ unsigned long ut_strtoul(const char *file, int line, const char *func,
 unsigned ut_strtou(const char *file, int line, const char *func,
     const char *nptr, char **endptr, int base);
 
+int ut_snprintf(const char *file, int line, const char *func,
+		char *str, size_t size, const char *format, ...);
+
 /* an open() that can't return < 0 */
 #define OPEN(path, ...)\
     ut_open(__FILE__, __LINE__, __func__, path, __VA_ARGS__)
@@ -534,6 +508,10 @@ unsigned ut_strtou(const char *file, int line, const char *func,
 #define STRTOI(nptr, endptr, base)\
     ut_strtoi(__FILE__, __LINE__, __func__, nptr, endptr, base)
 
+#define SNPRINTF(str, size, format, ...) \
+	ut_snprintf(__FILE__, __LINE__, __func__, \
+			str, size, format, __VA_ARGS__)
+
 #ifndef _WIN32
 #define ut_jmp_buf_t sigjmp_buf
 #define ut_siglongjmp(b) siglongjmp(b, 1)
@@ -542,12 +520,11 @@ unsigned ut_strtou(const char *file, int line, const char *func,
 #define ut_jmp_buf_t jmp_buf
 #define ut_siglongjmp(b) longjmp(b, 1)
 #define ut_sigsetjmp(b) setjmp(b)
-static DWORD ErrMode;
-static BOOL Suppressed = FALSE;
-static UINT AbortBehave;
 #endif
 void ut_suppress_errmsg(void);
 void ut_unsuppress_errmsg(void);
+void ut_suppress_crt_assert(void);
+void ut_unsuppress_crt_assert(void);
 /*
  * signals...
  */
@@ -714,7 +691,11 @@ TEST_CASE_PROCESS(int argc, char *argv[],
 		if (!tc)
 			UT_FATAL("unknown test case -- '%s'", str_test);
 
-		i += tc->func(tc, argc - args_off, &argv[args_off]);
+		int ret = tc->func(tc, argc - args_off, &argv[args_off]);
+		if (ret < 0)
+			UT_FATAL("test return value cannot be negative");
+
+		i += ret;
 	}
 }
 

@@ -1,6 +1,7 @@
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2016-2017, Intel Corporation */
 /*
  * Copyright 2016, FUJITSU TECHNOLOGY SOLUTIONS GMBH
- * Copyright 2016-2017, Intel Corporation
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are permitted provided that the following conditions
@@ -272,13 +273,11 @@ print_usage(char *appname)
 static struct examine *
 get_examine(char *type_name)
 {
-	int i;
-
 	if (type_name == NULL) {
 		return NULL;
 	}
 
-	for (i = 0; i < COMMANDS_NUMBER; i++) {
+	for (size_t i = 0; i < COMMANDS_NUMBER; i++) {
 		if (strcmp(type_name, ex_funcs[i].name) == 0)
 			return &ex_funcs[i];
 	}

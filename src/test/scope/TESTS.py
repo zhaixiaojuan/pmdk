@@ -1,34 +1,6 @@
 #!/usr/bin/env python3
-#
-# Copyright 2019, Intel Corporation
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in
-#       the documentation and/or other materials provided with the
-#       distribution.
-#
-#     * Neither the name of the copyright holder nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2019-2020, Intel Corporation
 #
 
 #
@@ -41,6 +13,7 @@ import subprocess as sp
 
 import futils as ft
 import testframework as t
+from testframework import granularity as g
 
 
 def parse_lib(ctx, lib, static=False):
@@ -81,7 +54,7 @@ def parse_lib_linux(ctx, lib, static):
 
 
 def parse_lib_win(ctx, lib, static):
-    dllview = ft.get_test_tool_path(ctx, 'dllview')
+    dllview = ft.get_test_tool_path(ctx.build, 'dllview') + '.exe'
     cmd = [dllview, lib]
     proc = sp.run(cmd, universal_newlines=True,
                   stdout=sp.PIPE, stderr=sp.STDOUT)
@@ -93,25 +66,18 @@ def parse_lib_win(ctx, lib, static):
     return '\n'.join(out) + '\n'
 
 
-class Common(t.BaseTest):
+@t.require_valgrind_disabled('drd', 'helgrind', 'memcheck', 'pmemcheck')
+@g.no_testdir()
+class Common(t.Test):
     test_type = t.Medium
-    fs = t.Non
 
     checked_lib = ''
-
-    def setup(self, ctx):
-        """no test specific setup is made for the test using no filesystem"""
-        pass
-
-    def clean(self, ctx):
-        """no test specific cleanup is made for the test using no filesystem"""
-        pass
 
     def run(self, ctx):
         static = False
         if sys.platform == 'win32':
             lib = '{}.dll'.format(self.checked_lib)
-        elif str(ctx.build) == 'debug' or str(ctx.build) == 'release':
+        elif str(self.ctx.build) in ['debug', 'release']:
             lib = '{}.so.1'.format(self.checked_lib)
         else:
             static = True
@@ -188,4 +154,10 @@ class TEST12(Common):
 @t.windows_exclude
 class TEST13(Common):
     """Check scope of libpmem2 library (*nix)"""
+    checked_lib = 'libpmem2'
+
+
+@t.windows_only
+class TEST14(Common):
+    """Check scope of libpmem2 library (windows)"""
     checked_lib = 'libpmem2'

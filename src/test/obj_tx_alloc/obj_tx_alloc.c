@@ -1,34 +1,5 @@
-/*
- * Copyright 2015-2019, Intel Corporation
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *
- *     * Neither the name of the copyright holder nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2015-2020, Intel Corporation */
 
 /*
  * obj_tx_alloc.c -- unit test for pmemobj_tx_alloc and pmemobj_tx_zalloc
@@ -96,7 +67,7 @@ do_tx_alloc_oom(PMEMobjpool *pop)
 
 	size_t bitmap_size = howmany(alloc_cnt, 8);
 	char *bitmap = (char *)MALLOC(bitmap_size);
-	pmemobj_memset_persist(pop, bitmap, 0, bitmap_size);
+	memset(bitmap, 0, bitmap_size);
 
 	size_t obj_cnt = 0;
 	TOID(struct object) i;
@@ -568,6 +539,42 @@ do_tx_xalloc_zerolen(PMEMobjpool *pop)
 	TX_BEGIN(pop) {
 		TOID_ASSIGN(obj, pmemobj_tx_xalloc(0, TYPE_XABORT,
 				POBJ_XALLOC_NO_ABORT));
+	} TX_ONCOMMIT {
+		TOID_ASSIGN(obj, OID_NULL);
+	} TX_ONABORT {
+		UT_ASSERT(0); /* should not get to this point */
+	} TX_END
+
+	UT_ASSERT(TOID_IS_NULL(obj));
+
+	/* alloc 0 with pmemobj_tx_set_failure_behavior called */
+	TX_BEGIN(pop) {
+		pmemobj_tx_set_failure_behavior(POBJ_TX_FAILURE_RETURN);
+		TOID_ASSIGN(obj, pmemobj_tx_alloc(0, TYPE_XABORT));
+	} TX_ONCOMMIT {
+		TOID_ASSIGN(obj, OID_NULL);
+	} TX_ONABORT {
+		UT_ASSERT(0); /* should not get to this point */
+	} TX_END
+
+	UT_ASSERT(TOID_IS_NULL(obj));
+
+	/* xalloc 0 with pmemobj_tx_set_failure_behavior called */
+	TX_BEGIN(pop) {
+		pmemobj_tx_set_failure_behavior(POBJ_TX_FAILURE_RETURN);
+		TOID_ASSIGN(obj, pmemobj_tx_xalloc(0, TYPE_XABORT, 0));
+	} TX_ONCOMMIT {
+		TOID_ASSIGN(obj, OID_NULL);
+	} TX_ONABORT {
+		UT_ASSERT(0); /* should not get to this point */
+	} TX_END
+
+	UT_ASSERT(TOID_IS_NULL(obj));
+
+	/* zalloc 0 with pmemobj_tx_set_failure_behavior called */
+	TX_BEGIN(pop) {
+		pmemobj_tx_set_failure_behavior(POBJ_TX_FAILURE_RETURN);
+		TOID_ASSIGN(obj, pmemobj_tx_zalloc(0, TYPE_XABORT));
 	} TX_ONCOMMIT {
 		TOID_ASSIGN(obj, OID_NULL);
 	} TX_ONABORT {

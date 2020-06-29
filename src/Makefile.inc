@@ -1,32 +1,5 @@
-# Copyright 2014-2019, Intel Corporation
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in
-#       the documentation and/or other materials provided with the
-#       distribution.
-#
-#     * Neither the name of the copyright holder nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2014-2020, Intel Corporation
 #
 # src/Makefile.inc -- common Makefile rules for PMDK
 #
@@ -43,7 +16,13 @@ vpath %.c $(RPMEM_COMMON)
 COMMON = $(TOP)/src/common
 vpath %.c $(COMMON)
 
-INCS += -I../include -I../common/ $(OS_INCS)
+CORE = $(TOP)/src/core
+vpath %.c $(CORE)
+
+PMEM2 = $(TOP)/src/libpmem2
+vpath %.c $(PMEM2)
+
+INCS += -I../include -I../common/ -I../core/ $(OS_INCS)
 
 # default CFLAGS
 DEFAULT_CFLAGS += -std=gnu99
@@ -145,7 +124,7 @@ endif
 LDFLAGS += -Wl,-z,relro -Wl,--fatal-warnings -Wl,--warn-common $(EXTRA_LDFLAGS)
 
 ifneq ($(NORPATH),1)
-LDFLAGS += -Wl,-rpath=$(libdir)$(LIB_SUBDIR):$(LIBNDCTL_LD_LIBRARY_PATHS)
+LDFLAGS += -Wl,-rpath=$(libdir)$(LIB_SUBDIR):$(LIBFABRIC_LD_LIBRARY_PATHS):$(LIBNDCTL_LD_LIBRARY_PATHS)
 endif
 
 ifeq ($(LIBRT_NEEDED), y)
@@ -195,7 +174,9 @@ endif
 ifneq ($(SOURCE),)
 _OBJS = $(SOURCE:.c=.o)
 _OBJS_COMMON = $(patsubst $(COMMON)/%, %, $(_OBJS))
-_OBJS_RPMEM_COMMON = $(patsubst $(RPMEM_COMMON)/%, %, $(_OBJS_COMMON))
+_OBJS_CORE = $(patsubst $(CORE)/%, %, $(_OBJS_COMMON))
+_OBJS_PMEM2 = $(patsubst $(PMEM2)/%, %, $(_OBJS_CORE))
+_OBJS_RPMEM_COMMON = $(patsubst $(RPMEM_COMMON)/%, %, $(_OBJS_PMEM2))
 OBJS += $(addprefix $(objdir)/, $(_OBJS_RPMEM_COMMON))
 endif
 

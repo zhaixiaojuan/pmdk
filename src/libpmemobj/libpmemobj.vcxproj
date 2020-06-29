@@ -22,13 +22,13 @@
     <ClCompile Include="..\..\src\libpmemobj\obj.c" />
     <ClCompile Include="..\..\src\libpmemobj\palloc.c" />
     <ClCompile Include="..\..\src\libpmemobj\pmalloc.c" />
-    <ClCompile Include="..\..\src\libpmemobj\ravl.c" />
+    <ClCompile Include="..\common\ravl.c" />
     <ClCompile Include="..\..\src\libpmemobj\ulog.c" />
     <ClCompile Include="..\..\src\libpmemobj\sync.c" />
     <ClCompile Include="..\..\src\libpmemobj\tx.c" />
-    <ClCompile Include="..\common\alloc.c" />
-    <ClCompile Include="..\common\badblock.c" />
-    <ClCompile Include="..\common\badblock_none.c" />
+    <ClCompile Include="..\core\alloc.c" />
+    <ClCompile Include="..\common\set_badblocks.c" />
+    <ClCompile Include="..\common\bad_blocks.c" />
     <ClCompile Include="..\common\ctl.c" />
     <ClCompile Include="..\common\ctl_cow.c" />
     <ClCompile Include="..\common\ctl_prefault.c" />
@@ -36,22 +36,24 @@
     <ClCompile Include="..\common\ctl_fallocate.c" />
     <ClCompile Include="..\common\file.c" />
     <ClCompile Include="..\common\file_windows.c" />
-    <ClCompile Include="..\common\fs_windows.c" />
+    <ClCompile Include="..\core\fs_windows.c" />
     <ClCompile Include="..\common\mmap.c" />
     <ClCompile Include="..\common\mmap_windows.c" />
-    <ClCompile Include="..\common\os_auto_flush_windows.c" />
     <ClCompile Include="..\common\os_deep_windows.c" />
-    <ClCompile Include="..\common\os_dimm_windows.c" />
-    <ClCompile Include="..\common\os_thread_windows.c" />
-    <ClCompile Include="..\common\os_windows.c" />
-    <ClCompile Include="..\common\out.c" />
+    <ClCompile Include="..\core\os_thread_windows.c" />
+    <ClCompile Include="..\core\os_windows.c" />
+    <ClCompile Include="..\core\out.c" />
     <ClCompile Include="..\common\pool_hdr.c" />
     <ClCompile Include="..\common\set.c" />
     <ClCompile Include="..\common\shutdown_state.c" />
-    <ClCompile Include="..\common\util.c" />
-    <ClCompile Include="..\common\util_windows.c" />
+    <ClCompile Include="..\core\util.c" />
+    <ClCompile Include="..\core\util_windows.c" />
     <ClCompile Include="..\common\uuid.c" />
     <ClCompile Include="..\common\uuid_windows.c" />
+    <ClCompile Include="..\libpmem2\auto_flush_windows.c" />
+    <ClCompile Include="..\libpmem2\badblocks.c" />
+    <ClCompile Include="..\libpmem2\badblocks_none.c" />
+    <ClCompile Include="..\libpmem2\usc_windows.c" />
     <ClCompile Include="alloc_class.c" />
     <ClCompile Include="container_ravl.c" />
     <ClCompile Include="container_seglists.c" />
@@ -59,10 +61,15 @@
     <ClCompile Include="memblock.c" />
     <ClCompile Include="recycler.c" />
     <ClCompile Include="stats.c" />
+    <ClCompile Include="..\libpmem2\config.c" />
+    <ClCompile Include="..\libpmem2\source.c" />
+    <ClCompile Include="..\libpmem2\source_windows.c" />
+    <ClCompile Include="..\libpmem2\pmem2_utils.c" />
+    <ClCompile Include="..\libpmem2\pmem2_utils_other.c" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="..\..\src\common\out.h" />
-    <ClInclude Include="..\..\src\common\util.h" />
+    <ClInclude Include="..\..\src\core\out.h" />
+    <ClInclude Include="..\..\src\core\util.h" />
     <ClInclude Include="..\..\src\common\valgrind_internal.h" />
     <ClInclude Include="..\..\src\include\libpmemobj.h" />
     <ClInclude Include="..\..\src\libpmemobj\bucket.h" />
@@ -78,19 +85,18 @@
     <ClInclude Include="..\..\src\libpmemobj\pmalloc.h" />
     <ClInclude Include="..\..\src\libpmemobj\pmemops.h" />
     <ClInclude Include="..\..\src\libpmemobj\redo.h" />
-    <ClInclude Include="..\..\src\libpmemobj\ravl.h" />
-    <ClInclude Include="..\common\alloc.h" />
+    <ClInclude Include="..\common\ravl.h" />
+    <ClInclude Include="..\core\alloc.h" />
     <ClInclude Include="..\common\ctl.h" />
     <ClInclude Include="..\common\ctl_global.h" />
     <ClInclude Include="..\common\dlsym.h" />
-    <ClInclude Include="..\common\fault_injection.h" />
+    <ClInclude Include="..\core\fault_injection.h" />
     <ClInclude Include="..\common\file.h" />
-    <ClInclude Include="..\common\fs.h" />
+    <ClInclude Include="..\core\fs.h" />
     <ClInclude Include="..\common\mmap.h" />
-    <ClInclude Include="..\common\os.h" />
-    <ClInclude Include="..\common\os_auto_flush.h" />
+    <ClInclude Include="..\core\os.h" />
     <ClInclude Include="..\common\os_deep.h" />
-    <ClInclude Include="..\common\os_thread.h" />
+    <ClInclude Include="..\core\os_thread.h" />
     <ClInclude Include="..\common\pmemcommon.h" />
     <ClInclude Include="..\common\pool_hdr.h" />
     <ClInclude Include="..\common\queue.h" />
@@ -112,6 +118,8 @@
     <ClInclude Include="..\include\libpmemobj\tx.h" />
     <ClInclude Include="..\include\libpmemobj\tx_base.h" />
     <ClInclude Include="..\include\libpmemobj\types.h" />
+    <ClInclude Include="..\libpmem2\auto_flush.h" />
+    <ClInclude Include="..\libpmem2\auto_flush_windows.h" />
     <ClInclude Include="alloc_class.h" />
     <ClInclude Include="container.h" />
     <ClInclude Include="container_ravl.h" />
@@ -121,6 +129,8 @@
     <ClInclude Include="stats.h" />
     <ClInclude Include="sync.h" />
     <ClInclude Include="tx.h" />
+    <ClInclude Include="..\libpmem2\config.h" />
+    <ClInclude Include="..\libpmem2\pmem2_utils.h" />
   </ItemGroup>
   <ItemGroup>
     <None Include="libpmemobj.def" />
@@ -143,7 +153,7 @@
     <RootNamespace>libpmemobj</RootNamespace>
     <DefaultLanguage>en-US</DefaultLanguage>
     <MinimumVisualStudioVersion>14.0</MinimumVisualStudioVersion>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
     <WindowsTargetPlatformMinVersion>10.0.10240.0</WindowsTargetPlatformMinVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />

@@ -1,33 +1,5 @@
-#
+# SPDX-License-Identifier: BSD-3-Clause
 # Copyright 2014-2020, Intel Corporation
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in
-#       the documentation and/or other materials provided with the
-#       distribution.
-#
-#     * Neither the name of the copyright holder nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 
 #
@@ -105,7 +77,7 @@ MANPAGES_3_DUMMY = libpmem/pmem_drain.3 libpmem/pmem_has_hw_drain.3 libpmem/pmem
 		   libpmemobj/pmemobj_check_version.3 libpmemobj/pmemobj_check.3 libpmemobj/pmemobj_errormsg.3 libpmemobj/pmemobj_set_funcs.3 \
 		   libpmemobj/pmemobj_reserve.3 libpmemobj/pmemobj_xreserve.3 libpmemobj/pmemobj_defer_free.3 libpmemobj/pmemobj_set_value.3 libpmemobj/pmemobj_publish.3 libpmemobj/pmemobj_tx_publish.3 libpmemobj/pmemobj_tx_xpublish.3 libpmemobj/pmemobj_cancel.3 libpmemobj/pobj_reserve_new.3 libpmemobj/pobj_reserve_alloc.3 libpmemobj/pobj_xreserve_new.3 libpmemobj/pobj_xreserve_alloc.3 \
 		   libpmemobj/tx_xstrdup.3 libpmemobj/tx_xwcsdup.3 libpmemobj/tx_xfree.3 \
-		   libpmemobj/pmemobj_defrag.3 libpmemobj/pmemobj_get_user_data.3 libpmemobj/pmemobj_set_user_data.3 libpmemobj/pmemobj_tx_get_user_data.3 libpmemobj/pmemobj_tx_set_user_data.3
+		   libpmemobj/pmemobj_defrag.3 libpmemobj/pmemobj_get_user_data.3 libpmemobj/pmemobj_set_user_data.3 libpmemobj/pmemobj_tx_get_user_data.3 libpmemobj/pmemobj_tx_set_user_data.3 libpmemobj/pmemobj_tx_get_failure_behavior.3 libpmemobj/pmemobj_tx_set_failure_behavior.3
 
 MANPAGES_WEBDIR_LINUX = web_linux
 MANPAGES_WEBDIR_WINDOWS = web_windows
@@ -122,11 +94,24 @@ MANPAGES_1_DUMMY_EXP =
 # libpmem2
 MANPAGES_7_MD_PMEM2 = libpmem2/libpmem2.7.md
 MANPAGES_5_MD_PMEM2 =
-MANPAGES_3_MD_PMEM2 = libpmem2/pmem2_errormsg.3.md libpmem2/pmem2_config.3.md libpmem2/pmem2_mapping.3.md
+MANPAGES_3_MD_PMEM2 = libpmem2/pmem2_errormsg.3.md libpmem2/pmem2_config_new.3.md libpmem2/pmem2_map.3.md \
+		libpmem2/pmem2_unmap.3.md libpmem2/pmem2_map_get_address.3.md libpmem2/pmem2_map_get_size.3.md \
+		libpmem2/pmem2_source_from_fd.3.md libpmem2/pmem2_config_set_required_store_granularity.3.md \
+		libpmem2/pmem2_source_size.3.md libpmem2/pmem2_source_alignment.3.md \
+		libpmem2/pmem2_config_set_length.3.md libpmem2/pmem2_config_set_offset.3.md \
+		libpmem2/pmem2_map_get_store_granularity.3.md libpmem2/pmem2_get_flush_fn.3.md \
+		libpmem2/pmem2_get_drain_fn.3.md libpmem2/pmem2_get_persist_fn.3.md \
+		libpmem2/pmem2_perror.3.md libpmem2/pmem2_get_memmove_fn.3.md libpmem2/pmem2_config_set_sharing.3.md \
+		libpmem2/pmem2_config_set_address.3.md libpmem2/pmem2_config_clear_address.3.md \
+		libpmem2/pmem2_config_set_vm_reservation.3.md libpmem2/pmem2_vm_reservation_new.3.md \
+		libpmem2/pmem2_badblock_context_new.3.md libpmem2/pmem2_badblock_next.3.md \
+		libpmem2/pmem2_badblock_clear.3.md libpmem2/pmem2_config_set_protection.3.md \
+		libpmem2/pmem2_deep_flush.3.md libpmem2/pmem2_source_from_anon.3.md
 MANPAGES_1_MD_PMEM2 =
 ifeq ($(PMEM2_INSTALL),y)
-MANPAGES_3_DUMMY += libpmem2/pmem2_config_new.3 libpmem2/pmem2_config_delete.3 libpmem2/pmem2_config_set_fd.3 libpmem2/pmem2_config_set_handle.3 \
-		   libpmem2/pmem2_map.3
+MANPAGES_3_DUMMY += libpmem2/pmem2_config_delete.3 libpmem2/pmem2_source_from_handle.3 libpmem2/pmem2_source_delete.3 \
+	libpmem2/pmem2_get_memset_fn.3 libpmem2/pmem2_get_memcpy_fn.3 libpmem2/pmem2_vm_reservation_delete.3 \
+	libpmem2/pmem2_badblock_context_delete.3
 endif
 
 ifeq ($(BUILD_RPMEM),y)
@@ -182,6 +167,11 @@ MANPAGES_5_NOINSTALL += $(MANPAGES_5_GROFF_PMEM2)
 MANPAGES_3_NOINSTALL += $(MANPAGES_3_GROFF_PMEM2)
 MANPAGES_1_NOINSTALL += $(MANPAGES_1_GROFF_PMEM2)
 endif
+
+MANPAGES_7_MD_WEB = $(MANPAGES_7_MD_PMEM2) + $(MANPAGES_7_MD)
+MANPAGES_5_MD_WEB = $(MANPAGES_5_MD_PMEM2) + $(MANPAGES_5_MD)
+MANPAGES_3_MD_WEB = $(MANPAGES_3_MD_PMEM2) + $(MANPAGES_3_MD)
+MANPAGES_1_MD_WEB = $(MANPAGES_1_MD_PMEM2) + $(MANPAGES_1_MD)
 
 MANPAGES = $(MANPAGES_7_GROFF) $(MANPAGES_5_GROFF) $(MANPAGES_3_GROFF) $(MANPAGES_1_GROFF) \
 	   $(MANPAGES_7_NOINSTALL) $(MANPAGES_5_NOINSTALL) $(MANPAGES_3_NOINSTALL) $(MANPAGES_1_NOINSTALL)
@@ -242,14 +232,14 @@ html: $(HTMLFILES)
 
 web: $(MANPAGES) | $(MANPAGES_WEBDIR_LINUX) $(MANPAGES_WEBDIR_WINDOWS)
 	$(MAKE) -C generated all
-	$(foreach f, $(MANPAGES_7_MD), WEB=1 WIN32="" ../utils/md2man.sh $(f) default.man $(MANPAGES_WEBDIR_LINUX)/$(f);)
-	$(foreach f, $(MANPAGES_5_MD), WEB=1 WIN32="" ../utils/md2man.sh $(f) default.man $(MANPAGES_WEBDIR_LINUX)/$(f);)
-	$(foreach f, $(MANPAGES_3_MD), WEB=1 WIN32="" ../utils/md2man.sh $(f) default.man $(MANPAGES_WEBDIR_LINUX)/$(f);)
-	$(foreach f, $(MANPAGES_1_MD), WEB=1 WIN32="" ../utils/md2man.sh $(f) default.man $(MANPAGES_WEBDIR_LINUX)/$(f);)
-	$(foreach f, $(MANPAGES_7_MD), WEB=1 WIN32=1 ../utils/md2man.sh $(f) default.man $(MANPAGES_WEBDIR_WINDOWS)/$(f);)
-	$(foreach f, $(MANPAGES_5_MD), WEB=1 WIN32=1 ../utils/md2man.sh $(f) default.man $(MANPAGES_WEBDIR_WINDOWS)/$(f);)
-	$(foreach f, $(MANPAGES_3_MD), WEB=1 WIN32=1 ../utils/md2man.sh $(f) default.man $(MANPAGES_WEBDIR_WINDOWS)/$(f);)
-	$(foreach f, $(MANPAGES_1_MD), WEB=1 WIN32=1 ../utils/md2man.sh $(f) default.man $(MANPAGES_WEBDIR_WINDOWS)/$(f);)
+	$(foreach f, $(MANPAGES_7_MD_WEB), WEB=1 WIN32="" ../utils/md2man.sh $(f) default.man $(MANPAGES_WEBDIR_LINUX)/$(f);)
+	$(foreach f, $(MANPAGES_5_MD_WEB), WEB=1 WIN32="" ../utils/md2man.sh $(f) default.man $(MANPAGES_WEBDIR_LINUX)/$(f);)
+	$(foreach f, $(MANPAGES_3_MD_WEB), WEB=1 WIN32="" ../utils/md2man.sh $(f) default.man $(MANPAGES_WEBDIR_LINUX)/$(f);)
+	$(foreach f, $(MANPAGES_1_MD_WEB), WEB=1 WIN32="" ../utils/md2man.sh $(f) default.man $(MANPAGES_WEBDIR_LINUX)/$(f);)
+	$(foreach f, $(MANPAGES_7_MD_WEB), WEB=1 WIN32=1 ../utils/md2man.sh $(f) default.man $(MANPAGES_WEBDIR_WINDOWS)/$(f);)
+	$(foreach f, $(MANPAGES_5_MD_WEB), WEB=1 WIN32=1 ../utils/md2man.sh $(f) default.man $(MANPAGES_WEBDIR_WINDOWS)/$(f);)
+	$(foreach f, $(MANPAGES_3_MD_WEB), WEB=1 WIN32=1 ../utils/md2man.sh $(f) default.man $(MANPAGES_WEBDIR_WINDOWS)/$(f);)
+	$(foreach f, $(MANPAGES_1_MD_WEB), WEB=1 WIN32=1 ../utils/md2man.sh $(f) default.man $(MANPAGES_WEBDIR_WINDOWS)/$(f);)
 
 compress: $(GZFILES)
 

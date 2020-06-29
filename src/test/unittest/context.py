@@ -1,36 +1,7 @@
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2019-2020, Intel Corporation
 #
-# Copyright 2019, Intel Corporation
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in
-#       the documentation and/or other materials provided with the
-#       distribution.
-#
-#     * Neither the name of the copyright holder nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-"""Set of classes that represent the context of single test execution
-(like build, filesystem, test type)"""
+"""Set of classes that represent the context of single test execution"""
 
 import os
 import shlex
@@ -38,11 +9,15 @@ import sys
 import itertools
 import shutil
 import subprocess as sp
+import collections
+import contextlib
+from inspect import ismethod
 
+import configurator
 import futils
 from poolset import _Poolset
-import tools
-from utils import KiB, MiB, GiB, TiB
+from tools import Tools
+from utils import KiB, MiB, HEADER_SIZE
 
 try:
     import testconfig
@@ -55,7 +30,7 @@ try:
     envconfig = envconfig.config
 except ImportError:
     # if file doesn't exist create dummy object
-    envconfig = {'GLOBAL_LIB_PATH': ''}
+    envconfig = {'GLOBAL_LIB_PATH': '', 'PMEM2_AVX512F_ENABLED': ''}
 
 
 def expand(*classes):
@@ -64,26 +39,129 @@ def expand(*classes):
 
 
 class ContextBase:
-    """Low level context utils."""
-    def __init__(self, test, conf, **kwargs):
-        self.env = {}
-        for ctx in [kwargs['fs'], kwargs['build']]:
-            if hasattr(ctx, 'env'):
-                self.env.update(ctx.env)
-        self.test = test
-        self.conf = conf
-        self.build = kwargs['build']
-        self.fs = kwargs['fs']
-        self.valgrind = kwargs['valgrind']
-        self.msg = futils.Message(conf)
+    """Context basic interface and low-level utilities"""
 
-    def dump_n_lines(self, file, n=None):
+    def __init__(self, build, *args, **kwargs):
+        self._elems = []
+        self._env = {}
+        self.cmd_prefix = ''
+        self.build = build
+
+        # for positional arguments, each arg is added to the anonymous
+        # context elements list
+        for arg in args:
+            self.add_ctx_elem(arg)
+
+        # for keyword arguments, each kwarg value is additionally set as a
+        # context attribute with its key assigned as an attribute name.
+        for k, v in kwargs.items():
+            self.add_ctx_elem(v)
+            setattr(self, str(k), v)
+
+    def __getattr__(self, name):
+        """
+        If context class itself does not have an acquired attribute
+        check if one of its elements has it and return it.
+        """
+        elems_with_attr = [e for e in self._elems if hasattr(e, name)]
+
+        # no context elements with requested attribute found
+        if not elems_with_attr:
+            raise AttributeError('Neither context nor any of its elements '
+                                 'have the attribute "{}"'.format(name))
+
+        # all found elements have the same attribute value
+        elif all(e == e for e in elems_with_attr):
+            return getattr(elems_with_attr[0], name)
+
+        # more than one element found and they have different attribute values
+        else:
+            raise AttributeError('Ambiguity while acquiring attribute "{}": '
+                                 'implemented by multiple context elements '
+                                 'with different values'
+                                 .format(name))
+
+    def __str__(self):
+        """
+        The Context string representation is a concatenation
+        (separated by '/') of all its elements string representations.
+        """
+        s = '{}/'.format(str(self.build))
+        for e in self._elems:
+            if e:
+                s = s + str(e) + '/'
+        s = s[:-1]
+        return s
+
+    def add_ctx_elem(self, elem):
+        """
+        Add element to the context. Update context environment variables
+        with element's environment variables (if present)
+        """
+        self._elems.append(elem)
+        if hasattr(elem, 'name'):
+            setattr(self, elem.name, elem)
+        else:
+            setattr(self, str(elem), elem)
+
+        if hasattr(elem, 'env'):
+            self.add_env(elem.env)
+        if hasattr(elem, 'cmd'):
+            if self.cmd_prefix:
+                raise ValueError('More than one context element '
+                                 'defines command line prefix')
+            else:
+                self.cmd_prefix = elem.cmd
+
+    def add_env(self, env):
+        """Add environment variables to those stored by context"""
+        futils.add_env_common(self._env, env)
+
+    def setup(self, *args, **kwargs):
+        """
+        run setup() method for each context element.
+        Ignore error if not implemented
+        """
+        kwargs['tools'] = self.tools
+        for e in self._elems:
+            with contextlib.suppress(AttributeError):
+                e.setup(*args, **kwargs)
+
+    def check(self, *args, **kwargs):
+        """
+        run check() method for each context element.
+        Ignore error if not implemented
+        """
+        kwargs['tools'] = self.tools
+        for e in self._elems:
+            with contextlib.suppress(AttributeError):
+                e.check(*args, **kwargs)
+
+    def clean(self, *args, **kwargs):
+        """
+        run clean() method for each context element.
+        Ignore error if not implemented
+        """
+        kwargs['tools'] = self.tools
+        for e in self._elems:
+            with contextlib.suppress(AttributeError):
+                e.clean(*args, **kwargs)
+
+    @property
+    def env(self):
+        return self._env
+
+    @property
+    def tools(self):
+        return Tools(self.env, self.build)
+
+    def dump_n_lines(self, file, n=-1):
         """
         Prints last n lines of given log file. Number of lines printed can be
         modified locally by "n" argument or globally by "dump_lines" in
         testconfig.py file. If none of them are provided, default value is 30.
         """
-        if n is None:
+        if n < 0:
             n = config.get('dump_lines', 30)
 
         file_size = self.get_size(file.name)
@@ -94,8 +172,9 @@ class ContextBase:
             if n > length:
                 n = length
             lines = lines[-n:]
-            lines.insert(0, 'Last {} lines of {} below (whole file has {} lines):{}'
-                            ''.format(n, file.name, length, os.linesep))
+            lines.insert(0, 'Last {} lines of {} below '
+                         '(whole file has {} lines):{}'
+                         .format(n, file.name, length, os.linesep))
             for line in lines:
                 print(line, end='')
         else:
@@ -106,61 +185,121 @@ class ContextBase:
 
     def is_devdax(self, path):
         """Checks if given path points to device dax"""
-        proc = tools.pmemdetect(self, '-d', path)
-        if proc.returncode == tools.PMEMDETECT_ERROR:
+        proc = self.tools.pmemdetect('-d', path)
+        if proc.returncode == self.tools.PMEMDETECT_ERROR:
             futils.fail(proc.stdout)
-        if proc.returncode == tools.PMEMDETECT_TRUE:
+        if proc.returncode == self.tools.PMEMDETECT_TRUE:
             return True
-        if proc.returncode == tools.PMEMDETECT_FALSE:
+        if proc.returncode == self.tools.PMEMDETECT_FALSE:
             return False
-        futils.fail('Unknown value {} returned by pmemdetect'.format(proc.returncode))
+        futils.fail('Unknown value {} returned by pmemdetect'
+                    .format(proc.returncode))
 
     def supports_map_sync(self, path):
         """Checks if MAP_SYNC is supported on a filesystem from given path"""
-        proc = tools.pmemdetect(self, '-s', path)
-        if proc.returncode == tools.PMEMDETECT_ERROR:
+        proc = self.tools.pmemdetect('-s', path)
+        if proc.returncode == self.tools.PMEMDETECT_ERROR:
             futils.fail(proc.stdout)
-        if proc.returncode == tools.PMEMDETECT_TRUE:
+        if proc.returncode == self.tools.PMEMDETECT_TRUE:
             return True
-        if proc.returncode == tools.PMEMDETECT_FALSE:
+        if proc.returncode == self.tools.PMEMDETECT_FALSE:
             return False
-        futils.fail('Unknown value {} returned by pmemdetect'.format(proc.returncode))
+        futils.fail('Unknown value {} returned by pmemdetect'
+                    .format(proc.returncode))
 
     def get_size(self, path):
         """
         Returns size of the file or dax device.
-        Value "2**64 - 1" is checked because pmemdetect in case of error prints it.
+        Value "2**64 - 1" is checked because pmemdetect
+        prints it in case of error.
         """
-        proc = tools.pmemdetect(self, '-z', path)
+        proc = self.tools.pmemdetect('-z', path)
         if int(proc.stdout) != 2**64 - 1:
             return int(proc.stdout)
-        futils.fail('Could not get size of the file, it is inaccessible or does not exist')
+        futils.fail('Could not get size of the file, '
+                    'it is inaccessible or does not exist')
 
-    def get_free_space(self):
+    def get_free_space(self, dir="."):
         """Returns free space for current file system"""
-        _, _, free = shutil.disk_usage(".")
+        _, _, free = shutil.disk_usage(dir)
         return free
 
 
 class Context(ContextBase):
     """Manage test execution based on values from context classes"""
 
-    def __init__(self, test, conf, **kwargs):
-        ContextBase.__init__(self, test, conf, **kwargs)
+    def __init__(self, *args, **kwargs):
+        self.conf = configurator.Configurator().config
+        self.msg = futils.Message(self.conf.unittest_log_level)
+        ContextBase.__init__(self, *args, **kwargs)
 
-    @property
-    def testdir(self):
-        """Test directory on selected filesystem"""
-        # Testdir uses 'fs.dir' field  - it is illegal to access it in case of
-        # 'Non' fs. Hence it is implemented as a property.
-        return os.path.join(self.fs.dir, self.test.testdir)
+    def new_poolset(self, path):
+        return _Poolset(path, self)
+
+    def exec(self, cmd, *args, expected_exitcode=0, stderr_file=None,
+             stdout_file=None):
+        """Execute binary in current test context"""
+
+        tmp = self._env.copy()
+        futils.add_env_common(tmp, os.environ.copy())
+
+        # change cmd into list for supbrocess type compliance
+        cmd = [cmd, ]
+
+        if sys.platform == 'win32':
+            cmd[0] = os.path.join(self.build.exedir, cmd[0]) + '.exe'
+        else:
+            cmd[0] = os.path.join(self.cwd, cmd[0]) + \
+                self.build.exesuffix
+
+            if self.valgrind:
+                cmd = self.valgrind.cmd + cmd
+
+        # cast all provided args to strings (required by subprocess run())
+        # so that exec() can accept args of any printable type
+        cmd.extend([str(a) for a in args])
+
+        if self.conf.tracer:
+            cmd = shlex.split(self.conf.tracer) + cmd
+
+            # process stdout and stderr are not redirected - this lets running
+            # tracer command in an interactive session
+            proc = sp.run(cmd, env=tmp, cwd=self.cwd)
+        else:
+            if stderr_file:
+                f = open(os.path.join(self.cwd, stderr_file), 'w')
+
+            # let's create a dictionary of arguments to the run func
+            run_kwargs = {
+                'env': tmp,
+                'cwd': self.cwd,
+                'timeout': self.conf.timeout,
+                'stdout': sp.PIPE,
+                'universal_newlines': True,
+                'stderr': sp.STDOUT if stderr_file is None else f}
+
+            proc = sp.run(cmd, **run_kwargs)
+
+            if stderr_file:
+                f.close()
+
+        if expected_exitcode is not None and \
+           proc.returncode != expected_exitcode:
+            futils.fail(proc.stdout, exit_code=proc.returncode)
+
+        if stdout_file is not None:
+            with open(os.path.join(self.cwd, stdout_file), 'w') as f:
+                f.write(proc.stdout)
+
+        self.msg.print_verbose(proc.stdout)
 
     def create_holey_file(self, size, path, mode=None):
         """Create a new file with the selected size and name"""
         filepath = os.path.join(self.testdir, path)
         with open(filepath, 'w') as f:
-            f.seek(size - 1)
-            f.write('\0')
+            if size > 0:
+                f.seek(size - 1)
+                f.write('\0')
         if mode is not None:
             os.chmod(filepath, mode)
         return filepath
@@ -187,6 +326,11 @@ class Context(ContextBase):
             os.chmod(filepath, mode)
         return filepath
 
+    def require_free_space(self, space):
+        if self.get_free_space(self.testdir) < space:
+            futils.skip('Not enough free space ({} MiB required)'
+                        .format(space / MiB))
+
     def mkdirs(self, path, mode=None):
         """
         Creates directory along with all parent directories required. In the
@@ -198,60 +342,8 @@ class Context(ContextBase):
         else:
             os.makedirs(dirpath, mode, exist_ok=True)
 
-    def new_poolset(self, path):
-        return _Poolset(path, self)
 
-    def exec(self, cmd, *args, expected_exit=0):
-        """Execute binary in current test context"""
-
-        env = {**self.env, **os.environ.copy(), **self.test.utenv}
-
-        # change cmd into list for supbrocess type compliance
-        cmd = [cmd, ]
-
-        if sys.platform == 'win32':
-            env['PATH'] = self.build.libdir + os.pathsep +\
-                envconfig['GLOBAL_LIB_PATH'] + os.pathsep +\
-                env.get('PATH', '')
-            cmd[0] = os.path.join(self.build.exedir, cmd[0]) + '.exe'
-
-        else:
-            if self.test.ld_preload:
-                env['LD_PRELOAD'] = env.get('LD_PRELOAD', '') + os.pathsep +\
-                    self.test.ld_preload
-                self.valgrind.handle_ld_preload(self.test.ld_preload)
-            env['LD_LIBRARY_PATH'] = self.build.libdir + os.pathsep +\
-                envconfig['GLOBAL_LIB_PATH'] + os.pathsep +\
-                env.get('LD_LIBRARY_PATH', '')
-            cmd[0] = os.path.join(self.test.cwd, cmd[0]) + self.build.exesuffix
-
-            if self.valgrind:
-                cmd = self.valgrind.cmd + cmd
-
-        cmd = cmd + list(args)
-
-        if self.conf.tracer:
-            cmd = shlex.split(self.conf.tracer) + cmd
-
-            # process stdout and stderr are not redirected - this lets running
-            # tracer command in interactive session
-            proc = sp.run(cmd, env=env, cwd=self.test.cwd)
-        else:
-            proc = sp.run(cmd, env=env, cwd=self.test.cwd,
-                          timeout=self.conf.timeout, stdout=sp.PIPE,
-                          stderr=sp.STDOUT, universal_newlines=True)
-
-        if proc.returncode != expected_exit:
-            futils.fail(proc.stdout, exit_code=proc.returncode)
-
-        if sys.platform != 'win32' and expected_exit == 0 \
-                and not self.valgrind.validate_log():
-            futils.fail(proc.stdout)
-
-        self.msg.print_verbose(proc.stdout)
-
-
-class _CtxType(type):
+class CtxType(type):
     """Metaclass for context classes that can stand for multiple classes"""
     def __init__(cls, name, bases, dct):
         type.__init__(cls, name, bases, dct)
@@ -292,101 +384,168 @@ class _CtxType(type):
         return [c(conf) for c in expand(*classes)]
 
 
-class _Build(metaclass=_CtxType):
-    """Base and factory class for standard build classes"""
-    exesuffix = ''
-
-
-class Debug(_Build):
-    """Set the context for debug build"""
-    is_preferred = True
-
-    def __init__(self, conf):
-        if sys.platform == 'win32':
-            self.exedir = futils.WIN_DEBUG_EXEDIR
-        self.libdir = futils.DEBUG_LIBDIR
-
-
-class Release(_Build):
-    """Set the context for release build"""
-    is_preferred = True
-
-    def __init__(self, conf):
-        if sys.platform == 'win32':
-            self.exedir = futils.WIN_RELEASE_EXEDIR
-        self.libdir = futils.RELEASE_LIBDIR
-
-
-# Build types not available on Windows
-if sys.platform != 'win32':
-    class Static_Debug(_Build):
-        """Sets the context for static_debug build"""
-
-        def __init__(self, conf):
-            self.exesuffix = '.static-debug'
-            self.libdir = futils.DEBUG_LIBDIR
-
-    class Static_Release(_Build):
-        """Sets the context for static_release build"""
-
-        def __init__(self, conf):
-            self.exesuffix = '.static-nondebug'
-            self.libdir = futils.RELEASE_LIBDIR
-
-
-class _Fs(metaclass=_CtxType):
-    """Base class for filesystem classes"""
-
-
-class Pmem(_Fs):
-    """Set the context for pmem filesystem"""
-    is_preferred = True
-
-    def __init__(self, conf):
-        self.dir = os.path.abspath(conf.pmem_fs_dir)
-        if conf.fs_dir_force_pmem == 1:
-            self.env = {'PMEM_IS_PMEM_FORCE': '1'}
-
-
-class Nonpmem(_Fs):
-    """Set the context for nonpmem filesystem"""
-
-    def __init__(self, conf):
-        self.dir = os.path.abspath(conf.non_pmem_fs_dir)
-
-
-class Non(_Fs):
+def filter_contexts(config_ctx, test_ctx):
     """
-    No filesystem is used. Accessing some fields of this class is prohibited.
+    Return contexts that should be used in execution based on
+    contexts provided by config and test case
     """
-    explicit = True
+    if not test_ctx:
+        return [c for c in config_ctx if not c.explicit]
+    return [c for c in config_ctx if c in test_ctx]
 
-    def __init__(self, conf):
+
+def str_to_ctx_common(val, ctx_base_type):
+    def class_from_string(name, base):
+        if name == 'all':
+            return base.__subclasses__()
+
+        try:
+            return next(b for b in base.__subclasses__()
+                        if str(b) == name.lower())
+        except StopIteration:
+            print('Invalid context value: "{}".'.format(name))
+            raise
+
+    if isinstance(val, list):
+        classes = [class_from_string(cl, ctx_base_type) for cl in val]
+        return expand(*classes)
+    else:
+        return expand(class_from_string(val, ctx_base_type))
+
+
+def _req_prefix(attr):
+    """
+    Add prefix to requirement attribute name. Used to mitigate the risk
+    of name clashes.
+    """
+    return '_require{}'.format(attr)
+
+
+def add_requirement(tc, attr, value, **kwargs):
+    """Add requirement to the test"""
+    setattr(tc, _req_prefix(attr), value)
+    setattr(tc, _req_prefix('{}_kwargs'.format(attr)), kwargs)
+
+
+def get_requirement(tc, attr, default):
+    """
+    Get test requirement set to attribute 'attr', return default
+    if not found
+    """
+    ret_val = default
+    ret_kwargs = {}
+    try:
+        ret_val = getattr(tc, _req_prefix(attr))
+        ret_kwargs = getattr(tc, _req_prefix('{}_kwargs'.format(attr)))
+    except AttributeError:
         pass
 
-    def __getattribute__(self, name):
-        if name in ('dir',):
-            raise AttributeError("fs '{}' attribute cannot be used for '{}' fs"
-                                 .format(name, self))
+    return ret_val, ret_kwargs
+
+
+class TestParam:
+    """
+    TestParam manages single test parameter provided to test with add_params()
+    decorator.
+    Test parameters are added to context class as its elements - therefore the
+    'value' object may implement setup(), check() and clean() which will be
+    delegated to by TestParam class if context setup(), check() and
+    clean() methods are called.
+    """
+    def __init__(self, name, value):
+        self.name = name
+        self.value = value
+
+    def __str__(self):
+        return '{}: {}'.format(self.name, self.value)
+
+    def __call__(self):
+        return self.value
+
+    def setup(self, **kwargs):
+        if hasattr(self.value, 'setup') and ismethod(self.value.setup):
+            self.value.setup(**kwargs)
+
+    def check(self, **kwargs):
+        if hasattr(self.value, 'check') and ismethod(self.value.check):
+            self.value.check(**kwargs)
+
+    def clean(self, **kwargs):
+        if hasattr(self.value, 'clean') and ismethod(self.value.clean):
+            self.value.clean(**kwargs)
+
+
+PARAMS_ATTR = '_params_'
+
+
+def add_params(name, values):
+    """
+    Add parameters to test case.
+
+    Parameters will be accessible from test through context 'name' attribute.
+    The value of single parameter can be accessed by calling this attribute,
+    e.g. for:
+    add_params('param', params_list)
+    single parameter provided within 'params_list' is accessible through:
+    ctx.param()
+    """
+    params = [TestParam(name, v) for v in values]
+
+    def wrapped(tc):
+        if hasattr(tc, PARAMS_ATTR):
+            getattr(tc, PARAMS_ATTR).update({name: params})
         else:
-            return super().__getattribute__(name)
+            setattr(tc, PARAMS_ATTR, {name: params})
+        return tc
+
+    return wrapped
 
 
-class _TestType(metaclass=_CtxType):
-    """Base class for test duration"""
+def get_params(tc):
+    """Get parameters added to test case"""
+    try:
+        return getattr(tc, PARAMS_ATTR)
+    except AttributeError:
+        return {}
 
 
-class Short(_TestType):
-    pass
+class Any:
+    """
+    The test context attribute signifying that specific context value is not
+    relevant for the test outcome and it should be run only once in some
+    viable context
+    """
+    @classmethod
+    def get(cls, conf_ctx):
+        """Get specific context value to be run"""
+        for c in conf_ctx:
+            if c.is_preferred:
+                # pick preferred if found
+                return c
+        # if no preferred is found, pick the first non-explicit one
+        ret = [c for c in conf_ctx if not c.explicit]
+        if ret:
+            return ret[0]
+        else:
+            config = configurator.Configurator().config
+            msg = futils.Message(config.unittest_log_level)
+            msg.print_verbose('No valid "Any" context found')
+            return None
 
 
-class Medium(_TestType):
-    pass
+class _NoContext(collections.UserList):
+    """
+    May be safely returned by context element class 'filter' method if
+    its items are not required during test execution
+    (e. g. no dax devices required by test)
+    """
+
+    def __init__(self):
+        self.data = []
+        self.data.append(False)
+
+    def __bool__(self):
+        return False
 
 
-class Long(_TestType):
-    pass
-
-
-class Check(_TestType):
-    includes = [Short, Medium]
+NO_CONTEXT = _NoContext()

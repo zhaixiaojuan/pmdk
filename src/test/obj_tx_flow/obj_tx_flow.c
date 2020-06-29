@@ -1,34 +1,5 @@
-/*
- * Copyright 2015-2019, Intel Corporation
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *
- *     * Neither the name of the copyright holder nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2015-2020, Intel Corporation */
 
 /*
  * obj_tx_flow.c -- unit test for transaction flow
@@ -41,7 +12,7 @@
 #define TEST_VALUE_A 5
 #define TEST_VALUE_B 10
 #define TEST_VALUE_C 15
-#define OPS_NUM 8
+#define OPS_NUM 9
 TOID_DECLARE(struct test_obj, 1);
 
 struct test_obj {
@@ -147,6 +118,27 @@ do_tx_macro_abort_nested(PMEMobjpool *pop, TOID(struct test_obj) *obj)
 }
 
 static void
+do_tx_macro_abort_nested_begin(PMEMobjpool *pop, TOID(struct test_obj) *obj)
+{
+	errno = 0;
+	TX_BEGIN(pop) {
+		D_RW(*obj)->a = TEST_VALUE_A;
+		D_RW(*obj)->b = TEST_VALUE_B;
+
+		pmemobj_tx_set_failure_behavior(POBJ_TX_FAILURE_RETURN);
+		TX_BEGIN((PMEMobjpool *)(uintptr_t)7) {
+		} TX_ONABORT {
+			UT_ASSERT(0);
+		} TX_END
+		UT_ASSERT(errno == EINVAL);
+	} TX_ONABORT {
+		D_RW(*obj)->c = TEST_VALUE_C;
+	} TX_ONCOMMIT { /* not called */
+		D_RW(*obj)->a = TEST_VALUE_B;
+	} TX_END
+}
+
+static void
 do_tx_commit(PMEMobjpool *pop, TOID(struct test_obj) *obj)
 {
 
@@ -216,8 +208,8 @@ do_tx_abort_nested(PMEMobjpool *pop, TOID(struct test_obj) *obj)
 typedef void (*fn_op)(PMEMobjpool *pop, TOID(struct test_obj) *obj);
 static fn_op tx_op[OPS_NUM] = {do_tx_macro_commit, do_tx_macro_abort,
 			do_tx_macro_commit_nested, do_tx_macro_abort_nested,
-			do_tx_commit, do_tx_commit_nested, do_tx_abort,
-			do_tx_abort_nested};
+			do_tx_macro_abort_nested_begin, do_tx_commit,
+			do_tx_commit_nested, do_tx_abort, do_tx_abort_nested};
 
 static void
 do_tx_process(PMEMobjpool *pop)

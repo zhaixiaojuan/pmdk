@@ -1,34 +1,5 @@
-/*
- * Copyright 2014-2019, Intel Corporation
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *
- *     * Neither the name of the copyright holder nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2014-2020, Intel Corporation */
 
 /*
  * obj.c -- transactional object store implementation
@@ -346,6 +317,17 @@ obj_drain_empty(void)
 }
 
 /*
+ * obj_msync_nofail -- (internal) pmem_msync wrapper that never fails from
+ * caller's perspective
+ */
+static void
+obj_msync_nofail(const void *addr, size_t size)
+{
+	if (pmem_msync(addr, size))
+		FATAL("!pmem_msync");
+}
+
+/*
  * obj_nopmem_memcpy -- (internal) memcpy followed by an msync
  */
 static void *
@@ -360,7 +342,7 @@ obj_nopmem_memcpy(void *dest, const void *src, size_t len, unsigned flags)
 	 * libc memcpy does not.
 	 */
 	pmem_memcpy(dest, src, len, PMEM_F_MEM_NOFLUSH);
-	pmem_msync(dest, len);
+	obj_msync_nofail(dest, len);
 	return dest;
 }
 
@@ -374,7 +356,7 @@ obj_nopmem_memmove(void *dest, const void *src, size_t len, unsigned flags)
 
 	/* see comment in obj_nopmem_memcpy */
 	pmem_memmove(dest, src, len, PMEM_F_MEM_NOFLUSH);
-	pmem_msync(dest, len);
+	obj_msync_nofail(dest, len);
 	return dest;
 }
 
@@ -388,7 +370,7 @@ obj_nopmem_memset(void *dest, int c, size_t len, unsigned flags)
 
 	/* see comment in obj_nopmem_memcpy */
 	pmem_memset(dest, c, len, PMEM_F_MEM_NOFLUSH);
-	pmem_msync(dest, len);
+	obj_msync_nofail(dest, len);
 	return dest;
 }
 
@@ -829,7 +811,7 @@ obj_vg_check_no_undef(struct pmemobjpool *pop)
 static void
 obj_vg_boot(struct pmemobjpool *pop)
 {
-	if (!On_valgrind)
+	if (!On_memcheck)
 		return;
 
 	LOG(4, "pop %p", pop);
@@ -992,17 +974,6 @@ obj_descr_check(PMEMobjpool *pop, const char *layout, size_t poolsize)
 	}
 
 	return 0;
-}
-
-/*
- * obj_msync_nofail -- (internal) pmem_msync wrapper that never fails from
- * caller's perspective
- */
-static void
-obj_msync_nofail(const void *addr, size_t size)
-{
-	if (pmem_msync(addr, size))
-		FATAL("!pmem_msync");
 }
 
 /*
@@ -1236,7 +1207,7 @@ obj_runtime_init(PMEMobjpool *pop, int rdonly, int boot, unsigned nlanes)
 			goto err_boot;
 
 #if VG_MEMCHECK_ENABLED
-		if (On_valgrind) {
+		if (On_memcheck) {
 			/* mark unused part of the pool as not accessible */
 			void *end = palloc_heap_end(&pop->heap);
 			VALGRIND_DO_MAKE_MEM_NOACCESS(end,
@@ -3465,12 +3436,12 @@ void
 pmemobj_inject_fault_at(enum pmem_allocation_type type, int nth,
 							const char *at)
 {
-	common_inject_fault_at(type, nth, at);
+	core_inject_fault_at(type, nth, at);
 }
 
 int
 pmemobj_fault_injection_enabled(void)
 {
-	return common_fault_injection_enabled();
+	return core_fault_injection_enabled();
 }
 #endif

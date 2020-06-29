@@ -8,12 +8,15 @@
     <Filter Include="Test Scripts">
       <UniqueIdentifier>{2d237952-c50b-4d8c-a83f-e28a96d88887}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Match Files">
-      <UniqueIdentifier>{407f86df-d2bb-4cbd-ba25-881ccdd8d986}</UniqueIdentifier>
+    <Filter Include="Header Files">
+      <UniqueIdentifier>{2057683c-c33b-4646-acd8-996cbc0b26bb}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="pmem_memmove.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
+    <ClCompile Include="..\pmem2_memmove\memmove_common.c">
       <Filter>Source Files</Filter>
     </ClCompile>
   </ItemGroup>
@@ -21,5 +24,10 @@
     <None Include="TEST0.PS1">
       <Filter>Test Scripts</Filter>
     </None>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\pmem2_memmove\memmove_common.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

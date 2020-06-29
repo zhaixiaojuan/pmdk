@@ -1,34 +1,5 @@
-/*
- * Copyright 2017-2019, Intel Corporation
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *     * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *     * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *
- *     * Neither the name of the copyright holder nor the names of its
- *       contributors may be used to endorse or promote products derived
- *       from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2017-2020, Intel Corporation */
 
 /*
  * shutdown_state.c -- unsafe shudown detection
@@ -38,11 +9,13 @@
 #include <stdbool.h>
 #include <endian.h>
 #include "shutdown_state.h"
-#include "os_dimm.h"
 #include "out.h"
 #include "util.h"
 #include "os_deep.h"
 #include "set.h"
+#include "libpmem2.h"
+#include "badblocks.h"
+#include "../libpmem2/pmem2_utils.h"
 
 #define FLUSH_SDS(sds, rep) \
 	if ((rep) != NULL) os_part_deep_common(rep, 0, sds, sizeof(*(sds)), 1)
@@ -82,23 +55,38 @@ shutdown_state_init(struct shutdown_state *sds, struct pool_replica *rep)
  * if path does not exist it will fail which does NOT mean shutdown failure
  */
 int
-shutdown_state_add_part(struct shutdown_state *sds, const char *path,
+shutdown_state_add_part(struct shutdown_state *sds, int fd,
 	struct pool_replica *rep)
 {
-	LOG(3, "sds %p, path %s", sds, path);
+	LOG(3, "sds %p, fd %d", sds, fd);
 
 	size_t len = 0;
 	char *uid;
 	uint64_t usc;
 
-	if (os_dimm_usc(path, &usc)) {
-		LOG(2, "cannot read unsafe shutdown count for %s", path);
+	struct pmem2_source *src;
+
+	if (pmem2_source_from_fd(&src, fd))
 		return 1;
+
+	int ret = pmem2_source_device_usc(src, &usc);
+
+	if (ret == PMEM2_E_NOSUPP) {
+		usc = 0;
+	} else if (ret != 0) {
+		if (ret == -EPERM) {
+			/* overwrite error message */
+			ERR(
+				"Cannot read unsafe shutdown count. For more information please check https://github.com/pmem/pmdk/issues/4207");
+		}
+		LOG(2, "cannot read unsafe shutdown count for %d", fd);
+		goto err;
 	}
 
-	if (os_dimm_uid(path, NULL, &len)) {
-		ERR("cannot read uuid of %s", path);
-		return 1;
+	ret = pmem2_source_device_id(src, NULL, &len);
+	if (ret != PMEM2_E_NOSUPP && ret != 0) {
+		ERR("cannot read uuid of %d", fd);
+		goto err;
 	}
 
 	len += 4 - len % 4;
@@ -106,13 +94,14 @@ shutdown_state_add_part(struct shutdown_state *sds, const char *path,
 
 	if (uid == NULL) {
 		ERR("!Zalloc");
-		return 1;
+		goto err;
 	}
 
-	if (os_dimm_uid(path, uid, &len)) {
-		ERR("cannot read uuid of %s", path);
+	ret = pmem2_source_device_id(src, uid, &len);
+	if (ret != PMEM2_E_NOSUPP && ret != 0) {
+		ERR("cannot read uuid of %d", fd);
 		Free(uid);
-		return 1;
+		goto err;
 	}
 
 	sds->usc = htole64(le64toh(sds->usc) + usc);
@@ -123,8 +112,12 @@ shutdown_state_add_part(struct shutdown_state *sds, const char *path,
 
 	FLUSH_SDS(sds, rep);
 	Free(uid);
+	pmem2_source_delete(&src);
 	shutdown_state_checksum(sds, rep);
 	return 0;
+err:
+	pmem2_source_delete(&src);
+	return 1;
 }
 
 /*

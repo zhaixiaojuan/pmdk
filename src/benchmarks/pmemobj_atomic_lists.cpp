@@ -1,34 +1,5 @@
-/*
- * Copyright 2015-2019, Intel Corporation
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are permitted provided that the following conditions
- * are met:
- *
- *      * Redistributions of source code must retain the above copyright
- *       notice, this list of conditions and the following disclaimer.
- *
- *      * Redistributions in binary form must reproduce the above copyright
- *       notice, this list of conditions and the following disclaimer in
- *       the documentation and/or other materials provided with the
- *       distribution.
- *
- *      * Neither the name of the copyright holder nor the names of its
- *        contributors may be used to endorse or promote products derived
- *        from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
- * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
- * LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
- * A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
- * OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
- * SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
- * LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
- * DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
- * THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
- * (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
- * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// SPDX-License-Identifier: BSD-3-Clause
+/* Copyright 2015-2020, Intel Corporation */
 
 /*
  * pmemobj_atomic_lists.cpp -- benchmark for pmemobj atomic list API
@@ -67,13 +38,13 @@ typedef int (*fn_init_t)(struct worker_info *worker, size_t n_elm,
  * args -- stores command line parsed arguments.
  */
 struct obj_list_args {
-	char *type_num;    /* type_number mode - one, per-thread, rand */
-	char *position;    /* position - head, tail, middle, rand */
+	char *type_num;	   /* type_number mode - one, per-thread, rand */
+	char *position;	   /* position - head, tail, middle, rand */
 	unsigned list_len; /* initial list length */
-	bool queue;	/* use circle queue from <sys/queue.h> */
-	bool range;	/* use random allocation size */
+	bool queue;	   /* use circle queue from <sys/queue.h> */
+	bool range;	   /* use random allocation size */
 	unsigned min_size; /* minimum random allocation size */
-	unsigned seed;     /* seed value */
+	unsigned seed;	   /* seed value */
 };
 
 /*
@@ -99,9 +70,9 @@ static struct obj_bench {
 	 *	- position_middle.
 	 */
 	size_t *alloc_sizes; /* array to store random sizes of each object */
-	size_t max_len;      /* maximum list length */
-	size_t min_len;      /* initial list length */
-	int type_mode;       /* type_number mode */
+	size_t max_len;	     /* maximum list length */
+	size_t min_len;	     /* initial list length */
+	int type_mode;	     /* type_number mode */
 	int position_mode;   /* list destination mode */
 
 	/*
@@ -163,10 +134,10 @@ struct obj_worker {
 	/* head of the circular queue */
 	PMDK_CIRCLEQ_HEAD(qlist, item) headq;
 	TOID(struct item) * oids;    /* persistent pmemobj list elements */
-	struct item **items;	 /* volatile elements */
+	struct item **items;	     /* volatile elements */
 	size_t n_elm;		     /* number of elements in array */
 	fn_position_t *fn_positions; /* element access functions */
-	struct element elm;	  /* pointer to current element */
+	struct element elm;	     /* pointer to current element */
 	/*
 	 * list_move is a pointer to structure storing variables used by
 	 * second list (used only for obj_move benchmark).

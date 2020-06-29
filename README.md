@@ -1,8 +1,9 @@
 # **PMDK: Persistent Memory Development Kit**
 
-[![Build Status](https://travis-ci.org/pmem/pmdk.svg?branch=master)](https://travis-ci.org/pmem/pmdk)
-[![Build status](https://ci.appveyor.com/api/projects/status/u2l1db7ucl5ktq10/branch/master?svg=true&pr=false)](https://ci.appveyor.com/project/pmem/pmdk/branch/master)
-[![Build status](https://api.cirrus-ci.com/github/pmem/pmdk.svg)](https://cirrus-ci.com/github/pmem/pmdk/master)
+[![Travis build status](https://travis-ci.org/pmem/pmdk.svg?branch=master)](https://travis-ci.org/pmem/pmdk)
+[![GHA build status](https://github.com/pmem/pmdk/workflows/PMDK/badge.svg?branch=master)](https://github.com/pmem/pmdk/actions)
+[![Appveyor build status](https://ci.appveyor.com/api/projects/status/u2l1db7ucl5ktq10/branch/master?svg=true&pr=false)](https://ci.appveyor.com/project/pmem/pmdk/branch/master)
+[![Cirrus build status](https://api.cirrus-ci.com/github/pmem/pmdk.svg)](https://cirrus-ci.com/github/pmem/pmdk/master)
 [![Coverity Scan Build Status](https://img.shields.io/coverity/scan/3015.svg)](https://scan.coverity.com/projects/pmem-pmdk)
 [![PMDK release version](https://img.shields.io/github/release/pmem/pmdk.svg?sort=semver)](https://github.com/pmem/pmdk/releases/latest)
 [![Coverage Status](https://codecov.io/github/pmem/pmdk/coverage.svg?branch=master)](https://codecov.io/gh/pmem/pmdk/branch/master)
@@ -11,7 +12,7 @@ The **Persistent Memory Development Kit (PMDK)** is a collection of libraries an
 
 To install PMDK libraries, either install pre-built packages, which we build for every stable release, or clone the tree and build it yourself. **Pre-built** packages can be found in popular Linux distribution package repositories, or you can check out our recent stable releases on our [github release page](https://github.com/pmem/pmdk/releases). Specific installation instructions are outlined below.
 
-Bugs and feature requests for this repo are tracked in our [GitHub Issues Database](https://github.com/pmem/issues/issues).
+Bugs and feature requests for this repo are tracked in our [GitHub Issues Database](https://github.com/pmem/pmdk/issues).
 
 ## Contents
 1. [Libraries and Utilities](#libraries-and-utilities)
@@ -132,12 +133,12 @@ to disable this support by passing NDCTL_ENABLE=n to "make", but we strongly
 discourage users from doing that. Disabling NDCTL strips PMDK from ability to
 detect hardware failures, which may lead to silent data corruption.
 For information how to disable RAS at runtime for kernels prior to 5.0.4 please
-see https://github.com/pmem/issues/issues/1039.
+see https://github.com/pmem/pmdk/issues/4207.
 
 ### Windows
 
 * **MS Visual Studio 2015**
-* [Windows SDK 10.0.16299.15](https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk)
+* [Windows SDK 10.0.17134.12](https://developer.microsoft.com/en-us/windows/downloads/windows-10-sdk)
 * **perl** (i.e. [StrawberryPerl](http://strawberryperl.com/))
 * **PowerShell 5**
 
@@ -378,6 +379,6 @@ are only validated to "early access" quality with Cortex-A53 processor.
 ## Contact Us
 
 For more information on this library, contact
-Marcin Slusarz (marcin.slusarz@intel.com),
+Piotr Balcer (piotr.balcer@intel.com),
 Andy Rudoff (andy.rudoff@intel.com), or post to our
 [Google group](https://groups.google.com/group/pmem).

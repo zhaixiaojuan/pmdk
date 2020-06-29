@@ -1,40 +1,13 @@
-#
-# Copyright 2019, Intel Corporation
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in
-#       the documentation and/or other materials provided with the
-#       distribution.
-#
-#     * Neither the name of the copyright holder nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2019-2020, Intel Corporation
 
 """Test framework utilities"""
 
 from os.path import join, abspath, dirname
 import os
 import sys
+
+import configurator
 
 # Constant paths to repository elements
 ROOTDIR = abspath(join(dirname(__file__), '..'))
@@ -56,19 +29,19 @@ else:
 def get_tool_path(ctx, name):
     if sys.platform == 'win32':
         if str(ctx.build) == 'debug':
-            return abspath(join(WIN_DEBUG_BUILDDIR, 'libs', name + '.exe'))
+            return abspath(join(WIN_DEBUG_BUILDDIR, 'libs', name))
         else:
-            return abspath(join(WIN_RELEASE_BUILDDIR, 'libs', name + '.exe'))
+            return abspath(join(WIN_RELEASE_BUILDDIR, 'libs', name))
     else:
         return abspath(join(ROOTDIR, '..', 'tools', name, name))
 
 
-def get_test_tool_path(ctx, name):
+def get_test_tool_path(build, name):
     if sys.platform == 'win32':
-        if str(ctx.build) == 'debug':
-            return abspath(join(WIN_DEBUG_BUILDDIR, 'tests', name + '.exe'))
+        if str(build) == 'debug':
+            return abspath(join(WIN_DEBUG_BUILDDIR, 'tests', name))
         else:
-            return abspath(join(WIN_RELEASE_BUILDDIR, 'tests', name + '.exe'))
+            return abspath(join(WIN_RELEASE_BUILDDIR, 'tests', name))
     else:
         return abspath(join(ROOTDIR, 'tools', name, name))
 
@@ -78,6 +51,49 @@ def get_lib_dir(ctx):
         return DEBUG_LIBDIR
     else:
         return RELEASE_LIBDIR
+
+
+def get_example_path(ctx, libname, name):
+    """
+    Get the path to the example binary.
+    Paths to examples differ on Windows and Unix systems. On Windows,
+    the example binaries have a specific name: ex_libname_name.
+    On Unix systems, the example binaries are located in the catalog
+    "lib + libname/name" and have the same name as .c file.
+    """
+    if sys.platform == 'win32':
+        binname = '_'.join(['ex', libname, name])
+        if str(ctx.build) == 'debug':
+            return abspath(join(WIN_DEBUG_BUILDDIR, 'examples', binname))
+        else:
+            return abspath(join(WIN_RELEASE_BUILDDIR, 'examples', binname))
+    else:
+        return abspath(join(ROOTDIR, '..', 'examples', 'lib' + libname,
+                            name, name))
+
+
+def tail(file, n):
+    """
+    Replace the file content with the n last lines from the existing file.
+    The original file is saved under the name with ".old" suffix.
+    """
+    with open(file, 'r') as f:
+        lines = f.readlines()
+        last_lines = lines[-n:]
+    os.rename(file, file + ".old")
+    with open(file, 'w') as f:
+        for line in last_lines:
+            f.write(line)
+
+
+def count(file, substring):
+    """
+    Count the number of occurrences of a string in the given file.
+    """
+    with open(file, 'r') as f:
+        content = f.read()
+
+    return content.count(substring)
 
 
 class Color:
@@ -96,65 +112,29 @@ class Color:
 class Message:
     """Simple level based logger"""
 
-    def __init__(self, config):
-        self.config = config
+    def __init__(self, level):
+        self.level = level
 
     def print(self, msg):
-        if self.config.unittest_log_level >= 1:
+        if self.level >= 1:
             print(msg)
 
     def print_verbose(self, msg):
-        if self.config.unittest_log_level >= 2:
+        if self.level >= 2:
             print(msg)
-
-
-def filter_contexts(config_ctx, test_ctx):
-    """
-    Return contexts that should be used in execution based on
-    contexts provided by config and test case
-    """
-    if not test_ctx:
-        return [c for c in config_ctx if not c.explicit]
-    return [c for c in config_ctx if c in test_ctx]
-
-
-def run_tests_common(testcases, config):
-    """
-    Common implementation for running tests - used by RUNTESTS.py and
-    single test case interpreter
-    """
-    if config.test_sequence:
-        # filter test cases from sequence
-        testcases = [t for t in testcases if t.testnum in config.test_sequence]
-        # sort testcases so their sequence matches provided test sequence
-        testcases.sort(key=lambda tc: config.test_sequence.index(tc.testnum))
-
-    if not testcases:
-        sys.exit('No testcases to run found for selected configuration.')
-
-    ret = 0
-    for t in testcases:
-        try:
-            t = t(config)
-        except Skip as s:
-            print(s)
-        else:
-            if t.enabled and t._execute():  # if test failed
-                ret = 1
-                if not config.keep_going:
-                    return ret
-    return ret
 
 
 class Fail(Exception):
     """Thrown when test fails"""
 
-    def __init__(self, message):
-        super().__init__(message)
-        self.message = message
+    def __init__(self, msg):
+        super().__init__(msg)
+        self.messages = []
+        self.messages.append(msg)
 
     def __str__(self):
-        return self.message
+        ret = '\n'.join(self.messages)
+        return ret
 
 
 def fail(msg, exit_code=None):
@@ -166,13 +146,50 @@ def fail(msg, exit_code=None):
 class Skip(Exception):
     """Thrown when test should be skipped"""
 
-    def __init__(self, message):
-        super().__init__(message)
-        self.message = message
+    def __init__(self, msg):
+        super().__init__(msg)
+        config = configurator.Configurator().config
+        if config.fail_on_skip:
+            raise Fail(msg)
+
+        self.messages = []
+        self.messages.append(msg)
 
     def __str__(self):
-        return self.message
+        ret = '\n'.join(self.messages)
+        return ret
 
 
 def skip(msg):
     raise Skip(msg)
+
+
+def set_kwargs_attrs(cls, kwargs):
+    for k, v in kwargs.items():
+        setattr(cls, '{}'.format(k), v)
+
+
+def add_env_common(src, added):
+    """
+    A common implementation of adding an environment variable
+    to the 'src' environment variables dictionary - taking into account
+    that the variable may or may be not already defined.
+    """
+    for k, v in added.items():
+        if k in src:
+            src[k] = v + os.pathsep + src[k]
+        else:
+            src.update({k: v})
+
+
+def to_list(var, *types):
+    """
+    Some variables may be provided by the user either as a single instance of
+    a type or a sequence of instances (e. g. a string or list of strings).
+    To be conveniently treated by the framework code, their types
+    should be unified - casted to lists.
+    """
+    if isinstance(var, tuple(types)):
+        return [var, ]
+    else:
+        return var

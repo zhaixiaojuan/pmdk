@@ -41,7 +41,7 @@
     <ClCompile Include="..\..\libpmemobj\obj.c" />
     <ClCompile Include="..\..\libpmemobj\palloc.c" />
     <ClCompile Include="..\..\libpmemobj\pmalloc.c" />
-    <ClCompile Include="..\..\libpmemobj\ravl.c" />
+    <ClCompile Include="..\..\common\ravl.c" />
     <ClCompile Include="..\..\libpmemobj\recycler.c" />
     <ClCompile Include="..\..\libpmemobj\ulog.c" />
     <ClCompile Include="..\..\libpmemobj\stats.c" />
@@ -56,7 +56,7 @@
     <ProjectGuid>{9FF62356-30B4-42A1-8DC7-45262A18DD44}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>obj_pmalloc_mt</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.16299.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">

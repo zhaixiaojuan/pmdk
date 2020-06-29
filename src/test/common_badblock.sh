@@ -1,35 +1,6 @@
 #!/usr/bin/env bash
-#
-# Copyright 2018-2019, Intel Corporation
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are permitted provided that the following conditions
-# are met:
-#
-#     * Redistributions of source code must retain the above copyright
-#       notice, this list of conditions and the following disclaimer.
-#
-#     * Redistributions in binary form must reproduce the above copyright
-#       notice, this list of conditions and the following disclaimer in
-#       the documentation and/or other materials provided with the
-#       distribution.
-#
-#     * Neither the name of the copyright holder nor the names of its
-#       contributors may be used to endorse or promote products derived
-#       from this software without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
-# "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
-# LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
-# A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
-# OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
-# SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
-# LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
-# DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
-# THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
-# (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
-# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2018-2020, Intel Corporation
 
 #
 # src/test/common_badblock.sh -- commons for the following tests:
@@ -288,7 +259,7 @@ function ndctl_nfit_test_init() {
 function ndctl_nfit_test_init_node() {
 	run_on_node $1 "sudo ndctl disable-region all &>>$PREP_LOG_FILE"
 	if ! run_on_node $1 "sudo modprobe -r nfit_test &>>$PREP_LOG_FILE"; then
-		MOUNTED_DIRS="$(run_on_node $1 "$COMMAND_MOUNTED_DIRS")"
+		MOUNTED_DIRS="$(run_on_node $1 $COMMAND_MOUNTED_DIRS)"
 		run_on_node $1 "\
 			[ \"$MOUNTED_DIRS\" ] && sudo umount $MOUNTED_DIRS; \
 			sudo ndctl disable-region all &>>$PREP_LOG_FILE; \
@@ -625,11 +596,12 @@ function ndctl_uninject_error() {
 		local namespace=$2
 		local block=$3
 		local count=$4
-		expect_normal_exit "sudo ndctl inject-error --uninject --block=$block --count=$count $namespace &>/dev/null"
+		expect_normal_exit "sudo ndctl inject-error --uninject --block=$block --count=$count $namespace >> $PREP_LOG_FILE 2>&1"
 		if [ "$DEVTYPE" == "block_device" ]; then
-			expect_normal_exit "sudo dd if=/dev/zero of="$fulldev" bs=512 seek="$block" count="$count" oflag=direct &>/dev/null"
+			expect_normal_exit "sudo dd if=/dev/zero of=$fulldev bs=512 seek=$block count=$count \
+				oflag=direct >> $PREP_LOG_FILE 2>&1"
 		elif [ "$DEVTYPE" == "dax_device" ]; then
-			expect_normal_exit "$DAXIO$EXESUFFIX -i /dev/zero -o "$fulldev" -s "$block" -l "$count" &>/dev/null"
+			expect_normal_exit "$DAXIO$EXESUFFIX -i /dev/zero -o $fulldev -s $block -l $count >> $PREP_LOG_FILE 2>&1"
 		fi
 	fi
 }
@@ -655,11 +627,14 @@ function ndctl_uninject_error_node() {
 		local namespace=$3
 		local block=$4
 		local count=$5
-		expect_normal_exit run_on_node $node "sudo ndctl inject-error --uninject --block=$block --count=$count $namespace &>/dev/null"
+		expect_normal_exit run_on_node $node "sudo ndctl inject-error --uninject --block=$block --count=$count \
+			$namespace >> $PREP_LOG_FILE 2>&1"
 		if [ "$DEVTYPE" == "block_device" ]; then
-			expect_normal_exit run_on_node $node "sudo dd if=/dev/zero of="$fulldev" bs=512 seek="$block" count="$count" oflag=direct &>/dev/null"
+			expect_normal_exit run_on_node $node "sudo dd if=/dev/zero of=$fulldev bs=512 seek=$block count=$count \
+				oflag=direct >> $PREP_LOG_FILE 2>&1"
 		elif [ "$DEVTYPE" == "dax_device" ]; then
-			expect_normal_exit run_on_node $node "$DAXIO$EXESUFFIX -i /dev/zero -o "$fulldev" -s "$block" -l "$count" &>/dev/null"
+			expect_normal_exit run_on_node $node "$DAXIO$EXESUFFIX -i /dev/zero -o $fulldev -s $block -l $count \
+				>> $PREP_LOG_FILE 2>&1"
 		fi
 	fi
 }
