@@ -75,6 +75,7 @@ libpmemobj.so.1 libpmemobj1 #MINVER#
  pmemobj_tx_end@LIBPMEMOBJ_1.0 1.4
  pmemobj_tx_errno@LIBPMEMOBJ_1.0 1.4
  pmemobj_tx_free@LIBPMEMOBJ_1.0 1.4
+ pmemobj_tx_get_failure_behavior@LIBPMEMOBJ_1.0 1.9~
  pmemobj_tx_get_user_data@LIBPMEMOBJ_1.0 1.8
  pmemobj_tx_lock@LIBPMEMOBJ_1.0 1.4
  pmemobj_tx_log_append_buffer@LIBPMEMOBJ_1.0 1.7
@@ -84,6 +85,7 @@ libpmemobj.so.1 libpmemobj1 #MINVER#
  pmemobj_tx_process@LIBPMEMOBJ_1.0 1.4
  pmemobj_tx_publish@LIBPMEMOBJ_1.0 1.4
  pmemobj_tx_realloc@LIBPMEMOBJ_1.0 1.4
+ pmemobj_tx_set_failure_behavior@LIBPMEMOBJ_1.0 1.9~
  pmemobj_tx_set_user_data@LIBPMEMOBJ_1.0 1.8
  pmemobj_tx_stage@LIBPMEMOBJ_1.0 1.4
  pmemobj_tx_strdup@LIBPMEMOBJ_1.0 1.4
