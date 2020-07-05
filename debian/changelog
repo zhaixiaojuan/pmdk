@@ -1,3 +1,11 @@
+pmdk (1.9-1) unstable; urgency=medium
+
+  * Upstream release.
+  * Work around __pycache__ droppings.
+  * Disable scope tests until binutils #964457 is fixed; closes #964623.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Tue, 21 Jul 2020 09:52:05 +0200
+
 pmdk (1.9~rc2-1) experimental; urgency=medium
 
   * New upstream RC.
