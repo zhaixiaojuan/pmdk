@@ -10,6 +10,10 @@ BUILD_ARGS = prefix=/usr libdir=/usr/lib/$(DEB_HOST_MULTIARCH) sysconfdir=/etc b
 %:
 	dh $@ --with bash-completion
 
+override_dh_auto_clean:
+	dh_auto_clean
+	rm -rf src/test/unittest/__pycache__/
+
 override_dh_auto_build:
 	+$(MAKE) doc
 	dh_auto_build  -- $(BUILD_ARGS)
