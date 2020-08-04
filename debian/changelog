@@ -1,3 +1,11 @@
+pmdk (1.9-2) unstable; urgency=medium
+
+  * Add valgrind overrides fit for glibc 2.35; closes: #967057.
+  * Lintian overrides for no hardening on -debug packages (Andreas
+    Hasenack).
+
+ -- Adam Borowski <kilobyte@angband.pl>  Wed, 05 Aug 2020 00:35:28 +0200
+
 pmdk (1.9-1) unstable; urgency=medium
 
   * Upstream release.
