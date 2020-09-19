@@ -1,3 +1,9 @@
+pmdk (1.9.1-1) unstable; urgency=medium
+
+  * New upstream release.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Sat, 19 Sep 2020 04:12:26 +0200
+
 pmdk (1.9-2) unstable; urgency=medium
 
   * Add valgrind overrides fit for glibc 2.35; closes: #967057.
