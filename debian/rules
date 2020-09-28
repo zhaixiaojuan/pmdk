@@ -31,9 +31,7 @@ override_dh_installexamples:
 
 override_dh_installman:
 	dh_installman
-ifeq (amd64,$(DEB_HOST_ARCH))
 	dh_installman -p pmdk-tools doc/rpmemd/*.1
-endif
 
 override_dh_missing:
 	dh_missing --list-missing --exclude=usr/share/man --exclude=usr/lib/$(DEB_HOST_MULTIARCH)/pmdk_debug/ --exclude=usr/share/bash-completion/completions/pmempool

@@ -3,10 +3,6 @@
 set -ex
 
 arch=$(dpkg --print-architecture)
-if [ "$arch" != "amd64" ]; then
-    echo "Skipping rpmemd test, not available on $arch"
-    exit 77
-fi
 
 pkg_version=$(dpkg-query -f '${Version}\n' -W pmdk-tools | sed 's/~rc/-rc/')
 pkg_version=${pkg_version%-*}
