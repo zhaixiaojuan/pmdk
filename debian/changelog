@@ -1,3 +1,9 @@
+pmdk (1.9.1-2) unstable; urgency=medium
+
+  * Enable rpmem on ppc64 and arm64.  Thanks Tuliom!
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 12 Oct 2020 22:38:28 +0200
+
 pmdk (1.9.1-1) unstable; urgency=medium
 
   * New upstream release.
