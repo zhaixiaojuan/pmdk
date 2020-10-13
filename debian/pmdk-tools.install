@@ -1,4 +1,3 @@
-#!/usr/bin/dh-exec
 usr/bin/pmempool
-[amd64] usr/bin/rpmemd
+usr/bin/rpmemd
 usr/bin/daxio
