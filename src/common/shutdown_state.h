@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: BSD-3-Clause
+/* SPDX-License-Identifier: BSD-3-Clause */
 /* Copyright 2017-2020, Intel Corporation */
 
 /*
@@ -33,7 +33,6 @@ void shutdown_state_clear_dirty(struct shutdown_state *sds,
 
 int shutdown_state_check(struct shutdown_state *curr_sds,
 	struct shutdown_state *pool_sds, struct pool_replica *rep);
-int shutdown_state_is_supported(int fd);
 
 #ifdef __cplusplus
 }
