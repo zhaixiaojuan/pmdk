@@ -1,0 +1,12 @@
+#!/bin/sh
+set -e
+
+cd src/examples/libpmem2
+for prog in basic advanced log map_multiple_files redo unsafe_shutdown
+  do
+    gcc -Wall -o "$AUTOPKGTEST_TMP"/$prog $prog/$prog.c -I../ -lpmem2 -pthread
+  done
+
+cd "$AUTOPKGTEST_TMP"
+dd if=/dev/zero bs=4096 count=16 of=pool status=none
+./basic pool
