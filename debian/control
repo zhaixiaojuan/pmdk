@@ -25,7 +25,7 @@ Package: libpmem1
 Architecture: amd64 arm64 ppc64el
 Multi-Arch: same
 Depends: ${misc:Depends}, ${shlibs:Depends}
-Description: Persistent Memory low level support library
+Description: Persistent Memory low level support library, v1 runtime
  libpmem provides low level persistent memory support.  In particular, support
  for the persistent memory instructions for flushing changes to pmem is
  provided.
@@ -33,6 +33,8 @@ Description: Persistent Memory low level support library
  This library is provided for software which tracks every store to pmem and
  needs to flush those changes to durability.  Most developers will find higher
  level libraries like libpmemobj to be much more convenient.
+ .
+ This package provides binary runtime for version 1 of the API.
 
 Package: libpmem1-debug
 Architecture: amd64 arm64 ppc64el
@@ -43,10 +45,6 @@ Description: Persistent Memory low level support library — debug build
  for the persistent memory instructions for flushing changes to pmem is
  provided.
  .
- This library is provided for software which tracks every store to pmem and
- needs to flush those changes to durability.  Most developers will find higher
- level libraries like libpmemobj to be much more convenient.
- .
  This package contains a special build of this library meant for debugging
  purposes.  It contains extra logging, assertions and expensive checks that
  should not be used otherwise.
@@ -56,13 +54,53 @@ Section: libdevel
 Architecture: amd64 arm64 ppc64el
 Multi-Arch: same
 Depends: libpmem1 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
-Description: development files for libpmem1
+Description: Persistent Memory low level support library, v1 headers
  libpmem provides low level persistent memory support.  In particular, support
  for the persistent memory instructions for flushing changes to pmem is
  provided.
  .
  This package contains libraries and header files used for linking programs
  against libpmem.
+
+Package: libpmem2
+Architecture: amd64 arm64 ppc64el
+Multi-Arch: same
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: Persistent Memory low level support library, v2 runtime
+ libpmem provides low level persistent memory support.  In particular, support
+ for the persistent memory instructions for flushing changes to pmem is
+ provided.
+ .
+ This library is provided for software which tracks every store to pmem and
+ needs to flush those changes to durability.  Most developers will find higher
+ level libraries like libpmemobj to be much more convenient.
+
+Package: libpmem2-debug
+Architecture: amd64 arm64 ppc64el
+Multi-Arch: same
+Depends: ${misc:Depends}, ${shlibs:Depends}
+Description: Persistent Memory low level support library — debug build
+ libpmem provides low level persistent memory support.  In particular, support
+ for the persistent memory instructions for flushing changes to pmem is
+ provided.
+ .
+ This package contains a special build of this library meant for debugging
+ purposes.  It contains extra logging, assertions and expensive checks that
+ should not be used otherwise.
+
+Package: libpmem2-dev
+Section: libdevel
+Architecture: amd64 arm64 ppc64el
+Multi-Arch: same
+Depends: libpmem2 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
+Description: Persistent Memory low level support library, v2 headers
+ libpmem provides low level persistent memory support.  In particular, support
+ for the persistent memory instructions for flushing changes to pmem is
+ provided.
+ .
+ This package contains libraries and header files used for linking programs
+ against libpmem2, with a modernized API that avoids certain limitations of
+ libpmem1.
 
 Package: libpmemblk1
 Architecture: amd64 arm64 ppc64el
