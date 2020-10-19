@@ -1,3 +1,10 @@
+pmdk (1.10~rc1-1) experimental; urgency=medium
+
+  * New upstream RC.
+  * Add libpmem2{,-dev}.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Sun, 18 Oct 2020 23:05:48 +0200
+
 pmdk (1.9.1-3) unstable; urgency=medium
 
   * Fix rpmemd not being installed on !amd64.
