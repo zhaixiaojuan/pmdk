@@ -13,7 +13,7 @@ Build-Depends: bash-completion,
                pkg-config,
                python3,
                strace,
-               valgrind [!arm64],
+               valgrind [!arm64 !ppc64el],
 Standards-Version: 4.5.0
 Rules-Requires-Root: no
 Homepage: https://pmem.io/pmdk/
