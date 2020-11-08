@@ -5,6 +5,12 @@ pmdk (1.10~rc1-1) experimental; urgency=medium
 
  -- Adam Borowski <kilobyte@angband.pl>  Sun, 18 Oct 2020 23:05:48 +0200
 
+pmdk (1.9.2-1) unstable; urgency=medium
+
+  * New upstream bugfix release.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Thu, 29 Oct 2020 00:02:54 +0100
+
 pmdk (1.9.1-3) unstable; urgency=medium
 
   * Fix rpmemd not being installed on !amd64.
