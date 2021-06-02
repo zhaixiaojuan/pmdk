@@ -71,54 +71,14 @@ endif
 ifeq ($(LIBPMEMOBJ), internal-debug)
 LIBPMEM=y
 LIBPMEMCOMMON=internal-debug
-OBJS += $(TOP)/src/debug/libpmemobj/alloc_class.o\
-	$(TOP)/src/debug/libpmemobj/bucket.o\
-	$(TOP)/src/debug/libpmemobj/container_ravl.o\
-	$(TOP)/src/debug/libpmemobj/container_seglists.o\
-	$(TOP)/src/debug/libpmemobj/critnib.o\
-	$(TOP)/src/debug/libpmemobj/ctl_debug.o\
-	$(TOP)/src/debug/libpmemobj/heap.o\
-	$(TOP)/src/debug/libpmemobj/lane.o\
-	$(TOP)/src/debug/libpmemobj/libpmemobj.o\
-	$(TOP)/src/debug/libpmemobj/list.o\
-	$(TOP)/src/debug/libpmemobj/memblock.o\
-	$(TOP)/src/debug/libpmemobj/memops.o\
-	$(TOP)/src/debug/libpmemobj/obj.o\
-	$(TOP)/src/debug/libpmemobj/palloc.o\
-	$(TOP)/src/debug/libpmemobj/pmalloc.o\
-	$(TOP)/src/debug/libpmemobj/recycler.o\
-	$(TOP)/src/debug/libpmemobj/ulog.o\
-	$(TOP)/src/debug/libpmemobj/sync.o\
-	$(TOP)/src/debug/libpmemobj/tx.o\
-	$(TOP)/src/debug/libpmemobj/stats.o
-
+OBJS += $(LIBPMEMOBJ_OBJS_DEBUG)
 INCS += -I$(TOP)/src/libpmemobj
 endif
 
 ifeq ($(LIBPMEMOBJ), internal-nondebug)
 LIBPMEM=y
 LIBPMEMCOMMON=internal-nondebug
-OBJS +=	$(TOP)/src/nondebug/libpmemobj/alloc_class.o\
-	$(TOP)/src/nondebug/libpmemobj/bucket.o\
-	$(TOP)/src/nondebug/libpmemobj/container_ravl.o\
-	$(TOP)/src/nondebug/libpmemobj/container_seglists.o\
-	$(TOP)/src/nondebug/libpmemobj/critnib.o\
-	$(TOP)/src/nondebug/libpmemobj/ctl_debug.o\
-	$(TOP)/src/nondebug/libpmemobj/heap.o\
-	$(TOP)/src/nondebug/libpmemobj/lane.o\
-	$(TOP)/src/nondebug/libpmemobj/libpmemobj.o\
-	$(TOP)/src/nondebug/libpmemobj/list.o\
-	$(TOP)/src/nondebug/libpmemobj/memblock.o\
-	$(TOP)/src/nondebug/libpmemobj/memops.o\
-	$(TOP)/src/nondebug/libpmemobj/obj.o\
-	$(TOP)/src/nondebug/libpmemobj/palloc.o\
-	$(TOP)/src/nondebug/libpmemobj/pmalloc.o\
-	$(TOP)/src/nondebug/libpmemobj/recycler.o\
-	$(TOP)/src/nondebug/libpmemobj/ulog.o\
-	$(TOP)/src/nondebug/libpmemobj/sync.o\
-	$(TOP)/src/nondebug/libpmemobj/tx.o\
-	$(TOP)/src/nondebug/libpmemobj/stats.o
-
+OBJS += $(LIBPMEMOBJ_OBJS_NONDEBUG)
 INCS += -I$(TOP)/src/libpmemobj
 endif
 
@@ -164,32 +124,14 @@ INCS += -I$(TOP)/src/libpmemset
 endif
 
 ifeq ($(LIBPMEM), internal-nondebug)
-OBJS +=\
-	$(TOP)/src/nondebug/libpmem/libpmem.o\
-	$(TOP)/src/nondebug/libpmem/memops_generic.o\
-	$(TOP)/src/nondebug/libpmem/pmem.o\
-	$(TOP)/src/nondebug/libpmem/pmem_posix.o
-
-include $(TOP)/src/libpmem2/$(ARCH)/sources.inc
-OBJS_MEM = $(LIBPMEM2_ARCH_SOURCE:.c=.o)
-OBJS += $(addprefix $(TOP)/src/nondebug/libpmem/, ${OBJS_MEM})
-
+OBJS += $(LIBPMEM_OBJS_NONDEBUG)
 INCS += -I$(TOP)/src/libpmem
 INCS += -I$(TOP)/src/libpmem2
 INCS += -I$(TOP)/src/libpmem2/$(ARCH)
 endif
 
 ifeq ($(LIBPMEM), internal-debug)
-OBJS +=\
-	$(TOP)/src/debug/libpmem/libpmem.o\
-	$(TOP)/src/debug/libpmem/memops_generic.o\
-	$(TOP)/src/debug/libpmem/pmem.o\
-	$(TOP)/src/debug/libpmem/pmem_posix.o
-
-include $(TOP)/src/libpmem2/$(ARCH)/sources.inc
-OBJS_MEM = $(LIBPMEM2_ARCH_SOURCE:.c=.o)
-OBJS += $(addprefix $(TOP)/src/debug/libpmem/, ${OBJS_MEM})
-
+OBJS += $(LIBPMEM_OBJS_DEBUG)
 INCS += -I$(TOP)/src/libpmem
 INCS += -I$(TOP)/src/libpmem2
 INCS += -I$(TOP)/src/libpmem2/$(ARCH)
