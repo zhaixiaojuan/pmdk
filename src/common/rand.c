@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-/* Copyright 2019, Intel Corporation */
+/* Copyright 2019-2021, Intel Corporation */
 
 /*
  * rand.c -- random utils
@@ -40,7 +40,7 @@ hash64(uint64_t x)
  *
  * By David Blackman and Sebastiano Vigna; PD/CC0 2018.
  *
- * It has a period of 2²⁵⁶-1, excluding all-zero state; it must always get
+ * It has a period of 2**256 - 1, excluding all-zero state; it must always get
  * initialized to avoid that zero.
  */
 
@@ -84,8 +84,10 @@ randomize_r(rng_t *state, uint64_t seed)
 	if (!seed) {
 #ifdef SYS_getrandom
 		/* We want getentropy() but ancient Red Hat lacks it. */
-		if (!syscall(SYS_getrandom, state, sizeof(rng_t), 0))
+		if (syscall(SYS_getrandom, state, sizeof(rng_t), 0)
+			== sizeof(rng_t)) {
 			return; /* nofail, but ENOSYS on kernel < 3.16 */
+		}
 #elif _WIN32
 #pragma comment(lib, "Bcrypt.lib")
 		if (BCryptGenRandom(NULL, (PUCHAR)state, sizeof(rng_t),

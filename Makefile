@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2014-2020, Intel Corporation
+# Copyright 2014-2021, Intel Corporation
 
 #
 # Makefile -- top-level Makefile for PMDK
@@ -18,6 +18,8 @@
 # Use "make clean" to delete all intermediate files (*.o, etc).
 #
 # Use "make clobber" to delete everything re-buildable (binaries, etc.).
+#
+# Use "make gitclean" for a complete tree clean, save for test configs.
 #
 # Use "make cstyle" to run cstyle on all C source files
 #
@@ -45,6 +47,7 @@ EXPERIMENTAL ?= n
 BUILD_PACKAGE_CHECK ?= y
 BUILD_RPMEM ?= y
 TEST_CONFIG_FILE ?= "$(CURDIR)"/src/test/testconfig.sh
+PMEMSET_INSTALL ?= n
 DOC ?= y
 
 rpm : override DESTDIR="$(CURDIR)/$(RPM_BUILDDIR)"
@@ -110,6 +113,9 @@ check-doc: doc
 sparse:
 	$(MAKE) -C src sparse
 
+gitclean:
+	git clean -dfx -etestconfig.sh -etestconfig.py
+
 source: clobber
 	$(if "$(DESTDIR)", , $(error Please provide DESTDIR variable))
 	+utils/copy-source.sh "$(DESTDIR)" $(SRCVERSION)
@@ -121,7 +127,7 @@ rpm dpkg: pkg-clean
 	$(MAKE) source DESTDIR="$(DESTDIR)"
 	+utils/build-$@.sh -t $(SRCVERSION) -s "$(DESTDIR)"/pmdk -w "$(DESTDIR)" -o $(CURDIR)/$@\
 			-e $(EXPERIMENTAL) -c $(BUILD_PACKAGE_CHECK) -r $(BUILD_RPMEM)\
-			-f $(TEST_CONFIG_FILE) -n $(NDCTL_ENABLE)
+			-f $(TEST_CONFIG_FILE) -n $(NDCTL_ENABLE) -l $(PMEMSET_INSTALL)
 
 install: all
 

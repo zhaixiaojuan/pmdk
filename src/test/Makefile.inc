@@ -71,8 +71,7 @@ endif
 ifeq ($(LIBPMEMOBJ), internal-debug)
 LIBPMEM=y
 LIBPMEMCOMMON=internal-debug
-OBJS += $(TOP)/src/debug/common/ravl.o\
-	$(TOP)/src/debug/libpmemobj/alloc_class.o\
+OBJS += $(TOP)/src/debug/libpmemobj/alloc_class.o\
 	$(TOP)/src/debug/libpmemobj/bucket.o\
 	$(TOP)/src/debug/libpmemobj/container_ravl.o\
 	$(TOP)/src/debug/libpmemobj/container_seglists.o\
@@ -99,8 +98,7 @@ endif
 ifeq ($(LIBPMEMOBJ), internal-nondebug)
 LIBPMEM=y
 LIBPMEMCOMMON=internal-nondebug
-OBJS +=	$(TOP)/src/nondebug/common/ravl.o\
-	$(TOP)/src/nondebug/libpmemobj/alloc_class.o\
+OBJS +=	$(TOP)/src/nondebug/libpmemobj/alloc_class.o\
 	$(TOP)/src/nondebug/libpmemobj/bucket.o\
 	$(TOP)/src/nondebug/libpmemobj/container_ravl.o\
 	$(TOP)/src/nondebug/libpmemobj/container_seglists.o\
@@ -122,6 +120,47 @@ OBJS +=	$(TOP)/src/nondebug/common/ravl.o\
 	$(TOP)/src/nondebug/libpmemobj/stats.o
 
 INCS += -I$(TOP)/src/libpmemobj
+endif
+
+ifeq ($(LIBPMEMSET), y)
+LIBPMEM2=y
+DYNAMIC_LIBS += -lpmemset
+STATIC_DEBUG_LIBS += $(LIBS_DIR)/debug/libpmemset.a
+STATIC_NONDEBUG_LIBS += $(LIBS_DIR)/nondebug/libpmemset.a
+endif
+
+ifeq ($(LIBPMEMSET), internal-debug)
+LIBPMEM2=y
+LIBPMEMCORE=internal-debug
+OBJS +=\
+	$(TOP)/src/debug/libpmemset/config.o\
+	$(TOP)/src/debug/libpmemset/errormsg.o\
+	$(TOP)/src/debug/libpmemset/file.o\
+	$(TOP)/src/debug/libpmemset/file_posix.o\
+	$(TOP)/src/debug/libpmemset/libpmemset.o\
+	$(TOP)/src/debug/libpmemset/part.o\
+	$(TOP)/src/debug/libpmemset/pmemset.o\
+	$(TOP)/src/debug/libpmemset/pmemset_utils.o\
+	$(TOP)/src/debug/libpmemset/source.o
+
+INCS += -I$(TOP)/src/libpmemset
+endif
+
+ifeq ($(LIBPMEMSET), internal-nondebug)
+LIBPMEM2=y
+LIBPMEMCORE=internal-nondebug
+OBJS +=\
+	$(TOP)/src/nondebug/libpmemset/config.o\
+	$(TOP)/src/nondebug/libpmemset/errormsg.o\
+	$(TOP)/src/nondebug/libpmemset/file.o\
+	$(TOP)/src/nondebug/libpmemset/file_posix.o\
+	$(TOP)/src/nondebug/libpmemset/libpmemset.o\
+	$(TOP)/src/nondebug/libpmemset/part.o\
+	$(TOP)/src/nondebug/libpmemset/pmemset.o\
+	$(TOP)/src/nondebug/libpmemset/pmemset_utils.o\
+	$(TOP)/src/nondebug/libpmemset/source.o
+
+INCS += -I$(TOP)/src/libpmemset
 endif
 
 ifeq ($(LIBPMEM), internal-nondebug)
@@ -171,13 +210,11 @@ OBJS +=\
 	$(TOP)/src/debug/libpmem2/persist_posix.o\
 	$(TOP)/src/debug/libpmem2/pmem2_utils.o\
 	$(TOP)/src/debug/libpmem2/pmem2_utils_$(OS_DIMM).o\
-	$(TOP)/src/debug/libpmem2/ravl.o\
 	$(TOP)/src/debug/libpmem2/source.o\
 	$(TOP)/src/debug/libpmem2/source_posix.o\
 	$(TOP)/src/debug/libpmem2/usc_$(OS_DIMM).o\
 	$(TOP)/src/debug/libpmem2/vm_reservation.o\
 	$(TOP)/src/debug/libpmem2/vm_reservation_posix.o\
-	$(TOP)/src/debug/libpmem2/ravl_interval.o
 
 ifeq ($(OS_KERNEL_NAME),Linux)
 OBJS +=\
@@ -194,9 +231,13 @@ OBJS +=\
 endif
 
 ifeq ($(OS_DIMM),ndctl)
-OBJS += $(TOP)/src/debug/libpmem2/region_namespace_ndctl.o
+OBJS +=\
+	$(TOP)/src/debug/libpmem2/region_namespace_ndctl.o\
+	$(TOP)/src/debug/libpmem2/numa_ndctl.o
 else
-OBJS += $(TOP)/src/debug/libpmem2/region_namespace_none.o
+OBJS +=\
+	$(TOP)/src/debug/libpmem2/region_namespace_none.o\
+	$(TOP)/src/debug/libpmem2/numa_none.o
 endif
 
 include $(TOP)/src/libpmem2/$(ARCH)/sources.inc
@@ -225,11 +266,9 @@ OBJS +=\
 	$(TOP)/src/nondebug/libpmem2/persist_posix.o\
 	$(TOP)/src/nondebug/libpmem2/pmem2_utils.o\
 	$(TOP)/src/nondebug/libpmem2/pmem2_utils_$(OS_DIMM).o\
-	$(TOP)/src/nondebug/libpmem2/ravl.o\
 	$(TOP)/src/nondebug/libpmem2/usc_$(OS_DIMM).o\
 	$(TOP)/src/nondebug/libpmem2/vm_reservation.o\
 	$(TOP)/src/nondebug/libpmem2/vm_reservation_posix.o\
-	$(TOP)/src/nondebug/libpmem2/ravl_interval.o
 
 ifeq ($(OS_KERNEL_NAME),Linux)
 OBJS +=\
@@ -246,9 +285,13 @@ OBJS +=\
 endif
 
 ifeq ($(OS_DIMM),ndctl)
-OBJS += $(TOP)/src/nondebug/libpmem2/region_namespace_ndctl.o
+OBJS +=\
+	$(TOP)/src/nondebug/libpmem2/region_namespace_ndctl.o\
+	$(TOP)/src/nondebug/libpmem2/numa_ndctl.o
 else
-OBJS += $(TOP)/src/nondebug/libpmem2/region_namespace_none.o
+OBJS +=\
+	$(TOP)/src/nondebug/libpmem2/region_namespace_none.o\
+	$(TOP)/src/nondebug/libpmem2/numa_none.o
 endif
 
 include $(TOP)/src/libpmem2/$(ARCH)/sources.inc
@@ -320,9 +363,13 @@ OBJS +=\
 endif
 
 ifeq ($(OS_DIMM),ndctl)
-OBJS += $(TOP)/src/nondebug/libpmem2/region_namespace_ndctl.o
+OBJS +=\
+	$(TOP)/src/nondebug/libpmem2/region_namespace_ndctl.o\
+	$(TOP)/src/nondebug/libpmem2/numa_ndctl.o
 else
-OBJS += $(TOP)/src/nondebug/libpmem2/region_namespace_none.o
+OBJS +=\
+	$(TOP)/src/nondebug/libpmem2/region_namespace_none.o\
+	$(TOP)/src/nondebug/libpmem2/numa_none.o
 endif
 
 INCS += -I$(TOP)/src/common
@@ -373,9 +420,13 @@ OBJS +=\
 	endif
 
 ifeq ($(OS_DIMM),ndctl)
-OBJS += $(TOP)/src/debug/libpmem2/region_namespace_ndctl.o
+OBJS +=\
+	$(TOP)/src/debug/libpmem2/region_namespace_ndctl.o\
+	$(TOP)/src/debug/libpmem2/numa_ndctl.o
 else
-OBJS += $(TOP)/src/debug/libpmem2/region_namespace_none.o
+OBJS +=\
+	$(TOP)/src/debug/libpmem2/region_namespace_none.o\
+	$(TOP)/src/debug/libpmem2/numa_none.o
 endif
 
 INCS += -I$(TOP)/src/common
@@ -394,10 +445,11 @@ OBJS +=\
 	$(TOP)/src/nondebug/core/os_posix.o\
 	$(TOP)/src/nondebug/core/os_thread_posix.o\
 	$(TOP)/src/nondebug/core/out.o\
+	$(TOP)/src/nondebug/core/ravl.o\
+	$(TOP)/src/nondebug/core/ravl_interval.o\
 	$(TOP)/src/nondebug/core/util.o\
 	$(TOP)/src/nondebug/core/util_posix.o
 
-OBJS += $(LIBS_DIR)/debug/libpmemcore.a
 INCS += -I$(TOP)/src/core
 endif
 
@@ -408,10 +460,11 @@ OBJS +=\
 	$(TOP)/src/debug/core/os_posix.o\
 	$(TOP)/src/debug/core/os_thread_posix.o\
 	$(TOP)/src/debug/core/out.o\
+	$(TOP)/src/debug/core/ravl.o\
+	$(TOP)/src/debug/core/ravl_interval.o\
 	$(TOP)/src/debug/core/util.o\
 	$(TOP)/src/debug/core/util_posix.o
 
-OBJS += $(LIBS_DIR)/debug/libpmemcore.a
 INCS += -I$(TOP)/src/core
 endif
 

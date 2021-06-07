@@ -8,7 +8,7 @@ date: pmem2 API version 1.0
 ...
 
 [comment]: <> (SPDX-License-Identifier: BSD-3-Clause)
-[comment]: <> (Copyright 2019-2020, Intel Corporation)
+[comment]: <> (Copyright 2019-2021, Intel Corporation)
 
 [comment]: <> (pmem2_source_size.3 -- man page for pmem2_source_size)
 
@@ -16,7 +16,7 @@ date: pmem2 API version 1.0
 [SYNOPSIS](#synopsis)<br />
 [DESCRIPTION](#description)<br />
 [RETURN VALUE](#return-value)<br />
-[ERORRS](#errors)<br />
+[ERRORS](#errors)<br />
 [SEE ALSO](#see-also)<br />
 
 # NAME #
@@ -98,4 +98,4 @@ descriptor.
 
 **errno**(3),  **fstat**(2), **realpath**(3), **open**(2), **read**(2),
 **strtoull**(3), **pmem2_config_new**(3), **libpmem2**(7)
-and **<http://pmem.io>**
+and **<https://pmem.io>**

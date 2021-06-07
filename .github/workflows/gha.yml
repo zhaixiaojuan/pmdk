@@ -3,16 +3,17 @@ name: PMDK
 on: [push, pull_request]
 
 env:
-    GITHUB_REPO:    pmem/pmdk
-    DOCKERHUB_REPO: pmem/pmdk
+    GITHUB_REPO: pmem/pmdk
+    DOCKER_REPO: ghcr.io/pmem/pmdk
 
 jobs:
   linux:
     name: Linux
     runs-on: ubuntu-latest
     env:
-      DOCKERHUB_USER:          ${{ secrets.DOCKERHUB_USER }}
-      DOCKERHUB_PASSWORD:      ${{ secrets.DOCKERHUB_PASSWORD }}
+      # use org's Private Access Token to log in to GitHub Container Registry
+      GH_CR_USER:  ${{ secrets.GH_CR_USER }}
+      GH_CR_PAT:   ${{ secrets.GH_CR_PAT }}
       DOC_UPDATE_GITHUB_TOKEN: ${{ secrets.DOC_UPDATE_GITHUB_TOKEN }}
       HOST_WORKDIR:   /home/runner/work/pmdk/pmdk
       WORKDIR:        utils/docker
@@ -24,16 +25,16 @@ jobs:
       SRC_CHECKERS:   0
     strategy:
       matrix:
-        CONFIG: ["N=1 OS=ubuntu OS_VER=19.10 FAULT_INJECTION=1 TEST_BUILD=debug",
-                 "N=2 OS=ubuntu OS_VER=19.10 FAULT_INJECTION=1 TEST_BUILD=nondebug UBSAN=1",
-                 "N=3 OS=ubuntu OS_VER=19.10 PMDK_CC=clang PMDK_CXX=clang++ TEST_BUILD=debug SRC_CHECKERS=1",
-                 "N=4 OS=ubuntu OS_VER=19.10 PMDK_CC=clang PMDK_CXX=clang++ TEST_BUILD=nondebug",
+        CONFIG: ["N=1 OS=ubuntu OS_VER=20.04 FAULT_INJECTION=1 TEST_BUILD=debug",
+                 "N=2 OS=ubuntu OS_VER=20.04 FAULT_INJECTION=1 TEST_BUILD=nondebug UBSAN=1",
+                 "N=3 OS=ubuntu OS_VER=20.04 PMDK_CC=clang PMDK_CXX=clang++ TEST_BUILD=debug SRC_CHECKERS=1",
+                 "N=4 OS=ubuntu OS_VER=20.04 PMDK_CC=clang PMDK_CXX=clang++ TEST_BUILD=nondebug",
                  "N=5 OS=fedora OS_VER=31    PMDK_CC=clang PMDK_CXX=clang++ TEST_BUILD=debug",
                  "N=6 OS=fedora OS_VER=31    PMDK_CC=clang PMDK_CXX=clang++ TEST_BUILD=nondebug AUTO_DOC_UPDATE=1",
-                 "N=7 OS=fedora OS_VER=31    MAKE_PKG=1 EXPERIMENTAL=y REMOTE_TESTS=0 VALGRIND=0 PUSH_IMAGE=1",
-                 "N=8 OS=ubuntu OS_VER=19.10 MAKE_PKG=1 EXPERIMENTAL=y REMOTE_TESTS=0 VALGRIND=0 NDCTL_ENABLE=n PUSH_IMAGE=1",
-                 "N=9 OS=ubuntu OS_VER=19.10 MAKE_PKG=1 EXPERIMENTAL=y REMOTE_TESTS=0 VALGRIND=0 NDCTL_ENABLE=n PMDK_CC=clang PMDK_CXX=clang++",
-                "N=10 OS=ubuntu OS_VER=19.10 COVERAGE=1 FAULT_INJECTION=1 TEST_BUILD=debug"]
+                 "N=7 OS=fedora OS_VER=31    MAKE_PKG=1 EXPERIMENTAL=y REMOTE_TESTS=0 VALGRIND=0 PMEMSET_INSTALL=y PUSH_IMAGE=1",
+                 "N=8 OS=ubuntu OS_VER=20.04 MAKE_PKG=1 EXPERIMENTAL=y REMOTE_TESTS=0 VALGRIND=0 NDCTL_ENABLE=n PMEMSET_INSTALL=y PUSH_IMAGE=1",
+                 "N=9 OS=ubuntu OS_VER=20.04 MAKE_PKG=1 EXPERIMENTAL=y REMOTE_TESTS=0 VALGRIND=0 NDCTL_ENABLE=n PMDK_CC=clang PMDK_CXX=clang++",
+                "N=10 OS=ubuntu OS_VER=20.04 COVERAGE=1 FAULT_INJECTION=1 TEST_BUILD=debug"]
     steps:
        - name: Clone the git repo
          uses: actions/checkout@v2
@@ -66,8 +67,8 @@ jobs:
     steps:
        - name: Update Path
          run: |
-           echo "::add-path::$Env:msbuild"
-           echo "::add-path::$Env:perl"
+           echo "${env:msbuild}" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+           echo "${env:perl}" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
 
        - name: Clone the git repo
          uses: actions/checkout@v2

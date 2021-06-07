@@ -1,19 +1,18 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2016-2020, Intel Corporation
+# Copyright 2016-2021, Intel Corporation
 
 #
 # build-CI.sh - runs a Docker container from a Docker image with environment
 #                   prepared for building PMDK project and starts building PMDK.
 #
-# This script is used for building PMDK on Travis and GitHub Actions CIs.
+# This script is used for building PMDK on project's CIs.
 #
 
 set -e
 
 source $(dirname $0)/set-ci-vars.sh
 source $(dirname $0)/set-vars.sh
-source $(dirname $0)/valid-branches.sh
 
 if [[ "$CI_EVENT_TYPE" != "cron" && "$CI_BRANCH" != "coverity_scan" \
 	&& "$COVERITY" -eq 1 ]]; then
@@ -29,9 +28,9 @@ if [[ ( "$CI_EVENT_TYPE" == "cron" || "$CI_BRANCH" == "coverity_scan" )\
 	exit 0
 fi
 
-if [[ -z "$OS" || -z "$OS_VER" ]]; then
-	echo "ERROR: The variables OS and OS_VER have to be set properly " \
-		"(eg. OS=ubuntu, OS_VER=16.04)."
+if [[ -z "$OS" || -z "$OS_VER" || -z "$IMG_VER" ]]; then
+	echo "ERROR: The variables OS, OS_VER and IMG_VER have to be set properly " \
+		"(eg. OS=ubuntu, OS_VER=16.04, IMG_VER=1.10)."
 	exit 1
 fi
 
@@ -45,7 +44,7 @@ if [[ -z "$TEST_BUILD" ]]; then
 	TEST_BUILD=all
 fi
 
-imageName=${DOCKERHUB_REPO}:1.10-${OS}-${OS_VER}-${CI_CPU_ARCH}
+imageName=${DOCKER_REPO}:${IMG_VER}-${OS}-${OS_VER}-${CI_CPU_ARCH}
 containerName=pmdk-${OS}-${OS_VER}
 
 if [[ $MAKE_PKG -eq 0 ]] ; then command="./run-build.sh"; fi
@@ -60,18 +59,20 @@ fi
 if [ -n "$DNS_SERVER" ]; then DNS_SETTING=" --dns=$DNS_SERVER "; fi
 if [[ -f $CI_FILE_SKIP_BUILD_PKG_CHECK ]]; then BUILD_PACKAGE_CHECK=n; else BUILD_PACKAGE_CHECK=y; fi
 if [ -z "$NDCTL_ENABLE" ]; then ndctl_enable=; else ndctl_enable="--env NDCTL_ENABLE=$NDCTL_ENABLE"; fi
+if [ -z "$PMEMSET_INSTALL" ]; then pmemset_install=; else pmemset_install="--env PMEMSET_INSTALL=$PMEMSET_INSTALL"; fi
 if [[ $UBSAN -eq 1 ]]; then for x in C CPP LD; do declare EXTRA_${x}FLAGS=-fsanitize=undefined; done; fi
 
-# Only run doc update on $GITHUB_REPO master or stable branch
-if [[ -z "${CI_BRANCH}" || -z "${TARGET_BRANCHES[${CI_BRANCH}]}" || "$CI_EVENT_TYPE" == "pull_request" || "$CI_REPO_SLUG" != "${GITHUB_REPO}" ]]; then
+# Only run auto doc update on push events on "upstream" repo
+if [[ "${CI_EVENT_TYPE}" != "push" || "${CI_REPO_SLUG}" != "${GITHUB_REPO}" ]]; then
 	AUTO_DOC_UPDATE=0
 fi
 
 # Check if we are running on a CI (Travis or GitHub Actions)
 [ -n "$GITHUB_ACTIONS" -o -n "$TRAVIS" ] && CI_RUN="YES" || CI_RUN="NO"
 
-# We have a blacklist only for ppc64le arch
+# We have a blacklist only for ppc64le and aarch64 arch
 if [[ "$CI_CPU_ARCH" == ppc64le ]] ; then BLACKLIST_FILE=../../utils/docker/ppc64le.blacklist; fi
+if [[ "$CI_CPU_ARCH" == arm64 ]] ; then BLACKLIST_FILE=../../utils/docker/arm64.blacklist; fi
 
 # docker on travis + ppc64le runs inside an LXD container and for security
 # limits what can be done inside it, and as such, `docker run` fails with
@@ -136,6 +137,7 @@ docker run --rm --name=$containerName -i $TTY \
 	--env SRC_CHECKERS=$SRC_CHECKERS \
 	--env BLACKLIST_FILE=$BLACKLIST_FILE \
 	$ndctl_enable \
+	$pmemset_install \
 	--tmpfs /tmp:rw,relatime,suid,dev,exec,size=6G \
 	-v $HOST_WORKDIR:$WORKDIR \
 	-v /etc/localtime:/etc/localtime \

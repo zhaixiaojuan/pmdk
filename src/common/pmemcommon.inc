@@ -19,7 +19,6 @@ SOURCE +=\
 	$(COMMON)/os_deep_linux.c\
 	$(COMMON)/pool_hdr.c\
 	$(COMMON)/rand.c\
-	$(COMMON)/ravl.c\
 	$(COMMON)/set.c\
 	$(COMMON)/shutdown_state.c\
 	$(COMMON)/uuid.c\
@@ -49,7 +48,11 @@ SOURCE +=\
 endif
 
 ifeq ($(OS_DIMM),ndctl)
-SOURCE += $(PMEM2)/region_namespace_ndctl.c
+SOURCE +=\
+	$(PMEM2)/region_namespace_ndctl.c\
+	$(PMEM2)/numa_ndctl.c
 else
-SOURCE += $(PMEM2)/region_namespace_none.c
+SOURCE +=\
+	$(PMEM2)/region_namespace_none.c\
+	$(PMEM2)/numa_none.c
 endif

@@ -10,15 +10,15 @@ include $(TOP)/src/common.inc
 # core targets
 TARGETS = libpmem libpmemblk libpmemlog libpmemobj libpmempool tools libpmem2
 # make all targets
-ALL_TARGETS = $(TARGETS) common core librpmem
+ALL_TARGETS = $(TARGETS) common core librpmem libpmemset
 # all available targets
 POSSIBLE_TARGETS = $(TARGETS) common core librpmem rpmem_common test\
-	examples benchmarks
+	examples benchmarks libpmemset
 
 SCOPE_DIRS = $(TARGETS) common core librpmem rpmem_common
 
 DEBUG_RELEASE_TARGETS = common core libpmem libpmemblk libpmemlog libpmemobj\
-	libpmempool librpmem libpmem2
+	libpmempool librpmem libpmem2 libpmemset
 RELEASE_TARGETS = tools
 
 ifneq ($(BUILD_EXAMPLES),n)
@@ -55,6 +55,12 @@ PMREORDER_SRC = tools/pmreorder
 PMREORDER_FILES = $(PMREORDER_SRC)/*.py
 PMREORDER_DESTDIR = $(DESTDIR)$(datarootdir)/pmreorder
 PMREORDER_ROOTDIR = $(datarootdir)/pmreorder
+
+ifeq ($(PMEMSET_INSTALL),y)
+	PKG_CONFIG_FILES += libpmemset.pc
+	HEADERS_INSTALL += include/libpmemset.h
+	INSTALL_TARGETS += libpmemset
+endif
 
 ifeq ($(BUILD_RPMEM),y)
 	PKG_CONFIG_FILES += librpmem.pc
@@ -111,6 +117,7 @@ custom_build = $(DEBUG)$(OBJDIR)
 tools: libpmem libpmemblk libpmemlog libpmemobj libpmempool
 libpmemblk libpmemlog libpmemobj: libpmem
 libpmempool: libpmemblk
+libpmemset: libpmem2
 benchmarks test tools: common core
 
 pkg-cfg-common:

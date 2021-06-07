@@ -1,5 +1,5 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
-/* Copyright 2019-2020, Intel Corporation */
+/* Copyright 2019-2021, Intel Corporation */
 
 /*
  * libpmem2.h -- definitions of libpmem2 entry points
@@ -94,6 +94,7 @@ int pmem2_source_delete(struct pmem2_source **src);
 
 /* vm reservation setup */
 
+struct pmem2_map;
 struct pmem2_vm_reservation;
 
 void *pmem2_vm_reservation_get_address(struct pmem2_vm_reservation *rsv);
@@ -104,6 +105,26 @@ int pmem2_vm_reservation_new(struct pmem2_vm_reservation **rsv_ptr,
 		void *addr, size_t size);
 
 int pmem2_vm_reservation_delete(struct pmem2_vm_reservation **rsv_ptr);
+
+int pmem2_vm_reservation_extend(struct pmem2_vm_reservation *rsv, size_t size);
+
+int pmem2_vm_reservation_shrink(struct pmem2_vm_reservation *rsv, size_t offset,
+		size_t size);
+
+int pmem2_vm_reservation_map_find(struct pmem2_vm_reservation *rsv,
+		size_t reserv_offset, size_t len, struct pmem2_map **map);
+
+int pmem2_vm_reservation_map_find_prev(struct pmem2_vm_reservation *rsv,
+		struct pmem2_map *map, struct pmem2_map **prev_map);
+
+int pmem2_vm_reservation_map_find_next(struct pmem2_vm_reservation *rsv,
+		struct pmem2_map *map, struct pmem2_map **next_map);
+
+int pmem2_vm_reservation_map_find_first(struct pmem2_vm_reservation *rsv,
+		struct pmem2_map **map);
+
+int pmem2_vm_reservation_map_find_last(struct pmem2_vm_reservation *rsv,
+		struct pmem2_map **map);
 
 /* config setup */
 
@@ -225,6 +246,8 @@ int pmem2_source_device_idU(const struct pmem2_source *src,
 #endif
 
 int pmem2_source_device_usc(const struct pmem2_source *src, uint64_t *usc);
+
+int pmem2_source_numa_node(const struct pmem2_source *src, int *numa_node);
 
 struct pmem2_badblock_context;
 

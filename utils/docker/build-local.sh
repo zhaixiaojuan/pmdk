@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2017-2020, Intel Corporation
+# Copyright 2017-2021, Intel Corporation
 
 #
 # build-local.sh - runs a Docker container from a Docker image with environment
@@ -34,12 +34,17 @@ export PMDK_CC=${PMDK_CC:-gcc}
 export PMDK_CXX=${PMDK_CXX:-g++}
 export EXPERIMENTAL=${EXPERIMENTAL:-n}
 export VALGRIND=${VALGRIND:-1}
-export DOCKERHUB_REPO=${DOCKERHUB_REPO:-pmem/pmdk}
+export DOCKER_REPO=${DOCKER_REPO:-ghcr.io/pmem/pmdk}
 export GITHUB_REPO=${GITHUB_REPO:-pmem/pmdk}
 
-if [[ -z "$OS" || -z "$OS_VER" ]]; then
-	echo "ERROR: The variables OS and OS_VER have to be set " \
-		"(eg. OS=ubuntu, OS_VER=16.04)."
+if [[ -z "$IMG_VER" ]]; then
+	# set the IMG_VER variable - version of Docker images
+	source $(dirname $0)/images/set-images-version.sh
+fi
+
+if [[ -z "$OS" || -z "$OS_VER" || -z "$IMG_VER" ]]; then
+	echo "ERROR: The variables OS, OS_VER and IMG_VER have to be set " \
+		"(eg. OS=ubuntu, OS_VER=16.04, IMG_VER=1.10)."
 	exit 1
 fi
 
@@ -51,7 +56,7 @@ if [[ "$KEEP_CONTAINER" != "1" ]]; then
 	RM_SETTING=" --rm"
 fi
 
-imageName=${DOCKERHUB_REPO}:1.10-${OS}-${OS_VER}-${CI_CPU_ARCH}
+imageName=${DOCKER_REPO}:${IMG_VER}-${OS}-${OS_VER}-${CI_CPU_ARCH}
 containerName=pmdk-${OS}-${OS_VER}
 
 if [[ $MAKE_PKG -eq 1 ]] ; then
@@ -62,6 +67,7 @@ fi
 
 if [ -n "$DNS_SERVER" ]; then DNS_SETTING=" --dns=$DNS_SERVER "; fi
 if [ -z "$NDCTL_ENABLE" ]; then ndctl_enable=; else ndctl_enable="--env NDCTL_ENABLE=$NDCTL_ENABLE"; fi
+if [ -z "$PMEMSET_INSTALL" ]; then pmemset_install=; else pmemset_install="--env PMEMSET_INSTALL=$PMEMSET_INSTALL"; fi
 
 WORKDIR=/pmdk
 SCRIPTSDIR=$WORKDIR/utils/docker
@@ -103,6 +109,7 @@ docker run --name=$containerName -ti \
 	--env CI_RUN=$CI_RUN \
 	--env BLACKLIST_FILE=$BLACKLIST_FILE \
 	$ndctl_enable \
+	$pmemset_install \
 	--tmpfs /tmp:rw,relatime,suid,dev,exec,size=6G \
 	-v $HOST_WORKDIR:$WORKDIR \
 	-v /etc/localtime:/etc/localtime \

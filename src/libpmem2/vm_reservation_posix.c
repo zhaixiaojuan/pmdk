@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-/* Copyright 2020, Intel Corporation */
+/* Copyright 2020-2021, Intel Corporation */
 
 /*
  * vm_reservation_posix.c -- implementation of virtual memory
@@ -18,7 +18,7 @@ int vm_reservation_reserve_memory(void *addr, size_t size, void **raddr,
 int vm_reservation_release_memory(void *addr, size_t size);
 
 /*
- * vm_reservation_reserve_memory -- create a blank virual memory mapping
+ * vm_reservation_reserve_memory -- create a blank virtual memory mapping
  */
 int
 vm_reservation_reserve_memory(void *addr, size_t size, void **raddr,
@@ -82,4 +82,35 @@ vm_reservation_release_memory(void *addr, size_t size)
 	}
 
 	return 0;
+}
+
+/*
+ * vm_reservation_extend_memory -- extend memory range the reservation covers
+ */
+int
+vm_reservation_extend_memory(struct pmem2_vm_reservation *rsv,
+		void *rsv_end_addr, size_t size)
+{
+	void *reserved_addr = NULL;
+	size_t reserved_size = 0;
+
+	int ret = vm_reservation_reserve_memory(rsv_end_addr, size,
+			&reserved_addr, &reserved_size);
+	if (ret)
+		return ret;
+
+	ASSERTeq(rsv_end_addr, reserved_addr);
+	ASSERTeq(size, reserved_size);
+
+	return ret;
+}
+
+/*
+ * vm_reservation_shrink_memory -- shrink memory range the reservation covers
+ */
+int
+vm_reservation_shrink_memory(struct pmem2_vm_reservation *rsv,
+		void *rsv_release_addr, size_t size)
+{
+	return vm_reservation_release_memory(rsv_release_addr, size);
 }

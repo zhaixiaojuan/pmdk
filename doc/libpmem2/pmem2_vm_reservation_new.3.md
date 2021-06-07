@@ -8,7 +8,7 @@ date: pmem2 API version 1.0
 ...
 
 [comment]: <> (SPDX-License-Identifier: BSD-3-Clause)
-[comment]: <> (Copyright 2020, Intel Corporation)
+[comment]: <> (Copyright 2020-2021, Intel Corporation)
 
 [comment]: <> (pmem2_vm_reservation_new.3 -- man page for libpmem2 virtual memory reservation API)
 
@@ -30,9 +30,9 @@ an instance of virtual memory reservation
 #include <libpmem2.h>
 
 struct pmem2_vm_reservation;
-void pmem2_vm_reservation_new(struct pmem2_vm_reservation **rsv_ptr,
+int pmem2_vm_reservation_new(struct pmem2_vm_reservation **rsv_ptr,
 		void *addr, size_t size);
-void pmem2_vm_reservation_delete(struct pmem2_vm_reservation **rsv_ptr);
+int pmem2_vm_reservation_delete(struct pmem2_vm_reservation **rsv_ptr);
 ```
 
 # DESCRIPTION #
@@ -42,8 +42,8 @@ virtual address space of the calling process. Reservation serves as a placeholde
 of a given size on which sources can be mapped.
 
 For the function to succeed, the *addr* must be either aligned to an appropriate
-allocation granularity,
-or **NULL**, the size has to be aligned to an appropraite allocation granularity.
+allocation granularity or **NULL**, the size always has to be aligned to an
+appropriate allocation granularity.
 
 If the **pmem2_vm_reservation_new**() succeeds in creating a reservation, it instantiates a new
 **struct pmem2_vm_reservation** object describing the reservation. The pointer to this object
@@ -85,10 +85,6 @@ The **pmem2_vm_reservation_delete**() function can fail with the following error
 
 It can also return errors from the underlying **munmap**(2) function.
 
-# ERRORS #
-
-The **pmem2_vm_reservation_new**() and **pmem2_vm_reservation_delete**() functions are not supported yet.
-
 # SEE ALSO #
 
-**pmem2_config_set_vm_reservation**(3), **libpmem2**(7) and **<http://pmem.io>**
+**pmem2_config_set_vm_reservation**(3), **libpmem2**(7) and **<https://pmem.io>**

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-/* Copyright 2016-2020, Intel Corporation */
+/* Copyright 2016-2021, Intel Corporation */
 
 /*
  * rpmem_fip.c -- rpmem libfabric provider module source file
@@ -25,6 +25,7 @@
 #include "util.h"
 #include "os_thread.h"
 #include "os.h"
+#include "page_size.h"
 #include "rpmem_common.h"
 #include "rpmem_fip_common.h"
 #include "rpmem_proto.h"
@@ -46,10 +47,10 @@
 	ret;\
 })
 
-#define LANE_ALIGN_SIZE 64
+#define LANE_ALIGN_SIZE CACHELINE_SIZE
 #define LANE_ALIGN __attribute__((aligned(LANE_ALIGN_SIZE)))
 
-#define RPMEM_RAW_BUFF_SIZE 4096
+#define RPMEM_RAW_BUFF_SIZE PMEM_PAGESIZE
 #define RPMEM_RAW_SIZE 8
 
 typedef ssize_t (*rpmem_fip_flush_fn)(struct rpmem_fip *fip, size_t offset,
@@ -521,7 +522,7 @@ err_alloc_lanes:
 
 /*
  * rpmem_fip_lanes_fini_common -- (internal) deinitialize common lanes
- * resrouces
+ * resources
  */
 static int
 rpmem_fip_lanes_fini_common(struct rpmem_fip *fip)

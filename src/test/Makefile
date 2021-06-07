@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2014-2020, Intel Corporation
+# Copyright 2014-2021, Intel Corporation
 #
 
 #
@@ -96,6 +96,7 @@ OBJ_TESTS = \
 	obj_pool\
 	obj_pool_lock\
 	obj_pool_lookup\
+	obj_pool_open_mt\
 	obj_recovery\
 	obj_recreate\
 	obj_root\
@@ -223,9 +224,11 @@ PMEM2_TESTS = \
 
 ifeq ($(OS_DIMM),ndctl)
 PMEM2_TESTS += \
-	pmem2_badblock_mocks
+	pmem2_badblock_mocks\
+	pmem2_source_numa
 else
-$(info NOTE: Skipping pmem2_badblock_mocks test because libndctl is disabled (see NDCTL_ENABLE))
+$(info NOTE: Skipping tests because libndctl is disabled (see NDCTL_ENABLE)\
+		Skipped tests: pmem2_badblock_mocks pmem2_source_numa)
 endif
 
 PMEMPOOL_TESTS = \
@@ -294,6 +297,20 @@ PMREORDER_TESTS = \
 	pmreorder_simple\
 	pmreorder_stack
 
+PMEMSET_TESTS = \
+	pmemset_config\
+	pmemset_deep_flush\
+	pmemset_file\
+	pmemset_include\
+	pmemset_memcpy\
+	pmemset_memmove\
+	pmemset_memset\
+	pmemset_new\
+	pmemset_part\
+	pmemset_perror\
+	pmemset_persist\
+	pmemset_source
+
 LOCAL_TESTS = \
 	$(OBJ_TESTS)\
 	$(BLK_TESTS)\
@@ -301,6 +318,7 @@ LOCAL_TESTS = \
 	$(OTHER_TESTS)\
 	$(PMEM_TESTS)\
 	$(PMEM2_TESTS)\
+	$(PMEMSET_TESTS)\
 	$(PMEMPOOL_TESTS)\
 	$(LIBPMEMPOOL_TESTS)\
 	$(LIBPMEMPOOL_MOD_TESTS)\
@@ -458,6 +476,10 @@ pcheck-pmem: $(PMEM_TESTS)
 
 pcheck-pmem2: TARGET = pcheck
 pcheck-pmem2: $(PMEM2_TESTS)
+	@echo "No failures."
+
+pcheck-pmemset: TARGET = pcheck
+pcheck-pmemset: $(PMEMSET_TESTS)
 	@echo "No failures."
 
 pcheck-rpmem: TARGET = pcheck
