@@ -35,8 +35,16 @@ libpmem2.so.1 libpmem2 #MINVER#
  pmem2_source_from_anon@LIBPMEM2_1.0 1.10
  pmem2_source_from_fd@LIBPMEM2_1.0 1.10
  pmem2_source_get_fd@LIBPMEM2_1.0 1.10
+ pmem2_source_numa_node@LIBPMEM2_1.0 1.11
  pmem2_source_size@LIBPMEM2_1.0 1.10
  pmem2_vm_reservation_delete@LIBPMEM2_1.0 1.10
+ pmem2_vm_reservation_extend@LIBPMEM2_1.0 1.11
  pmem2_vm_reservation_get_address@LIBPMEM2_1.0 1.10
  pmem2_vm_reservation_get_size@LIBPMEM2_1.0 1.10
+ pmem2_vm_reservation_map_find@LIBPMEM2_1.0 1.11
+ pmem2_vm_reservation_map_find_first@LIBPMEM2_1.0 1.11
+ pmem2_vm_reservation_map_find_last@LIBPMEM2_1.0 1.11
+ pmem2_vm_reservation_map_find_next@LIBPMEM2_1.0 1.11
+ pmem2_vm_reservation_map_find_prev@LIBPMEM2_1.0 1.11
  pmem2_vm_reservation_new@LIBPMEM2_1.0 1.10
+ pmem2_vm_reservation_shrink@LIBPMEM2_1.0 1.11
