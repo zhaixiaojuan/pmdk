@@ -9,7 +9,12 @@ TOP = ../../../..
 TARGET = cmpmap
 OBJS = cmpmap.o
 
-LIBPMEM=y
+ifneq ($(DEBUG),)
+	OBJS += $(LIBPMEM_OBJS_DEBUG)
+else
+	OBJS += $(LIBPMEM_OBJS_NONDEBUG)
+endif
+
 LIBPMEMCOMMON=y
 
 include $(TOP)/src/tools/Makefile.inc

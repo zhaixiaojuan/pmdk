@@ -76,122 +76,6 @@ ifneq ($(filter $(ARCH), powerpc64 powerpc64le ppc64 ppc64le ppc64el powerpc),)
 override ARCH := ppc64
 endif
 
-LIBPMEMPOOL_OBJS_DEBUG :=\
-	$(TOP)/src/debug/libpmempool/check.o\
-	$(TOP)/src/debug/libpmempool/check_backup.o\
-	$(TOP)/src/debug/libpmempool/check_bad_blocks.o\
-	$(TOP)/src/debug/libpmempool/check_blk.o\
-	$(TOP)/src/debug/libpmempool/check_btt_info.o\
-	$(TOP)/src/debug/libpmempool/check_btt_map_flog.o\
-	$(TOP)/src/debug/libpmempool/check_log.o\
-	$(TOP)/src/debug/libpmempool/check_pool_hdr.o\
-	$(TOP)/src/debug/libpmempool/check_sds.o\
-	$(TOP)/src/debug/libpmempool/check_util.o\
-	$(TOP)/src/debug/libpmempool/check_write.o\
-	$(TOP)/src/debug/libpmempool/pool.o\
-	$(TOP)/src/debug/libpmempool/replica.o\
-	$(TOP)/src/debug/libpmempool/rm.o\
-	$(TOP)/src/debug/libpmempool/sync.o\
-	$(TOP)/src/debug/libpmempool/transform.o\
-	$(TOP)/src/debug/libpmempool/feature.o\
-	$(TOP)/src/debug/libpmempool/libpmempool.o
-
-LIBPMEMPOOL_OBJS_NONDEBUG :=\
-	$(TOP)/src/nondebug/libpmempool/check.o\
-	$(TOP)/src/nondebug/libpmempool/check_backup.o\
-	$(TOP)/src/nondebug/libpmempool/check_bad_blocks.o\
-	$(TOP)/src/nondebug/libpmempool/check_blk.o\
-	$(TOP)/src/nondebug/libpmempool/check_btt_info.o\
-	$(TOP)/src/nondebug/libpmempool/check_btt_map_flog.o\
-	$(TOP)/src/nondebug/libpmempool/check_log.o\
-	$(TOP)/src/nondebug/libpmempool/check_pool_hdr.o\
-	$(TOP)/src/nondebug/libpmempool/check_sds.o\
-	$(TOP)/src/nondebug/libpmempool/check_util.o\
-	$(TOP)/src/nondebug/libpmempool/check_write.o\
-	$(TOP)/src/nondebug/libpmempool/pool.o\
-	$(TOP)/src/nondebug/libpmempool/replica.o\
-	$(TOP)/src/nondebug/libpmempool/rm.o\
-	$(TOP)/src/nondebug/libpmempool/sync.o\
-	$(TOP)/src/nondebug/libpmempool/transform.o\
-	$(TOP)/src/nondebug/libpmempool/feature.o\
-	$(TOP)/src/nondebug/libpmempool/libpmempool.o
-
-LIBPMEMOBJ_OBJS_DEBUG :=\
-	$(TOP)/src/debug/libpmemobj/alloc_class.o\
-	$(TOP)/src/debug/libpmemobj/bucket.o\
-	$(TOP)/src/debug/libpmemobj/container_ravl.o\
-	$(TOP)/src/debug/libpmemobj/container_seglists.o\
-	$(TOP)/src/debug/libpmemobj/critnib.o\
-	$(TOP)/src/debug/libpmemobj/ctl_debug.o\
-	$(TOP)/src/debug/libpmemobj/heap.o\
-	$(TOP)/src/debug/libpmemobj/lane.o\
-	$(TOP)/src/debug/libpmemobj/libpmemobj.o\
-	$(TOP)/src/debug/libpmemobj/list.o\
-	$(TOP)/src/debug/libpmemobj/memblock.o\
-	$(TOP)/src/debug/libpmemobj/memops.o\
-	$(TOP)/src/debug/libpmemobj/obj.o\
-	$(TOP)/src/debug/libpmemobj/palloc.o\
-	$(TOP)/src/debug/libpmemobj/pmalloc.o\
-	$(TOP)/src/debug/libpmemobj/recycler.o\
-	$(TOP)/src/debug/libpmemobj/ulog.o\
-	$(TOP)/src/debug/libpmemobj/sync.o\
-	$(TOP)/src/debug/libpmemobj/tx.o\
-	$(TOP)/src/debug/libpmemobj/stats.o
-
-LIBPMEMOBJ_OBJS_NONDEBUG :=\
-	$(TOP)/src/nondebug/libpmemobj/alloc_class.o\
-	$(TOP)/src/nondebug/libpmemobj/bucket.o\
-	$(TOP)/src/nondebug/libpmemobj/container_ravl.o\
-	$(TOP)/src/nondebug/libpmemobj/container_seglists.o\
-	$(TOP)/src/nondebug/libpmemobj/critnib.o\
-	$(TOP)/src/nondebug/libpmemobj/ctl_debug.o\
-	$(TOP)/src/nondebug/libpmemobj/heap.o\
-	$(TOP)/src/nondebug/libpmemobj/lane.o\
-	$(TOP)/src/nondebug/libpmemobj/libpmemobj.o\
-	$(TOP)/src/nondebug/libpmemobj/list.o\
-	$(TOP)/src/nondebug/libpmemobj/memblock.o\
-	$(TOP)/src/nondebug/libpmemobj/memops.o\
-	$(TOP)/src/nondebug/libpmemobj/obj.o\
-	$(TOP)/src/nondebug/libpmemobj/palloc.o\
-	$(TOP)/src/nondebug/libpmemobj/pmalloc.o\
-	$(TOP)/src/nondebug/libpmemobj/recycler.o\
-	$(TOP)/src/nondebug/libpmemobj/ulog.o\
-	$(TOP)/src/nondebug/libpmemobj/sync.o\
-	$(TOP)/src/nondebug/libpmemobj/tx.o\
-	$(TOP)/src/nondebug/libpmemobj/stats.o
-
-LIBPMEMLOG_OBJS_DEBUG :=\
-	$(TOP)/src/debug/libpmemlog/libpmemlog.o\
-	$(TOP)/src/debug/libpmemlog/log.o
-
-LIBPMEMLOG_OBJS_NONDEBUG :=\
-	$(TOP)/src/nondebug/libpmemlog/libpmemlog.o\
-	$(TOP)/src/nondebug/libpmemlog/log.o
-
-ifeq ($(LIBPMEM_OBJS_DEBUG),)
-LIBPMEM_OBJS_DEBUG +=\
-	$(TOP)/src/debug/libpmem/libpmem.o\
-	$(TOP)/src/debug/libpmem/memops_generic.o\
-	$(TOP)/src/debug/libpmem/pmem.o\
-	$(TOP)/src/debug/libpmem/pmem_posix.o
-
-include $(TOP)/src/libpmem2/$(ARCH)/sources.inc
-OBJS_MEM = $(LIBPMEM2_ARCH_SOURCE:.c=.o)
-LIBPMEM_OBJS_DEBUG += $(addprefix $(TOP)/src/debug/libpmem/, ${OBJS_MEM})
-endif
-
-ifeq ($(LIBPMEM_OBJS_NONDEBUG),)
-LIBPMEM_OBJS_NONDEBUG +=\
-	$(TOP)/src/nondebug/libpmem/libpmem.o\
-	$(TOP)/src/nondebug/libpmem/memops_generic.o\
-	$(TOP)/src/nondebug/libpmem/pmem.o\
-	$(TOP)/src/nondebug/libpmem/pmem_posix.o
-
-include $(TOP)/src/libpmem2/$(ARCH)/sources.inc
-OBJS_MEM = $(LIBPMEM2_ARCH_SOURCE:.c=.o)
-LIBPMEM_OBJS_NONDEBUG += $(addprefix $(TOP)/src/nondebug/libpmem/, ${OBJS_MEM})
-endif
-
 ifeq ($(PKG_CONFIG_CHECKED),)
 ifeq ($(shell command -v $(PKG_CONFIG) && echo y || echo n), n)
 $(error $(PKG_CONFIG) not found)
@@ -505,6 +389,258 @@ ifeq ($(NDCTL_ENABLE),y)
 else
     OS_DIMM := none
 endif
+
+LIBPMEMPOOL_OBJS_DEBUG :=\
+	$(TOP)/src/debug/libpmempool/check.o\
+	$(TOP)/src/debug/libpmempool/check_backup.o\
+	$(TOP)/src/debug/libpmempool/check_bad_blocks.o\
+	$(TOP)/src/debug/libpmempool/check_blk.o\
+	$(TOP)/src/debug/libpmempool/check_btt_info.o\
+	$(TOP)/src/debug/libpmempool/check_btt_map_flog.o\
+	$(TOP)/src/debug/libpmempool/check_log.o\
+	$(TOP)/src/debug/libpmempool/check_pool_hdr.o\
+	$(TOP)/src/debug/libpmempool/check_sds.o\
+	$(TOP)/src/debug/libpmempool/check_util.o\
+	$(TOP)/src/debug/libpmempool/check_write.o\
+	$(TOP)/src/debug/libpmempool/pool.o\
+	$(TOP)/src/debug/libpmempool/replica.o\
+	$(TOP)/src/debug/libpmempool/rm.o\
+	$(TOP)/src/debug/libpmempool/sync.o\
+	$(TOP)/src/debug/libpmempool/transform.o\
+	$(TOP)/src/debug/libpmempool/feature.o\
+	$(TOP)/src/debug/libpmempool/libpmempool.o
+
+LIBPMEMPOOL_OBJS_NONDEBUG :=\
+	$(TOP)/src/nondebug/libpmempool/check.o\
+	$(TOP)/src/nondebug/libpmempool/check_backup.o\
+	$(TOP)/src/nondebug/libpmempool/check_bad_blocks.o\
+	$(TOP)/src/nondebug/libpmempool/check_blk.o\
+	$(TOP)/src/nondebug/libpmempool/check_btt_info.o\
+	$(TOP)/src/nondebug/libpmempool/check_btt_map_flog.o\
+	$(TOP)/src/nondebug/libpmempool/check_log.o\
+	$(TOP)/src/nondebug/libpmempool/check_pool_hdr.o\
+	$(TOP)/src/nondebug/libpmempool/check_sds.o\
+	$(TOP)/src/nondebug/libpmempool/check_util.o\
+	$(TOP)/src/nondebug/libpmempool/check_write.o\
+	$(TOP)/src/nondebug/libpmempool/pool.o\
+	$(TOP)/src/nondebug/libpmempool/replica.o\
+	$(TOP)/src/nondebug/libpmempool/rm.o\
+	$(TOP)/src/nondebug/libpmempool/sync.o\
+	$(TOP)/src/nondebug/libpmempool/transform.o\
+	$(TOP)/src/nondebug/libpmempool/feature.o\
+	$(TOP)/src/nondebug/libpmempool/libpmempool.o
+
+LIBPMEMOBJ_OBJS_DEBUG :=\
+	$(TOP)/src/debug/libpmemobj/alloc_class.o\
+	$(TOP)/src/debug/libpmemobj/bucket.o\
+	$(TOP)/src/debug/libpmemobj/container_ravl.o\
+	$(TOP)/src/debug/libpmemobj/container_seglists.o\
+	$(TOP)/src/debug/libpmemobj/critnib.o\
+	$(TOP)/src/debug/libpmemobj/ctl_debug.o\
+	$(TOP)/src/debug/libpmemobj/heap.o\
+	$(TOP)/src/debug/libpmemobj/lane.o\
+	$(TOP)/src/debug/libpmemobj/libpmemobj.o\
+	$(TOP)/src/debug/libpmemobj/list.o\
+	$(TOP)/src/debug/libpmemobj/memblock.o\
+	$(TOP)/src/debug/libpmemobj/memops.o\
+	$(TOP)/src/debug/libpmemobj/obj.o\
+	$(TOP)/src/debug/libpmemobj/palloc.o\
+	$(TOP)/src/debug/libpmemobj/pmalloc.o\
+	$(TOP)/src/debug/libpmemobj/recycler.o\
+	$(TOP)/src/debug/libpmemobj/ulog.o\
+	$(TOP)/src/debug/libpmemobj/sync.o\
+	$(TOP)/src/debug/libpmemobj/tx.o\
+	$(TOP)/src/debug/libpmemobj/stats.o
+
+LIBPMEMOBJ_OBJS_NONDEBUG :=\
+	$(TOP)/src/nondebug/libpmemobj/alloc_class.o\
+	$(TOP)/src/nondebug/libpmemobj/bucket.o\
+	$(TOP)/src/nondebug/libpmemobj/container_ravl.o\
+	$(TOP)/src/nondebug/libpmemobj/container_seglists.o\
+	$(TOP)/src/nondebug/libpmemobj/critnib.o\
+	$(TOP)/src/nondebug/libpmemobj/ctl_debug.o\
+	$(TOP)/src/nondebug/libpmemobj/heap.o\
+	$(TOP)/src/nondebug/libpmemobj/lane.o\
+	$(TOP)/src/nondebug/libpmemobj/libpmemobj.o\
+	$(TOP)/src/nondebug/libpmemobj/list.o\
+	$(TOP)/src/nondebug/libpmemobj/memblock.o\
+	$(TOP)/src/nondebug/libpmemobj/memops.o\
+	$(TOP)/src/nondebug/libpmemobj/obj.o\
+	$(TOP)/src/nondebug/libpmemobj/palloc.o\
+	$(TOP)/src/nondebug/libpmemobj/pmalloc.o\
+	$(TOP)/src/nondebug/libpmemobj/recycler.o\
+	$(TOP)/src/nondebug/libpmemobj/ulog.o\
+	$(TOP)/src/nondebug/libpmemobj/sync.o\
+	$(TOP)/src/nondebug/libpmemobj/tx.o\
+	$(TOP)/src/nondebug/libpmemobj/stats.o
+
+LIBPMEMLOG_OBJS_DEBUG :=\
+	$(TOP)/src/debug/libpmemlog/libpmemlog.o\
+	$(TOP)/src/debug/libpmemlog/log.o
+
+LIBPMEMLOG_OBJS_NONDEBUG :=\
+	$(TOP)/src/nondebug/libpmemlog/libpmemlog.o\
+	$(TOP)/src/nondebug/libpmemlog/log.o
+
+LIBPMEMBLK_OBJS_DEBUG :=\
+	$(TOP)/src/debug/libpmemblk/libpmemblk.o\
+	$(TOP)/src/debug/libpmemblk/blk.o\
+	$(TOP)/src/debug/libpmemblk/btt.o
+
+LIBPMEMBLK_OBJS_NONDEBUG :=\
+	$(TOP)/src/nondebug/libpmemblk/libpmemblk.o\
+	$(TOP)/src/nondebug/libpmemblk/blk.o\
+	$(TOP)/src/nondebug/libpmemblk/btt.o
+
+ifeq ($(LIBPMEM_OBJS_DEBUG),)
+LIBPMEM_OBJS_DEBUG +=\
+	$(TOP)/src/debug/libpmem/libpmem.o\
+	$(TOP)/src/debug/libpmem/memops_generic.o\
+	$(TOP)/src/debug/libpmem/pmem.o\
+	$(TOP)/src/debug/libpmem/pmem_posix.o
+
+include $(TOP)/src/libpmem2/$(ARCH)/sources.inc
+OBJS_MEM = $(LIBPMEM2_ARCH_SOURCE:.c=.o)
+LIBPMEM_OBJS_DEBUG += $(addprefix $(TOP)/src/debug/libpmem/, ${OBJS_MEM})
+endif
+
+ifeq ($(LIBPMEM_OBJS_NONDEBUG),)
+LIBPMEM_OBJS_NONDEBUG +=\
+	$(TOP)/src/nondebug/libpmem/libpmem.o\
+	$(TOP)/src/nondebug/libpmem/memops_generic.o\
+	$(TOP)/src/nondebug/libpmem/pmem.o\
+	$(TOP)/src/nondebug/libpmem/pmem_posix.o
+
+include $(TOP)/src/libpmem2/$(ARCH)/sources.inc
+OBJS_MEM = $(LIBPMEM2_ARCH_SOURCE:.c=.o)
+LIBPMEM_OBJS_NONDEBUG += $(addprefix $(TOP)/src/nondebug/libpmem/, ${OBJS_MEM})
+endif
+
+ifeq ($(LIBPMEM2_OBJS_DEBUG),)
+LIBPMEM2_OBJS_DEBUG +=\
+	$(TOP)/src/debug/libpmem2/badblocks.o\
+	$(TOP)/src/debug/libpmem2/badblocks_$(OS_DIMM).o\
+	$(TOP)/src/debug/libpmem2/config.o\
+	$(TOP)/src/debug/libpmem2/errormsg.o\
+	$(TOP)/src/debug/libpmem2/libpmem2.o\
+	$(TOP)/src/debug/libpmem2/map.o\
+	$(TOP)/src/debug/libpmem2/map_posix.o\
+	$(TOP)/src/debug/libpmem2/memops_generic.o\
+	$(TOP)/src/debug/libpmem2/persist.o\
+	$(TOP)/src/debug/libpmem2/persist_posix.o\
+	$(TOP)/src/debug/libpmem2/pmem2_utils.o\
+	$(TOP)/src/debug/libpmem2/pmem2_utils_$(OS_DIMM).o\
+	$(TOP)/src/debug/libpmem2/source.o\
+	$(TOP)/src/debug/libpmem2/source_posix.o\
+	$(TOP)/src/debug/libpmem2/usc_$(OS_DIMM).o\
+	$(TOP)/src/debug/libpmem2/vm_reservation.o\
+	$(TOP)/src/debug/libpmem2/vm_reservation_posix.o\
+
+ifeq ($(OS_KERNEL_NAME),Linux)
+LIBPMEM2_OBJS_DEBUG +=\
+	$(TOP)/src/debug/libpmem2/auto_flush_linux.o\
+	$(TOP)/src/debug/libpmem2/deep_flush_linux.o\
+	$(TOP)/src/debug/libpmem2/extent_linux.o\
+	$(TOP)/src/debug/libpmem2/pmem2_utils_linux.o
+else
+LIBPMEM2_OBJS_DEBUG +=\
+	$(TOP)/src/debug/libpmem2/auto_flush_none.o\
+	$(TOP)/src/debug/libpmem2/extent_none.o\
+	$(TOP)/src/debug/libpmem2/pmem2_utils_other.o\
+	$(TOP)/src/debug/libpmem2/deep_flush_other.o
+endif
+
+ifeq ($(OS_DIMM),ndctl)
+LIBPMEM2_OBJS_DEBUG +=\
+	$(TOP)/src/debug/libpmem2/region_namespace_ndctl.o\
+	$(TOP)/src/debug/libpmem2/numa_ndctl.o
+else
+LIBPMEM2_OBJS_DEBUG +=\
+	$(TOP)/src/debug/libpmem2/region_namespace_none.o\
+	$(TOP)/src/debug/libpmem2/numa_none.o
+endif
+
+include $(TOP)/src/libpmem2/$(ARCH)/sources.inc
+OBJS_MEM = $(LIBPMEM2_ARCH_SOURCE:.c=.o)
+LIBPMEM2_OBJS_DEBUG += $(addprefix $(TOP)/src/debug/libpmem2/, ${OBJS_MEM})
+endif
+
+ifeq ($(LIBPMEM2_OBJS_NONDEBUG),)
+LIBPMEM2_OBJS_NONDEBUG +=\
+	$(TOP)/src/nondebug/libpmem2/libpmem2.o\
+	$(TOP)/src/nondebug/libpmem2/badblocks.o\
+	$(TOP)/src/nondebug/libpmem2/badblocks_$(OS_DIMM).o\
+	$(TOP)/src/nondebug/libpmem2/config.o\
+	$(TOP)/src/nondebug/libpmem2/source.o\
+	$(TOP)/src/nondebug/libpmem2/source_posix.o\
+	$(TOP)/src/nondebug/libpmem2/errormsg.o\
+	$(TOP)/src/nondebug/libpmem2/map.o\
+	$(TOP)/src/nondebug/libpmem2/map_posix.o\
+	$(TOP)/src/nondebug/libpmem2/memops_generic.o\
+	$(TOP)/src/nondebug/libpmem2/persist.o\
+	$(TOP)/src/nondebug/libpmem2/persist_posix.o\
+	$(TOP)/src/nondebug/libpmem2/pmem2_utils.o\
+	$(TOP)/src/nondebug/libpmem2/pmem2_utils_$(OS_DIMM).o\
+	$(TOP)/src/nondebug/libpmem2/usc_$(OS_DIMM).o\
+	$(TOP)/src/nondebug/libpmem2/vm_reservation.o\
+	$(TOP)/src/nondebug/libpmem2/vm_reservation_posix.o\
+
+ifeq ($(OS_KERNEL_NAME),Linux)
+LIBPMEM2_OBJS_NONDEBUG +=\
+	$(TOP)/src/nondebug/libpmem2/auto_flush_linux.o\
+	$(TOP)/src/nondebug/libpmem2/deep_flush_linux.o\
+	$(TOP)/src/nondebug/libpmem2/extent_linux.o\
+	$(TOP)/src/nondebug/libpmem2/pmem2_utils_linux.o
+else
+LIBPMEM2_OBJS_NONDEBUG +=\
+	$(TOP)/src/nondebug/libpmem2/auto_flush_none.o\
+	$(TOP)/src/nondebug/libpmem2/extent_none.o\
+	$(TOP)/src/nondebug/libpmem2/pmem2_utils_other.o
+	$(TOP)/src/nondebug/libpmem2/deep_flush_other.o
+endif
+
+ifeq ($(OS_DIMM),ndctl)
+LIBPMEM2_OBJS_NONDEBUG +=\
+	$(TOP)/src/nondebug/libpmem2/region_namespace_ndctl.o\
+	$(TOP)/src/nondebug/libpmem2/numa_ndctl.o
+else
+LIBPMEM2_OBJS_NONDEBUG +=\
+	$(TOP)/src/nondebug/libpmem2/region_namespace_none.o\
+	$(TOP)/src/nondebug/libpmem2/numa_none.o
+endif
+
+include $(TOP)/src/libpmem2/$(ARCH)/sources.inc
+OBJS_MEM = $(LIBPMEM2_ARCH_SOURCE:.c=.o)
+LIBPMEM2_OBJS_NONDEBUG += $(addprefix $(TOP)/src/nondebug/libpmem2/, ${OBJS_MEM})
+
+endif
+
+ifeq ($(LIBPMEMCORE_OBJS_DEBUG),)
+LIBPMEMCORE_OBJS_DEBUG +=\
+	$(TOP)/src/debug/core/alloc.o\
+	$(TOP)/src/debug/core/fs_posix.o\
+	$(TOP)/src/debug/core/os_posix.o\
+	$(TOP)/src/debug/core/os_thread_posix.o\
+	$(TOP)/src/debug/core/out.o\
+	$(TOP)/src/debug/core/ravl.o\
+	$(TOP)/src/debug/core/ravl_interval.o\
+	$(TOP)/src/debug/core/util.o\
+	$(TOP)/src/debug/core/util_posix.o
+endif
+
+ifeq ($(LIBPMEMCORE_OBJS_NONDEBUG),)
+LIBPMEMCORE_OBJS_NONDEBUG +=\
+	$(TOP)/src/nondebug/core/alloc.o\
+	$(TOP)/src/nondebug/core/fs_posix.o\
+	$(TOP)/src/nondebug/core/os_posix.o\
+	$(TOP)/src/nondebug/core/os_thread_posix.o\
+	$(TOP)/src/nondebug/core/out.o\
+	$(TOP)/src/nondebug/core/ravl.o\
+	$(TOP)/src/nondebug/core/ravl_interval.o\
+	$(TOP)/src/nondebug/core/util.o\
+	$(TOP)/src/nondebug/core/util_posix.o
+endif
+
 export OS_DIMM
 export LIBNDCTL_PKG_CONFIG_DEPS
 export LIBNDCTL_PKG_CONFIG_DEPS_VAR

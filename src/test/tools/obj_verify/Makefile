@@ -12,8 +12,14 @@ TOP = ../../../..
 TARGET = obj_verify
 OBJS = obj_verify.o
 
-LIBPMEM=y
-LIBPMEMOBJ=y
+ifneq ($(DEBUG),)
+	OBJS += $(LIBPMEM_OBJS_DEBUG)
+	OBJS += $(LIBPMEMOBJ_OBJS_DEBUG)
+else
+	OBJS += $(LIBPMEM_OBJS_NONDEBUG)
+	OBJS += $(LIBPMEMOBJ_OBJS_NONDEBUG)
+endif
+
 LIBPMEMCOMMON=y
 
 include $(TOP)/src/tools/Makefile.inc

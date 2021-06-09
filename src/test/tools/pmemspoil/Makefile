@@ -12,8 +12,14 @@ TARGET = pmemspoil
 
 OBJS = spoil.o
 
-LIBPMEM=y
 TOOLS_COMMON=y
-LIBPMEMBLK_PRIV=btt_info_convert2h
+
+ifneq ($(DEBUG),)
+	OBJS += $(LIBPMEM_OBJS_DEBUG)
+	OBJS += $(LIBPMEMBLK_OBJS_DEBUG)
+else
+	OBJS += $(LIBPMEM_OBJS_NONDEBUG)
+	OBJS += $(LIBPMEMBLK_OBJS_NONDEBUG)
+endif
 
 include $(TOP)/src/tools/Makefile.inc

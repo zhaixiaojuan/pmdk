@@ -7,8 +7,6 @@
 TOP = ../../..
 include $(TOP)/src/common.inc
 
-INCS += -I$(TOP)/src/libpmem2
-
 ifeq ($(NDCTL_ENABLE),y)
 
 SCP_TO_REMOTE_NODES = y

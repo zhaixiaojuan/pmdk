@@ -10,9 +10,15 @@ TARGET = pmemdetect
 
 OBJS = pmemdetect.o
 
-LIBPMEM=y
+ifneq ($(DEBUG),)
+	OBJS += $(LIBPMEM_OBJS_DEBUG)
+	OBJS += $(LIBPMEMBLK_OBJS_DEBUG)
+else
+	OBJS += $(LIBPMEM_OBJS_NONDEBUG)
+	OBJS += $(LIBPMEMBLK_OBJS_NONDEBUG)
+endif
+
 TOOLS_COMMON=y
-LIBPMEMBLK_PRIV=btt_info_convert2h
 
 SCP_TO_REMOTE_NODES = y
 

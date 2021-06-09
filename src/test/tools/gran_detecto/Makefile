@@ -6,15 +6,24 @@
 
 TOP = ../../../..
 
-vpath %.c $(TOP)/src/core
+include $(TOP)/src/common.inc
+
 INCS += -I$(TOP)/src/core
 INCS += -I$(TOP)/src/common
 
 TARGET = gran_detecto
 
-OBJS += gran_detecto.o\
-	os_posix.o
+OBJS += gran_detecto.o
 
-LIBPMEM2=y
+ifneq ($(DEBUG),)
+	OBJS += $(LIBPMEM2_OBJS_DEBUG)
+	OBJS += $(LIBPMEMCORE_OBJS_DEBUG)
+else
+	OBJS += $(LIBPMEM2_OBJS_NONDEBUG)
+	OBJS += $(LIBPMEMCORE_OBJS_NONDEBUG)
+endif
+
+CFLAGS += $(LIBNDCTL_CFLAGS)
+LIBS += $(LIBNDCTL_LIBS) -pthread
 
 include $(TOP)/src/tools/Makefile.inc

@@ -9,6 +9,10 @@ TOP = ../../../..
 TARGET = usc_permission_check
 OBJS = usc_permission_check.o
 
-LIBPMEM2=y
+ifneq ($(DEBUG),)
+	OBJS += $(LIBPMEM2_OBJS_DEBUG)
+else
+	OBJS += $(LIBPMEM2_OBJS_NONDEBUG)
+endif
 LIBPMEMCORE=y
 include $(TOP)/src/tools/Makefile.inc
