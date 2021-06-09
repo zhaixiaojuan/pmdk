@@ -76,6 +76,46 @@ ifneq ($(filter $(ARCH), powerpc64 powerpc64le ppc64 ppc64le ppc64el powerpc),)
 override ARCH := ppc64
 endif
 
+LIBPMEMPOOL_OBJS_DEBUG :=\
+	$(TOP)/src/debug/libpmempool/check.o\
+	$(TOP)/src/debug/libpmempool/check_backup.o\
+	$(TOP)/src/debug/libpmempool/check_bad_blocks.o\
+	$(TOP)/src/debug/libpmempool/check_blk.o\
+	$(TOP)/src/debug/libpmempool/check_btt_info.o\
+	$(TOP)/src/debug/libpmempool/check_btt_map_flog.o\
+	$(TOP)/src/debug/libpmempool/check_log.o\
+	$(TOP)/src/debug/libpmempool/check_pool_hdr.o\
+	$(TOP)/src/debug/libpmempool/check_sds.o\
+	$(TOP)/src/debug/libpmempool/check_util.o\
+	$(TOP)/src/debug/libpmempool/check_write.o\
+	$(TOP)/src/debug/libpmempool/pool.o\
+	$(TOP)/src/debug/libpmempool/replica.o\
+	$(TOP)/src/debug/libpmempool/rm.o\
+	$(TOP)/src/debug/libpmempool/sync.o\
+	$(TOP)/src/debug/libpmempool/transform.o\
+	$(TOP)/src/debug/libpmempool/feature.o\
+	$(TOP)/src/debug/libpmempool/libpmempool.o
+
+LIBPMEMPOOL_OBJS_NONDEBUG :=\
+	$(TOP)/src/nondebug/libpmempool/check.o\
+	$(TOP)/src/nondebug/libpmempool/check_backup.o\
+	$(TOP)/src/nondebug/libpmempool/check_bad_blocks.o\
+	$(TOP)/src/nondebug/libpmempool/check_blk.o\
+	$(TOP)/src/nondebug/libpmempool/check_btt_info.o\
+	$(TOP)/src/nondebug/libpmempool/check_btt_map_flog.o\
+	$(TOP)/src/nondebug/libpmempool/check_log.o\
+	$(TOP)/src/nondebug/libpmempool/check_pool_hdr.o\
+	$(TOP)/src/nondebug/libpmempool/check_sds.o\
+	$(TOP)/src/nondebug/libpmempool/check_util.o\
+	$(TOP)/src/nondebug/libpmempool/check_write.o\
+	$(TOP)/src/nondebug/libpmempool/pool.o\
+	$(TOP)/src/nondebug/libpmempool/replica.o\
+	$(TOP)/src/nondebug/libpmempool/rm.o\
+	$(TOP)/src/nondebug/libpmempool/sync.o\
+	$(TOP)/src/nondebug/libpmempool/transform.o\
+	$(TOP)/src/nondebug/libpmempool/feature.o\
+	$(TOP)/src/nondebug/libpmempool/libpmempool.o
+
 LIBPMEMOBJ_OBJS_DEBUG :=\
 	$(TOP)/src/debug/libpmemobj/alloc_class.o\
 	$(TOP)/src/debug/libpmemobj/bucket.o\
@@ -120,6 +160,13 @@ LIBPMEMOBJ_OBJS_NONDEBUG :=\
 	$(TOP)/src/nondebug/libpmemobj/tx.o\
 	$(TOP)/src/nondebug/libpmemobj/stats.o
 
+LIBPMEMLOG_OBJS_DEBUG :=\
+	$(TOP)/src/debug/libpmemlog/libpmemlog.o\
+	$(TOP)/src/debug/libpmemlog/log.o
+
+LIBPMEMLOG_OBJS_NONDEBUG :=\
+	$(TOP)/src/nondebug/libpmemlog/libpmemlog.o\
+	$(TOP)/src/nondebug/libpmemlog/log.o
 
 ifeq ($(LIBPMEM_OBJS_DEBUG),)
 LIBPMEM_OBJS_DEBUG +=\

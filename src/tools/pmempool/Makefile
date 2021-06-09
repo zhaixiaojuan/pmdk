@@ -5,6 +5,10 @@
 #
 SCP_TO_REMOTE_NODES = y
 
+TOP = ../../..
+
+vpath %.c ../../libpmemblk/
+vpath %.c ../../libpmempool/
 vpath %.c ../../libpmemobj/
 vpath %.c ../../librpmem/
 vpath %.c ../../rpmem_common/
@@ -12,34 +16,35 @@ vpath %.c ../../rpmem_common/
 TARGET = pmempool
 
 OBJS = pmempool.o\
-       info.o info_blk.o info_log.o info_obj.o ulog.o\
+       info.o info_blk.o info_log.o info_obj.o\
        create.o dump.o check.o rm.o convert.o synchronize.o transform.o\
-       rpmem_ssh.o rpmem_cmd.o rpmem_util.o rpmem_common.o feature.o
+       rpmem_ssh.o rpmem_cmd.o rpmem_util.o rpmem_common.o feature.o\
+       btt.o  blk.o libpmemblk.o
 
-LIBPMEM=y
-LIBPMEMBLK=y
-LIBPMEMOBJ=y
-LIBPMEMLOG=y
-LIBPMEMPOOL=y
 TOOLS_COMMON=y
 
-LIBPMEMOBJ_PRIV=memblock_from_offset alloc_class_by_id\
-	memblock_rebuild_state alloc_class_by_run\
-	heap_run_foreach_object alloc_class_collection_new\
-	alloc_class_collection_delete
-
-LIBPMEMBLK_PRIV=btt_init btt_write btt_fini btt_info_convert2h\
-	btt_info_convert2le btt_flog_convert2h btt_flog_convert2le
+ifneq ($(DEBUG),)
+	OBJS += $(LIBPMEMOBJ_OBJS_DEBUG)
+	OBJS += $(LIBPMEMPOOL_OBJS_DEBUG)
+	OBJS += $(LIBPMEMLOG_OBJS_DEBUG)
+	OBJS += $(LIBPMEM_OBJS_DEBUG)
+else
+	OBJS += $(LIBPMEMOBJ_OBJS_NONDEBUG)
+	OBJS += $(LIBPMEMPOOL_OBJS_NONDEBUG)
+	OBJS += $(LIBPMEMLOG_OBJS_NONDEBUG)
+	OBJS += $(LIBPMEM_OBJS_NONDEBUG)
+endif
 
 INCS += -I$(TOP)/src/common
 INCS += -I$(TOP)/src/rpmem_common
 INCS += -I$(TOP)/src/libpmem2
+INCS += -I$(TOP)/src/libpmem2/$(ARCH)
 INCS += -I$(TOP)/src/librpmem
 INCS += -I$(TOP)/src/libpmemlog
 INCS += -I$(TOP)/src/libpmemblk
 INCS += -I$(TOP)/src/libpmemobj
-
-CFLAGS += -DUSE_RPMEM
+INCS += -I$(TOP)/src/libpmem
+CFLAGS += -DUSE_RPMEM -DPMEMOBJ_DIRECT_NON_INLINE
 
 MANPAGES = $(TOP)/doc/pmempool.1\
            $(TOP)/doc/pmempool-info.1\

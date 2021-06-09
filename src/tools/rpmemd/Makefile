@@ -5,6 +5,7 @@
 #
 
 vpath %.c ../../rpmem_common/
+vpath %.c ../../libpmemblk/
 
 TOP = ../../..
 include $(TOP)/src/common.inc
@@ -20,11 +21,16 @@ OBJS = rpmemd.o\
        rpmemd_db.o\
        rpmemd_fip.o\
        rpmem_fip_common.o\
-       rpmemd_util.o
+       rpmemd_util.o\
+       btt.o
 
-LIBPMEM=y
 TOOLS_COMMON=y
-LIBPMEMBLK_PRIV=btt_info_convert2h
+
+ifneq ($(DEBUG),)
+	OBJS += $(LIBPMEM_OBJS_DEBUG)
+else
+	OBJS += $(LIBPMEM_OBJS_NONDEBUG)
+endif
 
 INCS += -I$(TOP)/src/rpmem_common
 CFLAGS += -DRPMEMC_LOG_RPMEMD
