@@ -85,7 +85,7 @@ CFLAGS ?= $(DEFAULT_CFLAGS)
 CFLAGS += -std=gnu99
 CFLAGS += -fno-common
 CFLAGS += -pthread
-CFLAGS += -flto
+CFLAGS += -flto=auto
 CFLAGS += -DSRCVERSION=\"$(SRCVERSION)\"
 
 ifeq ($(OS_DIMM),ndctl)
