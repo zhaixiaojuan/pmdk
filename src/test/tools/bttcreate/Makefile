@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2016, Intel Corporation
+# Copyright 2016-2021, Intel Corporation
 #
 # Makefile -- Makefile for bttcreate tool
 #

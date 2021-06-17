@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2018, Intel Corporation
+# Copyright 2018-2021, Intel Corporation
 
 #
 # src/test/tools/obj_verify -- build obj_verify tool

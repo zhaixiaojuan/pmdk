@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2016-2020, Intel Corporation
+# Copyright 2016-20210, Intel Corporation
 
 #
 # src/libpmempool/Makefile -- Makefile for libpmempool
