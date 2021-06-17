@@ -1325,6 +1325,7 @@ pool_set_file_nreplicas(struct pool_set_file *file)
 	return file->poolset->nreplicas;
 }
 
+#if 0
 /*
  * pool_set_file_map -- return mapped address at given offset
  */
@@ -1335,6 +1336,7 @@ pool_set_file_map(struct pool_set_file *file, uint64_t offset)
 		return NULL;
 	return (char *)file->addr + offset;
 }
+#endif
 
 /*
  * pool_set_file_persist -- propagates and persists changes to a memory range

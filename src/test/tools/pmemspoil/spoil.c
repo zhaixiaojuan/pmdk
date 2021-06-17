@@ -1241,6 +1241,18 @@ pmemspoil_process(struct pmemspoil *psp,
 }
 
 /*
+ * pool_set_file_map -- return mapped address at given offset
+ */
+__attribute__((weak))
+void *
+pool_set_file_map(struct pool_set_file *file, uint64_t offset)
+{
+	if (file->addr == MAP_FAILED)
+		return NULL;
+	return (char *)file->addr + offset;
+}
+
+/*
  * pmemspoil_func -- main function for check command
  */
 int

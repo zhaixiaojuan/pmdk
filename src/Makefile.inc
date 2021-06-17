@@ -251,11 +251,20 @@ $(LIB_SO): $(LIB_SO_SONAME) $(MAKEFILE_DEPS)
 $(LIB_AR_UNSCOPED): $(OBJS) $(EXTRA_OBJS) $(MAKEFILE_DEPS)
 	$(LD) -o $@ -r $(OBJS) $(EXTRA_OBJS)
 
+ifeq ($(LIB_LINK),)
 $(LIB_AR_ALL): $(LIB_AR_UNSCOPED) $(MAKEFILE_DEPS)
 	$(OBJCOPY) $< $@
+else
+$(LIB_AR_ALL): $(LIB_AR_UNSCOPED) $(LIB_LINK) $(MAKEFILE_DEPS)
+	printf '\e[35m%s\e[0m ← \e[95m%s\e[0m\n' "$@" "$(LIB_AR_ALL)"
+	$(CC) $(LDFLAGS) -r -flinker-output=nolto-rel -o $(LIB_AR_ALL).tmp.a $<
+	$(OBJCOPY) --localize-hidden `sed -n 's/^	*\([a-zA-Z0-9_]*\);$$/-G \1/p' $(LIB_LINK)` $(LIB_AR_ALL).tmp.a $@
+endif
 
 $(LIB_AR): $(LIB_AR_ALL) $(MAKEFILE_DEPS)
 	$(AR) rv $@ $(LIB_AR_ALL)
+	#printf '\e[36m%s\e[0m ← \e[96m%s\e[0m\n' "$@" "$(LIB_AR_ALL)"
+	#$(CC) $(LDFLAGS) -r -flinker-output=nolto-rel -o $@ $(LIB_AR_ALL)
 
 $(PMEMBLK_PRIV_OBJ):
 	$(MAKE) -C $(LIBSDIR) libpmemblk
