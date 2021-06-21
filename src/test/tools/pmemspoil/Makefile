@@ -14,12 +14,7 @@ OBJS = spoil.o
 
 TOOLS_COMMON=y
 
-ifneq ($(DEBUG),)
-	OBJS += $(LIBPMEM_OBJS_DEBUG)
-	OBJS += $(LIBPMEMBLK_OBJS_DEBUG)
-else
-	OBJS += $(LIBPMEM_OBJS_NONDEBUG)
-	OBJS += $(LIBPMEMBLK_OBJS_NONDEBUG)
-endif
+OBJS += $(call lib_objs,$(BUILDTYPE),PMEM)
+OBJS += $(call lib_objs,$(BUILDTYPE),PMEMBLK)
 
 include $(TOP)/src/tools/Makefile.inc

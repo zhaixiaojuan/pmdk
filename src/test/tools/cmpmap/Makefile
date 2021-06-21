@@ -9,11 +9,7 @@ TOP = ../../../..
 TARGET = cmpmap
 OBJS = cmpmap.o
 
-ifneq ($(DEBUG),)
-	OBJS += $(LIBPMEM_OBJS_DEBUG)
-else
-	OBJS += $(LIBPMEM_OBJS_NONDEBUG)
-endif
+OBJS += $(call lib_objs,$(BUILDTYPE),PMEM)
 
 LIBPMEMCOMMON=y
 

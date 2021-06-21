@@ -23,17 +23,10 @@ OBJS = pmempool.o\
 
 TOOLS_COMMON=y
 
-ifneq ($(DEBUG),)
-	OBJS += $(LIBPMEMOBJ_OBJS_DEBUG)
-	OBJS += $(LIBPMEMPOOL_OBJS_DEBUG)
-	OBJS += $(LIBPMEMLOG_OBJS_DEBUG)
-	OBJS += $(LIBPMEM_OBJS_DEBUG)
-else
-	OBJS += $(LIBPMEMOBJ_OBJS_NONDEBUG)
-	OBJS += $(LIBPMEMPOOL_OBJS_NONDEBUG)
-	OBJS += $(LIBPMEMLOG_OBJS_NONDEBUG)
-	OBJS += $(LIBPMEM_OBJS_NONDEBUG)
-endif
+OBJS += $(call lib_objs,$(BUILDTYPE),PMEMOBJ)
+OBJS += $(call lib_objs,$(BUILDTYPE),PMEMPOOL)
+OBJS += $(call lib_objs,$(BUILDTYPE),PMEMLOG)
+OBJS += $(call lib_objs,$(BUILDTYPE),PMEM)
 
 INCS += -I$(TOP)/src/common
 INCS += -I$(TOP)/src/rpmem_common

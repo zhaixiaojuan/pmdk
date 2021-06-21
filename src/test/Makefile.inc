@@ -71,14 +71,14 @@ endif
 ifeq ($(LIBPMEMOBJ), internal-debug)
 LIBPMEM=y
 LIBPMEMCOMMON=internal-debug
-OBJS += $(LIBPMEMOBJ_OBJS_DEBUG)
+OBJS += $(call lib_objs,debug,PMEMOBJ)
 INCS += -I$(TOP)/src/libpmemobj
 endif
 
 ifeq ($(LIBPMEMOBJ), internal-nondebug)
 LIBPMEM=y
 LIBPMEMCOMMON=internal-nondebug
-OBJS += $(LIBPMEMOBJ_OBJS_NONDEBUG)
+OBJS += $(call lib_objs,nondebug,PMEMOBJ)
 INCS += -I$(TOP)/src/libpmemobj
 endif
 
@@ -124,14 +124,14 @@ INCS += -I$(TOP)/src/libpmemset
 endif
 
 ifeq ($(LIBPMEM), internal-nondebug)
-OBJS += $(LIBPMEM_OBJS_NONDEBUG)
+OBJS += $(call lib_objs,nondebug,PMEM)
 INCS += -I$(TOP)/src/libpmem
 INCS += -I$(TOP)/src/libpmem2
 INCS += -I$(TOP)/src/libpmem2/$(ARCH)
 endif
 
 ifeq ($(LIBPMEM), internal-debug)
-OBJS += $(LIBPMEM_OBJS_DEBUG)
+OBJS += $(call lib_objs,debug,PMEM)
 INCS += -I$(TOP)/src/libpmem
 INCS += -I$(TOP)/src/libpmem2
 INCS += -I$(TOP)/src/libpmem2/$(ARCH)
@@ -139,7 +139,7 @@ endif
 
 ifeq ($(LIBPMEM2), internal-debug)
 LIBPMEMCORE=internal-debug
-OBJS += $(LIBPMEM2_OBJS_DEBUG)
+OBJS += $(call lib_objs,debug,PMEM2)
 INCS += -I$(TOP)/src/common
 INCS += -I$(TOP)/src/libpmem2
 INCS += -I$(TOP)/src/libpmem2/$(ARCH)
@@ -147,7 +147,7 @@ endif
 
 ifeq ($(LIBPMEM2), internal-nondebug)
 LIBPMEMCORE=internal-nondebug
-OBJS += $(LIBPMEM2_OBJS_NONDEBUG)
+OBJS += $(call lib_objs,nondebug,PMEM2)
 INCS += -I$(TOP)/src/common
 INCS += -I$(TOP)/src/libpmem2
 INCS += -I$(TOP)/src/libpmem2/$(ARCH)
@@ -289,12 +289,12 @@ INCS += -I$(TOP)/src/core
 endif
 
 ifeq ($(LIBPMEMCORE), internal-nondebug)
-OBJS += $(LIBPMEMCORE_OBJS_NONDEBUG)
+OBJS += $(subst /libpmemcore/,/core/,$(call lib_objs,nondebug,PMEMCORE))
 INCS += -I$(TOP)/src/core
 endif
 
 ifeq ($(LIBPMEMCORE), internal-debug)
-OBJS += $(LIBPMEMCORE_OBJS_DEBUG)
+OBJS += $(subst /libpmemcore/,/core/,$(call lib_objs,debug,PMEMCORE))
 INCS += -I$(TOP)/src/core
 endif
 

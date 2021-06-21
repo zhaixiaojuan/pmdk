@@ -12,13 +12,8 @@ TOP = ../../../..
 TARGET = obj_verify
 OBJS = obj_verify.o
 
-ifneq ($(DEBUG),)
-	OBJS += $(LIBPMEM_OBJS_DEBUG)
-	OBJS += $(LIBPMEMOBJ_OBJS_DEBUG)
-else
-	OBJS += $(LIBPMEM_OBJS_NONDEBUG)
-	OBJS += $(LIBPMEMOBJ_OBJS_NONDEBUG)
-endif
+OBJS += $(call lib_objs,$(BUILDTYPE),PMEM)
+OBJS += $(call lib_objs,$(BUILDTYPE),PMEMOBJ)
 
 LIBPMEMCOMMON=y
 

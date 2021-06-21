@@ -15,13 +15,8 @@ TARGET = gran_detecto
 
 OBJS += gran_detecto.o
 
-ifneq ($(DEBUG),)
-	OBJS += $(LIBPMEM2_OBJS_DEBUG)
-	OBJS += $(LIBPMEMCORE_OBJS_DEBUG)
-else
-	OBJS += $(LIBPMEM2_OBJS_NONDEBUG)
-	OBJS += $(LIBPMEMCORE_OBJS_NONDEBUG)
-endif
+OBJS += $(call lib_objs,$(BUILDTYPE),PMEM2)
+OBJS += $(subst /libpmemcore/,/core/,$(call lib_objs,$(BUILDTYPE),PMEMCORE))
 
 CFLAGS += $(LIBNDCTL_CFLAGS)
 LIBS += $(LIBNDCTL_LIBS) -pthread

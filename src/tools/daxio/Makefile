@@ -16,11 +16,7 @@ OBJS = daxio.o
 
 LIBPMEMCOMMON=y
 
-ifneq ($(DEBUG),)
-	OBJS += $(LIBPMEM_OBJS_DEBUG)
-else
-	OBJS += $(LIBPMEM_OBJS_NONDEBUG)
-endif
+OBJS += $(call lib_objs,$(BUILDTYPE),PMEM)
 
 CFLAGS += $(LIBNDCTL_CFLAGS)
 LIBS += $(LIBNDCTL_LIBS)

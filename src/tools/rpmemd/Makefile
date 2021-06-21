@@ -26,11 +26,7 @@ OBJS = rpmemd.o\
 
 TOOLS_COMMON=y
 
-ifneq ($(DEBUG),)
-	OBJS += $(LIBPMEM_OBJS_DEBUG)
-else
-	OBJS += $(LIBPMEM_OBJS_NONDEBUG)
-endif
+OBJS += $(call lib_objs,$(BUILDTYPE),PMEM)
 
 INCS += -I$(TOP)/src/rpmem_common
 CFLAGS += -DRPMEMC_LOG_RPMEMD
