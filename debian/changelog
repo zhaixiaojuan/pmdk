@@ -1,3 +1,10 @@
+pmdk (1.11.0~rc2-1) experimental; urgency=medium
+
+  * New upstream RC.
+    + Fixes FTBFS issues with gcc-11 (closes: #984295).
+
+ -- Adam Borowski <kilobyte@angband.pl>  Fri, 25 Jun 2021 14:49:07 +0200
+
 pmdk (1.11.0~rc1-1) experimental; urgency=medium
 
   * New upstream RC.
