@@ -48,13 +48,6 @@ static char *granularity_name[3] = {
 };
 
 /*
- * pmemset_header
- */
-struct pmemset_header {
-	char stub;
-};
-
-/*
  * pmemset_mapping_min
  */
 static size_t
@@ -245,6 +238,7 @@ pmemset_delete_pmap_ravl_cb(void *data, void *arg)
 	if (*ret)
 		return;
 
+	/* reservation provided by the user should not be modified */
 	if (cb_args->adjust_reservation)
 		*ret = pmemset_adjust_reservation_to_contents(&pmem2_reserv);
 }
@@ -718,6 +712,17 @@ pmemset_part_map(struct pmemset_part **part_ptr, struct pmemset_extras *extra,
 
 	util_rwlock_unlock(&set->shared_state.lock);
 
+	struct pmemset_event_part_add event;
+	event.addr = pmap->desc.addr;
+	event.len = pmap->desc.size;
+	event.src = pmem2_src;
+
+	struct pmemset_event_context ctx;
+	ctx.type = PMEMSET_EVENT_PART_ADD;
+	ctx.data.part_add = event;
+
+	pmemset_config_event_callback(set_config, set, &ctx);
+
 	return 0;
 
 err_p2map_delete:
@@ -728,7 +733,8 @@ err_pmap_revert:
 	else
 		pmemset_part_map_delete(&pmap);
 err_adjust_vm_reserv:
-	if (!pmemset_config_get_reservation(set_config))
+	/* reservation provided by the user should not be modified */
+	if (pmemset_config_get_reservation(set_config) == NULL)
 		pmemset_adjust_reservation_to_contents(&pmem2_reserv);
 err_lock_unlock:
 	util_rwlock_unlock(&set->shared_state.lock);
@@ -736,38 +742,6 @@ err_pmem2_cfg_delete:
 	pmem2_config_delete(&pmem2_cfg);
 	return ret;
 }
-
-#ifndef _WIN32
-/*
- * pmemset_header_init -- not supported
- */
-int
-pmemset_header_init(struct pmemset_header *header, const char *layout,
-		int major, int minor)
-{
-	return PMEMSET_E_NOSUPP;
-}
-#else
-/*
- * pmemset_header_initU -- not supported
- */
-int
-pmemset_header_initU(struct pmemset_header *header, const char *layout,
-		int major, int minor)
-{
-	return PMEMSET_E_NOSUPP;
-}
-
-/*
- * pmemset_header_initW -- not supported
- */
-int
-pmemset_header_initW(struct pmemset_header *header, const wchar_t *layout,
-		int major, int minor)
-{
-	return PMEMSET_E_NOSUPP;
-}
-#endif
 
 /*
  * pmemset_update_previous_part_map -- updates previous part map for the
@@ -809,6 +783,7 @@ pmemset_remove_part_map(struct pmemset *set, struct pmemset_part_map **pmap_ptr)
 
 	util_rwlock_wrlock(&set->shared_state.lock);
 
+	struct pmem2_vm_reservation *pmem2_reserv = pmap->pmem2_reserv;
 	int ret = pmemset_unregister_part_map(set, pmap);
 	if (ret)
 		goto err_lock_unlock;
@@ -829,6 +804,12 @@ pmemset_remove_part_map(struct pmemset *set, struct pmemset_part_map **pmap_ptr)
 	ret = pmemset_part_map_delete(pmap_ptr);
 	if (ret)
 		goto err_insert_pmap;
+
+	/* reservation provided by the user should not be modified */
+	if (pmemset_config_get_reservation(set->set_config) == NULL) {
+		ret = pmemset_adjust_reservation_to_contents(&pmem2_reserv);
+		ASSERTeq(ret, 0);
+	}
 
 	util_rwlock_unlock(&set->shared_state.lock);
 
@@ -971,7 +952,8 @@ pmemset_remove_part_map_range_cb(struct pmemset *set,
 	}
 
 	struct pmemset_config *cfg = pmemset_get_pmemset_config(set);
-	if (!pmemset_config_get_reservation(cfg)) {
+	/* reservation provided by the user should not be modified */
+	if (pmemset_config_get_reservation(cfg) == NULL) {
 		ret = pmemset_adjust_reservation_to_contents(&pmem2_reserv);
 		ASSERTeq(ret, 0);
 	}

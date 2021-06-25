@@ -148,48 +148,6 @@ pmemset_config_get_contiguous_part_coalescing(
 	return cfg->part_coalescing;
 }
 
-#ifndef _WIN32
-/*
- * pmemset_config_set_layout_name -- not supported
- */
-int
-pmemset_config_set_layout_name(struct pmemset_config *cfg,
-		const char *layout)
-{
-	return PMEMSET_E_NOSUPP;
-}
-#else
-/*
- * pmemset_config_set_layout_nameU -- not supported
- */
-int
-pmemset_config_set_layout_nameU(struct pmemset_config *cfg,
-		const char *layout)
-{
-	return PMEMSET_E_NOSUPP;
-}
-
-/*
- * pmemset_config_set_layout_nameW -- not supported
- */
-int
-pmemset_config_set_layout_nameW(struct pmemset_config *cfg,
-		const wchar_t *layout)
-{
-	return PMEMSET_E_NOSUPP;
-}
-#endif
-
-/*
- * pmemset_config_set_version -- not supported
- */
-int
-pmemset_config_set_version(struct pmemset_config *cfg,
-		int major, int minor)
-{
-	return PMEMSET_E_NOSUPP;
-}
-
 /*
  * pmemset_config_set_required_store_granularity -- set granularity for pmemset
  */
@@ -246,6 +204,8 @@ pmemset_config_duplicate(struct pmemset_config **cfg_dst,
 	(*cfg_dst)->set_granularity = cfg_src->set_granularity;
 	(*cfg_dst)->set_granularity_valid = cfg_src->set_granularity_valid;
 	(*cfg_dst)->set_reservation = cfg_src->set_reservation;
+	(*cfg_dst)->callback = cfg_src->callback;
+	(*cfg_dst)->arg = cfg_src->arg;
 
 	return 0;
 }
