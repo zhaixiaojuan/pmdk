@@ -1,3 +1,10 @@
+pmdk (1.11.0-1) experimental; urgency=medium
+
+  * New upstream release.
+    + Fixes insufficient flushing on ARMv8.2+ (closes: #990573).
+
+ -- Adam Borowski <kilobyte@angband.pl>  Fri, 02 Jul 2021 15:23:11 +0200
+
 pmdk (1.11.0~rc2-1) experimental; urgency=medium
 
   * New upstream RC.
