@@ -1,3 +1,9 @@
+pmdk (1.10-2) unstable; urgency=high
+
+  * Fix insufficient flushing on ARMv8.2+ (closes: #990573).
+
+ -- Adam Borowski <kilobyte@angband.pl>  Fri, 02 Jul 2021 17:02:37 +0200
+
 pmdk (1.10-1) unstable; urgency=medium
 
   * New upstream release.
