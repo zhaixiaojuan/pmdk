@@ -1,3 +1,9 @@
+pmdk (1.11.0-2) unstable; urgency=medium
+
+  * Upload to unstable.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Tue, 10 Aug 2021 14:27:49 +0200
+
 pmdk (1.11.0-1) experimental; urgency=medium
 
   * New upstream release.
