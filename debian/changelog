@@ -1,3 +1,10 @@
+pmdk (1.11.1-1) unstable; urgency=high
+
+  * New upstream bugfix release, fixes a possible data loss on crash bug.
+  * Add lplewa's upstream gpg key.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 27 Sep 2021 17:12:08 +0200
+
 pmdk (1.11.0-2) unstable; urgency=medium
 
   * Upload to unstable.
