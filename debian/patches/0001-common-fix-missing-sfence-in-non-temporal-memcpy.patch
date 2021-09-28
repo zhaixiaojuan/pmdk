@@ -1,0 +1,188 @@
+From e67ca1ee3089d28e5945bc4a3e33ac525e313b5b Mon Sep 17 00:00:00 2001
+From: Piotr Balcer <piotr.balcer@intel.com>
+Date: Wed, 1 Sep 2021 14:12:49 +0200
+Subject: [PATCH] common: fix missing sfence in non-temporal memcpy
+
+The implementation of hardware fencing for non-temporal
+memcpy variants is done using a function pointer. Some
+of those pointers are called "barrier" which unfortunately
+overlaps with a function-like macro that's used for compiler
+barriers. This meant that a compiler barrier was being used
+instead of a hardware store barrier.
+
+This patch changes the compiler barrier to a static inline
+function called "compiler_barrier" to avoid name conflicts.
+
+Fixes #5292
+Reported-by: @Transpeptidase
+---
+ src/core/util.h                                | 17 ++++++++++++++---
+ src/libpmem2/x86_64/memcpy/memcpy_nt_avx.c     |  4 ++--
+ src/libpmem2/x86_64/memcpy/memcpy_nt_avx512f.c |  4 ++--
+ src/libpmem2/x86_64/memcpy/memcpy_nt_sse2.c    |  4 ++--
+ src/libpmem2/x86_64/memset/memset_nt_avx.c     |  4 ++--
+ src/libpmem2/x86_64/memset/memset_nt_avx512f.c |  4 ++--
+ src/libpmem2/x86_64/memset/memset_nt_sse2.c    |  4 ++--
+ 7 files changed, 26 insertions(+), 15 deletions(-)
+
+diff --git a/src/core/util.h b/src/core/util.h
+index 542047a17..1ce575dfa 100644
+--- a/src/core/util.h
++++ b/src/core/util.h
+@@ -1,5 +1,5 @@
+ /* SPDX-License-Identifier: BSD-3-Clause */
+-/* Copyright 2014-2020, Intel Corporation */
++/* Copyright 2014-2021, Intel Corporation */
+ /*
+  * Copyright (c) 2016-2020, Microsoft Corporation. All rights reserved.
+  *
+@@ -133,13 +133,24 @@ void util_set_alloc_funcs(
+ #ifdef _MSC_VER
+ #define force_inline inline __forceinline
+ #define NORETURN __declspec(noreturn)
+-#define barrier() _ReadWriteBarrier()
+ #else
+ #define force_inline __attribute__((always_inline)) inline
+ #define NORETURN __attribute__((noreturn))
+-#define barrier() asm volatile("" ::: "memory")
+ #endif
+ 
++/*
++ * compiler_barrier -- issues a compiler barrier
++ */
++static force_inline void
++compiler_barrier(void)
++{
++#ifdef _MSC_VER
++	_ReadWriteBarrier();
++#else
++	asm volatile("" ::: "memory");
++#endif
++}
++
+ #ifdef _MSC_VER
+ typedef UNALIGNED uint64_t ua_uint64_t;
+ typedef UNALIGNED uint32_t ua_uint32_t;
+diff --git a/src/libpmem2/x86_64/memcpy/memcpy_nt_avx.c b/src/libpmem2/x86_64/memcpy/memcpy_nt_avx.c
+index ff007fb3c..6311bed4f 100644
+--- a/src/libpmem2/x86_64/memcpy/memcpy_nt_avx.c
++++ b/src/libpmem2/x86_64/memcpy/memcpy_nt_avx.c
+@@ -1,5 +1,5 @@
+ // SPDX-License-Identifier: BSD-3-Clause
+-/* Copyright 2017-2020, Intel Corporation */
++/* Copyright 2017-2021, Intel Corporation */
+ 
+ #include <immintrin.h>
+ #include <stddef.h>
+@@ -22,7 +22,7 @@ static force_inline void
+ mm256_stream_si256(char *dest, unsigned idx, __m256i src)
+ {
+ 	_mm256_stream_si256((__m256i *)dest + idx, src);
+-	barrier();
++	compiler_barrier();
+ }
+ 
+ static force_inline void
+diff --git a/src/libpmem2/x86_64/memcpy/memcpy_nt_avx512f.c b/src/libpmem2/x86_64/memcpy/memcpy_nt_avx512f.c
+index fb19504e4..4a60b9cd0 100644
+--- a/src/libpmem2/x86_64/memcpy/memcpy_nt_avx512f.c
++++ b/src/libpmem2/x86_64/memcpy/memcpy_nt_avx512f.c
+@@ -1,5 +1,5 @@
+ // SPDX-License-Identifier: BSD-3-Clause
+-/* Copyright 2017-2020, Intel Corporation */
++/* Copyright 2017-2021, Intel Corporation */
+ 
+ #include <immintrin.h>
+ #include <stddef.h>
+@@ -22,7 +22,7 @@ static force_inline void
+ mm512_stream_si512(char *dest, unsigned idx, __m512i src)
+ {
+ 	_mm512_stream_si512((__m512i *)dest + idx, src);
+-	barrier();
++	compiler_barrier();
+ }
+ 
+ static force_inline void
+diff --git a/src/libpmem2/x86_64/memcpy/memcpy_nt_sse2.c b/src/libpmem2/x86_64/memcpy/memcpy_nt_sse2.c
+index b633be9da..05c5cf9bf 100644
+--- a/src/libpmem2/x86_64/memcpy/memcpy_nt_sse2.c
++++ b/src/libpmem2/x86_64/memcpy/memcpy_nt_sse2.c
+@@ -1,5 +1,5 @@
+ // SPDX-License-Identifier: BSD-3-Clause
+-/* Copyright 2017-2020, Intel Corporation */
++/* Copyright 2017-2021, Intel Corporation */
+ 
+ #include <immintrin.h>
+ #include <stddef.h>
+@@ -21,7 +21,7 @@ static force_inline void
+ mm_stream_si128(char *dest, unsigned idx, __m128i src)
+ {
+ 	_mm_stream_si128((__m128i *)dest + idx, src);
+-	barrier();
++	compiler_barrier();
+ }
+ 
+ static force_inline void
+diff --git a/src/libpmem2/x86_64/memset/memset_nt_avx.c b/src/libpmem2/x86_64/memset/memset_nt_avx.c
+index 4a4d5f6a2..4882b3c58 100644
+--- a/src/libpmem2/x86_64/memset/memset_nt_avx.c
++++ b/src/libpmem2/x86_64/memset/memset_nt_avx.c
+@@ -1,5 +1,5 @@
+ // SPDX-License-Identifier: BSD-3-Clause
+-/* Copyright 2017-2020, Intel Corporation */
++/* Copyright 2017-2021, Intel Corporation */
+ 
+ #include <immintrin.h>
+ #include <stddef.h>
+@@ -17,7 +17,7 @@ static force_inline void
+ mm256_stream_si256(char *dest, unsigned idx, __m256i src)
+ {
+ 	_mm256_stream_si256((__m256i *)dest + idx, src);
+-	barrier();
++	compiler_barrier();
+ }
+ 
+ static force_inline void
+diff --git a/src/libpmem2/x86_64/memset/memset_nt_avx512f.c b/src/libpmem2/x86_64/memset/memset_nt_avx512f.c
+index b29402a93..5db88c5aa 100644
+--- a/src/libpmem2/x86_64/memset/memset_nt_avx512f.c
++++ b/src/libpmem2/x86_64/memset/memset_nt_avx512f.c
+@@ -1,5 +1,5 @@
+ // SPDX-License-Identifier: BSD-3-Clause
+-/* Copyright 2017-2020, Intel Corporation */
++/* Copyright 2017-2021, Intel Corporation */
+ 
+ #include <immintrin.h>
+ #include <stddef.h>
+@@ -18,7 +18,7 @@ static force_inline void
+ mm512_stream_si512(char *dest, unsigned idx, __m512i src)
+ {
+ 	_mm512_stream_si512((__m512i *)dest + idx, src);
+-	barrier();
++	compiler_barrier();
+ }
+ 
+ static force_inline void
+diff --git a/src/libpmem2/x86_64/memset/memset_nt_sse2.c b/src/libpmem2/x86_64/memset/memset_nt_sse2.c
+index 5590a65f8..0793ff5be 100644
+--- a/src/libpmem2/x86_64/memset/memset_nt_sse2.c
++++ b/src/libpmem2/x86_64/memset/memset_nt_sse2.c
+@@ -1,5 +1,5 @@
+ // SPDX-License-Identifier: BSD-3-Clause
+-/* Copyright 2017-2020, Intel Corporation */
++/* Copyright 2017-2021, Intel Corporation */
+ 
+ #include <immintrin.h>
+ #include <stddef.h>
+@@ -16,7 +16,7 @@ static force_inline void
+ mm_stream_si128(char *dest, unsigned idx, __m128i src)
+ {
+ 	_mm_stream_si128((__m128i *)dest + idx, src);
+-	barrier();
++	compiler_barrier();
+ }
+ 
+ static force_inline void
+-- 
+2.33.0
+
