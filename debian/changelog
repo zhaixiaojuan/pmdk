@@ -1,3 +1,9 @@
+pmdk (1.10-2+deb11u1) bullseye; urgency=high
+
+  * Fix missing barriers after non-temporal memcpy.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Tue, 28 Sep 2021 17:41:00 +0200
+
 pmdk (1.10-2) unstable; urgency=high
 
   * Fix insufficient flushing on ARMv8.2+ (closes: #990573).
