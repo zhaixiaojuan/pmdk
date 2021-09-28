@@ -1,3 +1,9 @@
+pmdk (1.11.1-2) unstable; urgency=medium
+
+  * Add helgrind suppressions for glibc-2.32/ppc64el.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Tue, 28 Sep 2021 12:57:41 +0200
+
 pmdk (1.11.1-1) unstable; urgency=high
 
   * New upstream bugfix release, fixes a possible data loss on crash bug.
