@@ -1,3 +1,9 @@
+pmdk (1.10-2+deb11u1~bpo10+1) buster-backports; urgency=medium
+
+  * Backport to Buster.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Sun, 10 Oct 2021 01:26:15 +0200
+
 pmdk (1.10-2+deb11u1) bullseye; urgency=high
 
   * Fix missing barriers after non-temporal memcpy.
