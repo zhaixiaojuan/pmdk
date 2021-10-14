@@ -6,6 +6,7 @@
 # See also https://bugs.launchpad.net/ubuntu/+bug/1752378/comments/15 and
 # later.
 libpmemlog1-debug binary: package-has-unnecessary-activation-of-ldconfig-trigger
+libpmemlog1-debug binary: unstripped-binary-or-object
 
 # The -debug packages are meant for special debugging # cases and should not be
 # installed or used outside of a debugging session.

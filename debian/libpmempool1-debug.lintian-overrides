@@ -6,3 +6,4 @@
 # See also https://bugs.launchpad.net/ubuntu/+bug/1752378/comments/15 and
 # later.
 libpmempool1-debug binary: package-has-unnecessary-activation-of-ldconfig-trigger
+libpmempool1-debug binary: unstripped-binary-or-object
