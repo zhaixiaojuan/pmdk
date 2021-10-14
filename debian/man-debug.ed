@@ -1,0 +1,10 @@
+/_LOG_LEVEL/-1i
+.RS
+.PP
+NOTE: On Debian/Ubuntu systems, this extra debug version of the library
+is shipped in the respective \f[B]-debug\f[R] Debian package and placed
+in the \f[B]/usr/lib/$ARCH/pmdk_dbg/\f[R] directory.
+.RE
+.
+w
+q

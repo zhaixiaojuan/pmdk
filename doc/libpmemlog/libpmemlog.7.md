@@ -194,11 +194,6 @@ typical way to access the debug version is to set the environment variable
 controlled using the following environment variables. These variables have
 no effect on the non-debug version of the library.
 
->NOTE:
-On Debian/Ubuntu systems, this extra debug version of the library is
-shipped in the respective **-debug** Debian package and placed in
-the **/usr/lib/$ARCH/pmdk_dbg/** directory.
-
 + **PMEMLOG_LOG_LEVEL**
 
 The value of **PMEMLOG_LOG_LEVEL** enables trace points in the debug version

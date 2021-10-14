@@ -16,6 +16,8 @@ override_dh_auto_clean:
 
 override_dh_auto_build:
 	+$(MAKE) doc
+	for x in `grep -l _LOG_LEVEL doc/lib*/lib*.7`; do \
+		ed -s <debian/man-debug.ed $$x; done
 	dh_auto_build  -- $(BUILD_ARGS)
 
 override_dh_auto_install:

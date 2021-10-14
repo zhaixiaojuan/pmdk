@@ -193,11 +193,6 @@ environment variable to _LDLIBPATH(). Debugging output is
 controlled using the following environment variables. These variables have
 no effect on the non-debug version of the library.
 
->NOTE:
-On Debian/Ubuntu systems, this extra debug version of the library is
-shipped in the respective **-debug** Debian package and placed in
-the **/usr/lib/$ARCH/pmdk_dbg/** directory.
-
 + **PMEMBLK_LOG_LEVEL**
 
 The value of **PMEMBLK_LOG_LEVEL** enables trace points in the debug version
