@@ -1,3 +1,11 @@
+pmdk (1.11.1-3) unstable; urgency=medium
+
+  * Add lintian overrides for quirks of -debug packages.
+  * Rework the way man pages are patched.
+  * Cherry-pick riscv64 support.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Thu, 21 Oct 2021 18:27:53 +0200
+
 pmdk (1.11.1-2) unstable; urgency=medium
 
   * Add helgrind suppressions for glibc-2.32/ppc64el.
