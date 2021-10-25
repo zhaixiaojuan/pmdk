@@ -1,3 +1,9 @@
+pmdk (1.10-2+deb11u1~bpo10+2) buster-backports; urgency=medium
+
+  * Drop rpmem stuff on !amd64, Buster has no deps.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 25 Oct 2021 12:24:01 +0200
+
 pmdk (1.10-2+deb11u1~bpo10+1) buster-backports; urgency=medium
 
   * Backport to Buster.
