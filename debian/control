@@ -7,7 +7,7 @@ Build-Depends: bash-completion,
                debhelper-compat (= 12),
                dh-exec,
                libdaxctl-dev (>= 64),
-               libfabric-dev,
+               libfabric-dev [amd64],
                libndctl-dev (>= 64),
                pandoc,
                pkg-config,
@@ -285,7 +285,7 @@ Description: development files for libpmempool1
  against libpmempool.
 
 Package: librpmem1
-Architecture: amd64 arm64 ppc64el
+Architecture: amd64
 Multi-Arch: same
 Depends: libpmem1 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory remote access support library
@@ -302,7 +302,7 @@ Description: Persistent Memory remote access support library
  for most applications.
 
 Package: librpmem1-debug
-Architecture: amd64 arm64 ppc64el
+Architecture: amd64
 Multi-Arch: same
 Depends: libpmem1-debug (= ${binary:Version}),
          ${misc:Depends},
@@ -326,7 +326,7 @@ Description: Persistent Memory remote access support library — debug build
 
 Package: librpmem-dev
 Section: libdevel
-Architecture: amd64 arm64 ppc64el
+Architecture: amd64
 Multi-Arch: same
 Depends: libpmem-dev (= ${binary:Version}),
          librpmem1 (= ${binary:Version}),
