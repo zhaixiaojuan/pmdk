@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-/* Copyright 2015-2020, Intel Corporation */
+/* Copyright 2015-2021, Intel Corporation */
 
 /*
  * palloc.c -- implementation of pmalloc POSIX-like API
@@ -33,6 +33,7 @@
  *	3. memory blocks (sorted by lock address)
  */
 
+#include "bucket.h"
 #include "valgrind_internal.h"
 #include "heap_layout.h"
 #include "heap.h"
@@ -85,6 +86,9 @@ void
 palloc_set_value(struct palloc_heap *heap, struct pobj_action *act,
 	uint64_t *ptr, uint64_t value)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(heap);
+
 	act->type = POBJ_ACTION_TYPE_MEM;
 
 	struct pobj_action_internal *actp = (struct pobj_action_internal *)act;
@@ -238,14 +242,14 @@ palloc_reservation_create(struct palloc_heap *heap, size_t size,
 	 * The memory block cannot be put back into the global state unless
 	 * there are no active reservations.
 	 */
-	if ((out->mresv = b->active_memory_block) != NULL)
+	if ((out->mresv = bucket_active_block(b)) != NULL)
 		util_fetch_and_add64(&out->mresv->nresv, 1);
 
 	out->lock = new_block->m_ops->get_lock(new_block);
 	out->new_state = MEMBLOCK_ALLOCATED;
 
 out:
-	heap_bucket_release(heap, b);
+	heap_bucket_release(b);
 
 	if (err == 0)
 		return 0;
@@ -262,6 +266,9 @@ palloc_heap_action_exec(struct palloc_heap *heap,
 	const struct pobj_action_internal *act,
 	struct operation_context *ctx)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(heap);
+
 #ifdef DEBUG
 	if (act->m.m_ops->get_state(&act->m) == act->new_state) {
 		ERR("invalid operation or heap corruption");
@@ -299,7 +306,7 @@ palloc_restore_free_chunk_state(struct palloc_heap *heap,
 				LOG(2, "unable to track runtime chunk state");
 			}
 		}
-		heap_bucket_release(heap, b);
+		heap_bucket_release(b);
 	}
 }
 
@@ -310,7 +317,8 @@ static void
 palloc_mem_action_noop(struct palloc_heap *heap,
 	struct pobj_action_internal *act)
 {
-
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(heap, act);
 }
 
 /*
@@ -325,26 +333,18 @@ palloc_reservation_clear(struct palloc_heap *heap,
 		return;
 
 	struct memory_block_reserved *mresv = act->mresv;
-	struct bucket *b = mresv->bucket;
+	struct bucket_locked *locked = mresv->bucket;
 
 	if (!publish) {
-		util_mutex_lock(&b->lock);
-		struct memory_block *am = &b->active_memory_block->m;
-
 		/*
 		 * If a memory block used for the action is the currently active
-		 * memory block of the bucket it can be inserted back to the
+		 * memory block of the bucket it can be returned back to the
 		 * bucket. This way it will be available for future allocation
 		 * requests, improving performance.
 		 */
-		if (b->is_active &&
-		    am->chunk_id == act->m.chunk_id &&
-		    am->zone_id == act->m.zone_id) {
-			ASSERTeq(b->active_memory_block, mresv);
-			bucket_insert_block(b, &act->m);
-		}
-
-		util_mutex_unlock(&b->lock);
+		struct bucket *b = bucket_acquire(locked);
+		bucket_try_insert_attached_block(b, &act->m);
+		bucket_release(b);
 	}
 
 	if (util_fetch_and_sub64(&mresv->nresv, 1) == 1) {
@@ -450,6 +450,9 @@ palloc_mem_action_exec(struct palloc_heap *heap,
 	const struct pobj_action_internal *act,
 	struct operation_context *ctx)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(heap);
+
 	operation_add_entry(ctx, act->ptr, act->value, ULOG_OPERATION_SET);
 }
 

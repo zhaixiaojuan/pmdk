@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2019-2020, Intel Corporation
+# Copyright 2019-2021, Intel Corporation
 
 #
 # src/libpmem2/Makefile -- Makefile for libpmem2
@@ -17,9 +17,11 @@ SOURCE =\
 	config.c\
 	deep_flush.c\
 	errormsg.c\
-	memops_generic.c\
 	map.c\
 	map_posix.c\
+	mover.c\
+	mcsafe_ops_posix.c\
+	memops_generic.c\
 	persist.c\
 	persist_posix.c\
 	pmem2_utils.c\
@@ -64,5 +66,5 @@ include ../Makefile.inc
 
 include $(PMEM2)/$(ARCH)/flags.inc
 
-CFLAGS += -I. $(LIBNDCTL_CFLAGS)
+CFLAGS += -I. $(LIBNDCTL_CFLAGS) $(MINIASYNC_CFLAGS) -DPMEM2_USE_MINIASYNC=1
 LIBS += -pthread $(LIBNDCTL_LIBS)

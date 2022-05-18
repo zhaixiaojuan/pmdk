@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-/* Copyright 2020-2021, Intel Corporation */
+/* Copyright 2020-2022, Intel Corporation */
 
 /*
  * vm_reservation_windows.c -- implementation of virtual memory
@@ -18,6 +18,25 @@ int vm_reservation_reserve_memory(void *addr, size_t size, void **raddr,
 int vm_reservation_release_memory(void *addr, size_t size);
 struct ravl_interval *vm_reservation_get_interval_tree(
 		struct pmem2_vm_reservation *rsv);
+
+/*
+ * vm_reservation_get_map_alignment -- (internal) choose the desired mapping
+ *                                                alignment
+ *
+ * This function default to the dwAllocationGranularity (Mmap_align) when
+ * minimum required alignment is smaller.
+ */
+size_t
+vm_reservation_get_map_alignment(size_t len, size_t min_align)
+{
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(len, min_align);
+
+	if (min_align < Mmap_align)
+		return Mmap_align;
+
+	return min_align;
+}
 
 /*
  * vm_reservation_reserve_memory -- create a blank virtual memory mapping
@@ -83,7 +102,7 @@ vm_reservation_merge_placeholders(struct pmem2_vm_reservation *rsv, void *addr,
 	LOG(3, "rsv_addr %p rsv_size %zu", rsv_addr, rsv_size);
 
 	/*
-	 * After unmapping from the reservation, it is neccessary to merge
+	 * After unmapping from the reservation, it is necessary to merge
 	 * the unoccupied neighbours so that the placeholders will be available
 	 * for splitting for the required size of the mapping.
 	 */
@@ -171,7 +190,7 @@ vm_reservation_split_placeholders(struct pmem2_vm_reservation *rsv, void *addr,
 	LOG(3, "rsv_addr %p rsv_size %zu", rsv_addr, rsv_size);
 
 	/*
-	 * Check wheter there is a mapping just beside the provided placeholder
+	 * Check whether there is a mapping just beside the provided placeholder
 	 * range (addr, addr + length). If the immediate neighboring ranges
 	 * are empty then split the provided range into separate placeholder.
 	 */
@@ -199,23 +218,23 @@ vm_reservation_split_placeholders(struct pmem2_vm_reservation *rsv, void *addr,
  * vm_reservation_extend_memory -- extend memory range the reservation covers
  */
 int
-vm_reservation_extend_memory(struct pmem2_vm_reservation *rsv,
-		void *rsv_end_addr, size_t size)
+vm_reservation_extend_memory(struct pmem2_vm_reservation *rsv, void *addr,
+		size_t size)
 {
 	void *reserved_addr = NULL;
 	size_t reserved_size = 0;
 
-	int ret = vm_reservation_reserve_memory(rsv_end_addr, size,
+	int ret = vm_reservation_reserve_memory(addr, size,
 			&reserved_addr, &reserved_size);
 	if (ret)
 		return ret;
 
-	ASSERTeq(rsv_end_addr, reserved_addr);
+	ASSERTeq(addr, reserved_addr);
 	ASSERTeq(size, reserved_size);
 
-	ret = vm_reservation_merge_placeholders(rsv, rsv_end_addr, size);
+	ret = vm_reservation_merge_placeholders(rsv, addr, size);
 	if (ret)
-		vm_reservation_release_memory(rsv_end_addr, size);
+		vm_reservation_release_memory(addr, size);
 
 	return ret;
 }

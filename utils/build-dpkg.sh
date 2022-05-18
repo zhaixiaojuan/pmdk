@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2014-2020, Intel Corporation
+# Copyright 2014-2021, Intel Corporation
 
 #
 # build-dpkg.sh - Script for building deb packages
@@ -251,6 +251,7 @@ $LIB_DIR/pmdk_debug/libpmem2.so.* $LIB_DIR/pmdk_dbg/
 $LIB_DIR/libpmem2.so
 $LIB_DIR/pkgconfig/libpmem2.pc
 $INC_DIR/libpmem2.h
+$INC_DIR/libpmem2/*.h
 $MAN7_DIR/libpmem2.7
 $MAN3_DIR/pmem2_*.3
 EOF
@@ -849,7 +850,7 @@ new-package-should-close-itp-bug
 EOF
 
 # librpmem & rpmemd
-if [ "${BUILD_RPMEM}" = "y" -a "${RPMEM_DPKG}" = "y" ]
+if [ "${BUILD_RPMEM}" = "y" ]
 then
 	append_rpmem_control;
 	rpmem_install_triggers_overrides;

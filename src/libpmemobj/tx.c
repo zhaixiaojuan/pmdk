@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-/* Copyright 2015-2020, Intel Corporation */
+/* Copyright 2015-2021, Intel Corporation */
 
 /*
  * tx.c -- transactions implementation
@@ -214,6 +214,9 @@ tx_action_remove(struct tx *tx)
 static int
 constructor_tx_alloc(void *ctx, void *ptr, size_t usable_size, void *arg)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(ctx);
+
 	LOG(5, NULL);
 
 	ASSERTne(ptr, NULL);
@@ -359,6 +362,9 @@ static int
 tx_undo_entry_apply(struct ulog_entry_base *e, void *arg,
 	const struct pmem_ops *p_ops)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(arg);
+
 	struct ulog_entry_buf *eb;
 
 	switch (ulog_entry_type(e)) {
@@ -556,6 +562,9 @@ static int
 tx_lane_ranges_insert_def(PMEMobjpool *pop, struct tx *tx,
 	const struct tx_range_def *rdef)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(pop);
+
 	LOG(3, "rdef->offset %"PRIu64" rdef->size %"PRIu64,
 		rdef->offset, rdef->size);
 
@@ -1053,6 +1062,7 @@ pmemobj_tx_end(void)
 	Free(txd);
 
 	VALGRIND_END_TX;
+	int ret = tx->last_errnum;
 
 	if (PMDK_SLIST_EMPTY(&tx->tx_entries)) {
 		ASSERTeq(tx->lane, NULL);
@@ -1071,6 +1081,7 @@ pmemobj_tx_end(void)
 			tx->stage_callback_arg = NULL;
 
 			cb(tx->pop, TX_STAGE_NONE, arg);
+			/* tx should not be accessed after this callback */
 		}
 	} else {
 		/* resume the next transaction */
@@ -1081,7 +1092,7 @@ pmemobj_tx_end(void)
 			obj_tx_abort(tx->last_errnum, 0);
 	}
 
-	return tx->last_errnum;
+	return ret;
 }
 
 /*
@@ -1123,6 +1134,8 @@ pmemobj_tx_process(void)
 static void
 vg_verify_initialized(PMEMobjpool *pop, const struct tx_range_def *def)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(pop, def);
 #if VG_MEMCHECK_ENABLED
 	if (!On_memcheck)
 		return;
@@ -2160,6 +2173,9 @@ static int
 CTL_READ_HANDLER(size)(void *ctx,
 	enum ctl_query_source source, void *arg, struct ctl_indexes *indexes)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(source, indexes);
+
 	PMEMobjpool *pop = ctx;
 
 	ssize_t *arg_out = arg;
@@ -2176,9 +2192,12 @@ static int
 CTL_WRITE_HANDLER(size)(void *ctx,
 	enum ctl_query_source source, void *arg, struct ctl_indexes *indexes)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(source, indexes);
+
 	PMEMobjpool *pop = ctx;
 
-	ssize_t arg_in = *(int *)arg;
+	ssize_t arg_in = *(long long *)arg;
 
 	if (arg_in < 0 || arg_in > (ssize_t)PMEMOBJ_MAX_ALLOC_SIZE) {
 		errno = EINVAL;
@@ -2202,6 +2221,9 @@ static int
 CTL_READ_HANDLER(threshold)(void *ctx,
 	enum ctl_query_source source, void *arg, struct ctl_indexes *indexes)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(ctx, source, arg, indexes);
+
 	LOG(1, "tx.cache.threshold parameter is deprecated");
 
 	return 0;
@@ -2214,6 +2236,9 @@ static int
 CTL_WRITE_HANDLER(threshold)(void *ctx,
 	enum ctl_query_source source, void *arg, struct ctl_indexes *indexes)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(ctx, source, arg, indexes);
+
 	LOG(1, "tx.cache.threshold parameter is deprecated");
 
 	return 0;
@@ -2236,6 +2261,9 @@ static int
 CTL_READ_HANDLER(skip_expensive_checks)(void *ctx,
 	enum ctl_query_source source, void *arg, struct ctl_indexes *indexes)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(source, indexes);
+
 	PMEMobjpool *pop = ctx;
 
 	int *arg_out = arg;
@@ -2253,6 +2281,9 @@ static int
 CTL_WRITE_HANDLER(skip_expensive_checks)(void *ctx,
 	enum ctl_query_source source, void *arg, struct ctl_indexes *indexes)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(source, indexes);
+
 	PMEMobjpool *pop = ctx;
 
 	int arg_in = *(int *)arg;
@@ -2272,6 +2303,9 @@ static int
 CTL_READ_HANDLER(verify_user_buffers)(void *ctx,
 	enum ctl_query_source source, void *arg, struct ctl_indexes *indexes)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(source, indexes);
+
 	PMEMobjpool *pop = ctx;
 
 	int *arg_out = arg;
@@ -2289,6 +2323,9 @@ static int
 CTL_WRITE_HANDLER(verify_user_buffers)(void *ctx,
 	enum ctl_query_source source, void *arg, struct ctl_indexes *indexes)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(source, indexes);
+
 	PMEMobjpool *pop = ctx;
 
 	int arg_in = *(int *)arg;
@@ -2314,6 +2351,9 @@ static int
 CTL_READ_HANDLER(queue_depth)(void *ctx, enum ctl_query_source source,
 	void *arg, struct ctl_indexes *indexes)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(ctx, source, arg, indexes);
+
 	return 0;
 }
 
@@ -2324,6 +2364,9 @@ static int
 CTL_WRITE_HANDLER(queue_depth)(void *ctx, enum ctl_query_source source,
 	void *arg, struct ctl_indexes *indexes)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(ctx, source, arg, indexes);
+
 	return 0;
 }
 
@@ -2336,6 +2379,9 @@ static int
 CTL_READ_HANDLER(worker)(void *ctx, enum ctl_query_source source,
 	void *arg, struct ctl_indexes *indexes)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(ctx, source, arg, indexes);
+
 	return 0;
 }
 
@@ -2346,6 +2392,9 @@ static int
 CTL_READ_HANDLER(stop)(void *ctx, enum ctl_query_source source,
 	void *arg, struct ctl_indexes *indexes)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(ctx, source, arg, indexes);
+
 	return 0;
 }
 

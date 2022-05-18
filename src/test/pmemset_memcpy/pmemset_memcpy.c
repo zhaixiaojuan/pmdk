@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-/* Copyright 2021, Intel Corporation */
+/* Copyright 2021-2022, Intel Corporation */
 
 /*
  * pmemset_memcpy.c -- test for doing a memcpy from libpmemset
@@ -45,18 +45,21 @@ main(int argc, char *argv[])
 	const char *thr = os_getenv("PMEM_MOVNT_THRESHOLD");
 	const char *avx = os_getenv("PMEM_AVX");
 	const char *avx512f = os_getenv("PMEM_AVX512F");
+	const char *movdir64b = os_getenv("PMEM_MOVDIR64B");
 
-	START(argc, argv, "pmemset_memcpy %s %s %s %s %savx %savx512f",
+	START(argc, argv, "pmemset_memcpy %s %s %s %s %savx %savx512f "
+			"%smovdir64b",
 			argv[2], argv[3], argv[4], thr ? thr : "default",
 			avx ? "" : "!",
-			avx512f ? "" : "!");
+			avx512f ? "" : "!",
+			movdir64b ? "" : "!");
 	util_init();
 
 	struct pmem2_source *pmem2_src;
-	struct pmemset_part *part;
 	struct pmemset_source *ssrc;
 	struct pmemset *set;
 	struct pmemset_config *cfg;
+	struct pmemset_map_config *map_cfg;
 	struct pmemset_part_descriptor desc;
 
 	fd = OPEN(argv[1], O_RDWR);
@@ -80,12 +83,11 @@ main(int argc, char *argv[])
 	ret = pmemset_new(&set, cfg);
 	UT_PMEMSET_EXPECT_RETURN(ret, 0);
 
-	ret = pmemset_part_new(&part, set, ssrc, 0, 4 * 1024 * 1024);
-	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	ut_create_map_config(&map_cfg, 0, 4 * 1024 * 1024);
+	UT_ASSERTne(map_cfg, NULL);
 
-	ret = pmemset_part_map(&part, NULL, &desc);
+	ret = pmemset_map(set, ssrc, map_cfg, &desc);
 	UT_PMEMSET_EXPECT_RETURN(ret, 0);
-	UT_ASSERTeq(part, NULL);
 
 	/* src > dst */
 	mapped_len = desc.size;
@@ -118,6 +120,8 @@ main(int argc, char *argv[])
 	ret = pmemset_delete(&set);
 	UT_PMEMSET_EXPECT_RETURN(ret, 0);
 	ret = pmemset_config_delete(&cfg);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	ret = pmemset_map_config_delete(&map_cfg);
 	UT_PMEMSET_EXPECT_RETURN(ret, 0);
 	ret = pmemset_source_delete(&ssrc);
 	UT_PMEMSET_EXPECT_RETURN(ret, 0);

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2019-2020, Intel Corporation
+# Copyright 2019-2022, Intel Corporation
 #
 
 """Device dax context classes and utilities"""
@@ -126,8 +126,9 @@ class DevDaxes():
 
         """
         dax_devices, _ = ctx.get_requirement(tc, 'devdax', ())
-        cls.check_fs_exec, kwargs = ctx.get_requirement(tc, 'require_fs_exec',
-                                                        None)
+        cls.check_fs_exec, _ = ctx.get_requirement(tc, 'require_fs_exec',
+                                                   None)
+        req_real_pmem, _ = ctx.get_requirement(tc, 'require_real_pmem', False)
 
         if not dax_devices:
             return ctx.NO_CONTEXT
@@ -150,6 +151,17 @@ class DevDaxes():
 
         assigned = _try_assign_by_requirements(config.device_dax_path,
                                                dax_devices)
+
+        # filter out the emulated devdaxes from the assigned ones
+        if req_real_pmem:
+            assigned_filtered = []
+
+            for dd in assigned:
+                if not ndctl.is_emulated(dd.path):
+                    assigned_filtered.append(dd)
+
+            assigned = tuple(assigned_filtered)
+
         if not assigned:
             raise futils.Skip('Dax devices in test configuration do not '
                               'meet test requirements')
@@ -205,7 +217,7 @@ def require_devdax(*dax_devices, **kwargs):
 
 def require_fs_exec(tc):
     """
-    Disable test if exec acess for device is not permitted
+    Disable test if exec access for device is not permitted
     """
     ctx.add_requirement(tc, 'require_fs_exec', True)
     return tc

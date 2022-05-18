@@ -7,11 +7,13 @@
 TOP = ../../..
 
 vpath %.c $(TOP)/src/test/unittest
+vpath %.c $(TOP)/src/libpmemset
 
+INCS += -I$(TOP)/src/libpmemset
 TARGET = pmemset_event
 OBJS = pmemset_event.o \
 	ut_pmemset_utils.o
 
-LIBPMEMSET=y
+LIBPMEMSET=internal-debug
 
 include ../Makefile.inc

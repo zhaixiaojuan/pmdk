@@ -19,15 +19,18 @@
     </ProjectReference>
   </ItemGroup>
   <ItemGroup>
+    <ClCompile Include="..\..\libpmemset\badblock.c" />
     <ClCompile Include="..\..\libpmemset\config.c" />
     <ClCompile Include="..\..\libpmemset\errormsg.c" />
     <ClCompile Include="..\..\libpmemset\file.c" />
     <ClCompile Include="..\..\libpmemset\file_windows.c" />
     <ClCompile Include="..\..\libpmemset\libpmemset.c" />
     <ClCompile Include="..\..\libpmemset\libpmemset_main.c" />
+    <ClCompile Include="..\..\libpmemset\map_config.c" />
     <ClCompile Include="..\..\libpmemset\part.c" />
     <ClCompile Include="..\..\libpmemset\pmemset.c" />
     <ClCompile Include="..\..\libpmemset\pmemset_utils.c" />
+    <ClCompile Include="..\..\libpmemset\sds.c" />
     <ClCompile Include="..\..\libpmemset\source.c" />
     <ClCompile Include="..\unittest\ut_pmem2_utils.c" />
     <ClCompile Include="..\unittest\ut_pmemset_utils.c" />
@@ -46,18 +49,18 @@
     <ProjectGuid>{47E7DAFC-4EDA-4007-BB7B-4BEB6D63C222}</ProjectGuid>
     <Keyword>Win32Proj</Keyword>
     <RootNamespace>pmemset_deep_flush</RootNamespace>
-    <WindowsTargetPlatformVersion>10.0.17134.0</WindowsTargetPlatformVersion>
+    <WindowsTargetPlatformVersion>10.0.22000.0</WindowsTargetPlatformVersion>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>true</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'" Label="Configuration">
     <ConfigurationType>Application</ConfigurationType>
     <UseDebugLibraries>false</UseDebugLibraries>
-    <PlatformToolset>v140</PlatformToolset>
+    <PlatformToolset>v143</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">

@@ -101,8 +101,8 @@ MANPAGES_3_MD_PMEM2 = libpmem2/pmem2_errormsg.3.md libpmem2/pmem2_config_new.3.m
 		libpmem2/pmem2_config_set_length.3.md libpmem2/pmem2_config_set_offset.3.md \
 		libpmem2/pmem2_map_get_store_granularity.3.md libpmem2/pmem2_get_flush_fn.3.md \
 		libpmem2/pmem2_get_drain_fn.3.md libpmem2/pmem2_get_persist_fn.3.md \
-		libpmem2/pmem2_perror.3.md libpmem2/pmem2_get_memmove_fn.3.md libpmem2/pmem2_config_set_sharing.3.md \
-		libpmem2/pmem2_config_set_vm_reservation.3.md libpmem2/pmem2_vm_reservation_new.3.md \
+		libpmem2/pmem2_perror.3.md libpmem2/pmem2_get_memmove_fn.3.md libpmem2/pmem2_async.3.md\
+		libpmem2/pmem2_config_set_sharing.3.md libpmem2/pmem2_config_set_vm_reservation.3.md libpmem2/pmem2_vm_reservation_new.3.md \
 		libpmem2/pmem2_vm_reservation_get_address.3.md libpmem2/pmem2_vm_reservation_get_size.3.md \
 		libpmem2/pmem2_badblock_context_new.3.md libpmem2/pmem2_badblock_next.3.md \
 		libpmem2/pmem2_badblock_clear.3.md libpmem2/pmem2_config_set_protection.3.md \
@@ -110,35 +110,41 @@ MANPAGES_3_MD_PMEM2 = libpmem2/pmem2_errormsg.3.md libpmem2/pmem2_config_new.3.m
 		libpmem2/pmem2_source_device_id.3.md libpmem2/pmem2_source_device_usc.3.md \
 		libpmem2/pmem2_map_from_existing.3.md libpmem2/pmem2_source_get_fd.3.md \
 		libpmem2/pmem2_source_get_handle.3.md libpmem2/pmem2_vm_reservation_extend.3.md \
-		libpmem2/pmem2_vm_reservation_map_find.3.md
+		libpmem2/pmem2_vm_reservation_map_find.3.md libpmem2/pmem2_source_pread_mcsafe.3.md \
 
 MANPAGES_1_MD_PMEM2 =
-MANPAGES_3_DUMMY += libpmem2/pmem2_config_delete.3 libpmem2/pmem2_source_from_handle.3 libpmem2/pmem2_source_delete.3 \
-	libpmem2/pmem2_get_memset_fn.3 libpmem2/pmem2_get_memcpy_fn.3 libpmem2/pmem2_vm_reservation_delete.3 \
+MANPAGES_3_DUMMY += libpmem2/pmem2_config_delete.3 libpmem2/pmem2_config_set_vdm.3 libpmem2/pmem2_source_from_handle.3 libpmem2/pmem2_source_delete.3 \
+	libpmem2/pmem2_get_memset_fn.3 libpmem2/pmem2_get_memcpy_fn.3 libpmem2/pmem2_memcpy_async.3 libpmem2/pmem2_memmove_async.3 \
+	libpmem2/pmem2_memset_async.3 libpmem2/pmem2_vm_reservation_delete.3 \
 	libpmem2/pmem2_badblock_context_delete.3 libpmem2/pmem2_vm_reservation_shrink.3 \
 	libpmem2/pmem2_vm_reservation_map_find_first.3 libpmem2/pmem2_vm_reservation_map_find_last.3 \
-	libpmem2/pmem2_vm_reservation_map_find_next.3 libpmem2/pmem2_vm_reservation_map_find_prev.3
+	libpmem2/pmem2_vm_reservation_map_find_next.3 libpmem2/pmem2_vm_reservation_map_find_prev.3 \
+	libpmem2/pmem2_source_pwrite_mcsafe.3
 
 # libpmemset
 MANPAGES_7_MD_PMEMSET = libpmemset/libpmemset.7.md
 MANPAGES_5_MD_PMEMSET =
 MANPAGES_3_MD_PMEMSET = libpmemset/pmemset_errormsg.3.md libpmemset/pmemset_perror.3.md libpmemset/pmemset_config_new.3.md \
 			libpmemset/pmemset_source_from_pmem2.3.md libpmemset/pmemset_new.3.md \
-			libpmemset/pmemset_source_from_file.3.md libpmemset/pmemset_source_delete.3.md libpmemset/pmemset_part_new.3.md \
-			libpmemset/pmemset_config_set_required_store_granularity.3.md libpmemset/pmemset_part_map.3.md \
+			libpmemset/pmemset_source_from_file.3.md libpmemset/pmemset_source_delete.3.md libpmemset/pmemset_map_config_new.3.md \
+			libpmemset/pmemset_config_set_required_store_granularity.3.md libpmemset/pmemset_map.3.md \
 			libpmemset/pmemset_first_part_map.3.md libpmemset/pmemset_descriptor_part_map.3.md libpmemset/pmemset_get_store_granularity.3.md \
 			libpmemset/pmemset_part_map_drop.3.md libpmemset/pmemset_part_map_by_address.3.md \
 			libpmemset/pmemset_persist.3.md libpmemset/pmemset_flush.3.md libpmemset/pmemset_drain.3.md \
 			libpmemset/pmemset_set_contiguous_part_coalescing.3.md libpmemset/pmemset_memmove.3.md \
 			libpmemset/pmemset_remove_part_map.3.md libpmemset/pmemset_deep_flush.3.md \
 			libpmemset/pmemset_source_from_temporary.3.md libpmemset/pmemset_remove_range.3.md \
-			libpmemset/pmemset_config_set_event_callback.3.md libpmemset/pmemset_config_set_reservation.3.md
+			libpmemset/pmemset_config_set_event_callback.3.md libpmemset/pmemset_config_set_reservation.3.md \
+			libpmemset/pmemset_map_config_set_length.3.md libpmemset/pmemset_map_config_set_offset.3.md \
+			libpmemset/pmemset_config_set_acceptable_states.3.md libpmemset/pmemset_source_set_sds.3.md \
+			libpmemset/pmemset_source_pread_mcsafe.3.md libpmemset/pmemset_source_alignment.3.md
 
 MANPAGES_1_MD_PMEMSET =
 ifeq ($(PMEMSET_INSTALL),y)
-MANPAGES_3_DUMMY += libpmemset/pmemset_config_delete.3 libpmemset/pmemset_delete.3 libpmemset/pmemset_part_delete.3 \
+MANPAGES_3_DUMMY += libpmemset/pmemset_config_delete.3 libpmemset/pmemset_delete.3 \
 		    libpmemset/pmemset_next_part_map.3 libpmemset/pmemset_memcpy.3 libpmemset/pmemset_memset.3 \
-		    libpmemset/pmemset_xsource_from_file.3
+		    libpmemset/pmemset_xsource_from_file.3 libpmemset/pmemset_map_config_delete.3 \
+		    libpmemset/pmemset_source_pwrite_mcsafe.3
 endif
 
 ifeq ($(BUILD_RPMEM),y)

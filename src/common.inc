@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2014-2020, Intel Corporation
+# Copyright 2014-2022, Intel Corporation
 #
 # src/common.inc -- common Makefile rules for PMDK
 #
@@ -342,6 +342,9 @@ export USE_LIBUNWIND
 export LIBUNWIND_LIBS
 endif
 
+export MINIASYNC_CFLAGS := -I$(TOP)/src/deps/miniasync/src/include/
+export MINIASYNC_LIBS := -lminiasync
+
 ifeq ($(OS_KERNEL_NAME),FreeBSD)
 
 GLIBC_CXXFLAGS=-D_GLIBCXX_USE_C99
@@ -373,11 +376,11 @@ ifeq ($(NDCTL_ENABLE),y)
         ifeq ($(HAS_NDCTL),y)
             OS_DIMM_CFLAG=-DNDCTL_ENABLED=1
         else
-            $(error Please install libndctl-dev/libndctl-devel >= $(NDCTL_MIN_VERSION))
+            $(error Please install libndctl-dev/libndctl-devel/ndctl-devel >= $(NDCTL_MIN_VERSION))
         endif
         HAS_DAXCTL := $(call check_package, libdaxctl --atleast-version $(NDCTL_MIN_VERSION))
         ifeq ($(HAS_DAXCTL),n)
-            $(error Please install libdaxctl-dev/libdaxctl-devel >= $(NDCTL_MIN_VERSION))
+            $(error Please install libdaxctl-dev/libdaxctl-devel/daxctl-devel >= $(NDCTL_MIN_VERSION))
         endif
         LIBNDCTL_PKG_CONFIG_DEPS := libndctl libdaxctl
         LIBNDCTL_PKG_CONFIG_DEPS_VAR := ,libndctl,libdaxctl

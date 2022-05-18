@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-/* Copyright 2020-2021, Intel Corporation */
+/* Copyright 2020-2022, Intel Corporation */
 
 /*
  * part.c -- implementation of common part API
@@ -12,87 +12,27 @@
 #include "file.h"
 #include "libpmemset.h"
 #include "libpmem2.h"
+#include "map_config.h"
 #include "os.h"
 #include "part.h"
 #include "pmemset.h"
 #include "pmemset_utils.h"
 #include "ravl_interval.h"
+#include "sds.h"
 #include "source.h"
-
-struct pmemset_part {
-	struct pmemset *set;
-	size_t offset;
-	size_t length;
-	struct pmemset_file *file;
-};
-
-/*
- * pmemset_part_new -- creates a new part for the provided set
- */
-int
-pmemset_part_new(struct pmemset_part **part, struct pmemset *set,
-		struct pmemset_source *src, size_t offset, size_t length)
-{
-	LOG(3, "part %p set %p src %p offset %zu length %zu",
-			part, set, src, offset, length);
-	PMEMSET_ERR_CLR();
-
-	int ret;
-	struct pmemset_part *partp;
-	*part = NULL;
-
-	ret = pmemset_source_validate(src);
-	if (ret)
-		return ret;
-
-	partp = pmemset_malloc(sizeof(*partp), &ret);
-	if (ret)
-		return ret;
-
-	ASSERTne(partp, NULL);
-
-	partp->set = set;
-	partp->offset = offset;
-	partp->length = length;
-	partp->file = pmemset_source_get_set_file(src);
-	*part = partp;
-
-	return ret;
-}
-
-/*
- * pmemset_part_delete -- deletes pmemset part
- */
-int
-pmemset_part_delete(struct pmemset_part **part)
-{
-	LOG(3, "part %p", part);
-	PMEMSET_ERR_CLR();
-
-	Free(*part);
-	*part = NULL;
-
-	return 0;
-}
-
-/*
- * pmemset_part_get_pmemset -- return set assigned to the part
- */
-struct pmemset *
-pmemset_part_get_pmemset(struct pmemset_part *part)
-{
-	return part->set;
-}
 
 /*
  * pmemset_part_map_init -- initialize the part map structure
  */
 static int
-pmemset_part_map_init(struct pmemset_part_map *pmap,
-		struct pmem2_vm_reservation *pmem2_reserv,
-		void *addr, size_t size)
+pmemset_part_map_init(struct pmemset_part_map *pmap, struct pmemset *set,
+		struct pmemset_source *src,
+		struct pmem2_vm_reservation *pmem2_reserv, void *addr,
+		size_t size)
 {
 	pmap->pmem2_reserv = pmem2_reserv;
+	pmap->set = set;
+	pmap->src = src;
 	pmap->desc.addr = addr;
 	pmap->desc.size = size;
 	pmap->refcount = 0;
@@ -104,7 +44,8 @@ pmemset_part_map_init(struct pmemset_part_map *pmap,
  * pmemset_part_map_new -- creates a new part map structure
  */
 int
-pmemset_part_map_new(struct pmemset_part_map **pmap_ptr,
+pmemset_part_map_new(struct pmemset_part_map **pmap_ptr, struct pmemset *set,
+		struct pmemset_source *src,
 		struct pmem2_vm_reservation *pmem2_reserv, size_t offset,
 		size_t size)
 {
@@ -117,7 +58,7 @@ pmemset_part_map_new(struct pmemset_part_map **pmap_ptr,
 
 	void *addr = (char *)pmem2_vm_reservation_get_address(pmem2_reserv) +
 			offset;
-	ret = pmemset_part_map_init(pmap, pmem2_reserv, addr, size);
+	ret = pmemset_part_map_init(pmap, set, src, pmem2_reserv, addr, size);
 	if (ret)
 		goto err_pmap_free;
 
@@ -196,9 +137,25 @@ pmemset_part_map_iterate(struct pmemset_part_map *pmap, size_t offset,
  */
 static int
 pmemset_pmem2_map_delete_cb(struct pmemset_part_map *pmap,
-		struct pmem2_map *map, void *arg)
+		struct pmem2_map *p2map, void *arg)
 {
-	return pmem2_map_delete(&map);
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(arg);
+
+	struct pmemset *set = pmap->set;
+	struct pmemset_sds_record *sds_record = pmemset_sds_find_record(p2map,
+			set);
+
+	int ret = pmem2_map_delete(&p2map);
+	if (ret)
+		return ret;
+
+	if (sds_record) {
+		struct pmemset_config *cfg = pmemset_get_config(set);
+		pmemset_sds_unregister_record_fire_event(sds_record, set, cfg);
+	}
+
+	return 0;
 }
 
 /*
@@ -221,45 +178,66 @@ pmemset_part_map_remove_range(struct pmemset_part_map *pmap, size_t offset,
 }
 
 /*
- * pmemset_part_get_size -- returns part size
- */
-size_t
-pmemset_part_get_size(struct pmemset_part *part)
-{
-	return part->length;
-}
-
-/*
- * pmemset_part_get_offset -- returns part offset
- */
-size_t
-pmemset_part_get_offset(struct pmemset_part *part)
-{
-	return part->offset;
-}
-
-/*
- * pmemset_part_get_offset -- returns file associated with part
- */
-struct pmemset_file *
-pmemset_part_get_file(struct pmemset_part *part)
-{
-	return part->file;
-}
-
-/*
- * pmemset_part_file_try_ensure_size -- truncate part file if source
- * is from a temp file and if required
+ * pmemset_part_file_try_ensure_size -- grow part file if source
+ * is from a temp file and by default, if not specified otherwise
  */
 int
-pmemset_part_file_try_ensure_size(struct pmemset_part *part, size_t source_size)
+pmemset_part_file_try_ensure_size(struct pmemset_file *f, size_t len,
+		size_t off, size_t source_size)
 {
-	struct pmemset_file *f = part->file;
-	bool truncate = pmemset_file_get_truncate(f);
+	int ret = 0;
+	bool grow = pmemset_file_get_grow(f);
 
-	size_t size = part->offset + part->length;
-	if (truncate && (size > source_size))
-		return pmemset_file_truncate(f, size);
+	size_t s = off + len;
+	if (!grow && (s > source_size)) {
+		ERR(
+			"file cannot be extended but its size equals %zu, "
+		    "while it should equal at least %zu to map the part",
+				source_size, s);
+		return PMEMSET_E_SOURCE_FILE_IS_TOO_SMALL;
+	}
+	if (grow && (s > source_size))
+		ret = pmemset_file_grow(f, s);
+
+	if (ret) {
+		ERR("cannot extend source from the part file %p", f);
+		return PMEMSET_E_CANNOT_GROW_SOURCE_FILE;
+	}
+
+	return 0;
+}
+
+/*
+ * pmemset_part_map_find -- find the earliest pmem2 mapping in the provided
+ * range
+ */
+int
+pmemset_part_map_find(struct pmemset_part_map *pmap, size_t offset, size_t size,
+	struct pmem2_map **p2map)
+{
+	int ret;
+	*p2map = NULL;
+
+	struct pmem2_vm_reservation *pmem2_reserv = pmap->pmem2_reserv;
+	size_t rsv_addr = (size_t)pmem2_vm_reservation_get_address(
+			pmem2_reserv);
+	size_t pmap_addr = (size_t)pmap->desc.addr;
+
+	ASSERT(pmap_addr >= rsv_addr);
+	/* part map offset in regards to the vm reservation */
+	size_t pmap_offset = pmap_addr - rsv_addr;
+
+	ret = pmem2_vm_reservation_map_find(pmem2_reserv, pmap_offset + offset,
+			size, p2map);
+	if (ret) {
+		if (ret == PMEM2_E_MAPPING_NOT_FOUND) {
+			ERR(
+				"no part found at the range (offset %zu, size %zu) "
+				"in the part mapping %p", offset, size, pmap);
+			return PMEMSET_E_PART_NOT_FOUND;
+		}
+		return ret;
+	}
 
 	return 0;
 }

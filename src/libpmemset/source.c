@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-/* Copyright 2020-2021, Intel Corporation */
+/* Copyright 2020-2022, Intel Corporation */
 
 /*
  * source.c -- implementation of common config API
@@ -7,6 +7,7 @@
 
 #include <errno.h>
 #include <fcntl.h>
+#include <inttypes.h>
 #include <libpmem2.h>
 #include <string.h>
 
@@ -16,8 +17,12 @@
 #include "alloc.h"
 #include "file.h"
 #include "os.h"
+#include "os_thread.h"
 #include "pmemset_utils.h"
+#include "ravl.h"
+#include "sds.h"
 #include "source.h"
+#include "sys_util.h"
 
 struct pmemset_source {
 	enum pmemset_source_type type;
@@ -33,13 +38,19 @@ struct pmemset_source {
 		} temp;
 	};
 	struct pmemset_file *file_set;
+	struct {
+		struct pmemset_sds *sds;
+		enum pmemset_part_state *state;
+		bool bb_detection;
+		int use_count;
+	} extras;
 };
 
 /*
  * pmemset_source_open_file -- validate and create source from file
  */
 static int
-pmemset_source_open_file(struct pmemset_source *srcp, unsigned flags)
+pmemset_source_open_file(struct pmemset_source *srcp, uint64_t flags)
 {
 	int ret;
 
@@ -81,6 +92,10 @@ pmemset_source_from_pmem2(struct pmemset_source **src,
 
 	srcp->type = PMEMSET_SOURCE_PMEM2;
 	srcp->pmem2.src = pmem2_src;
+	srcp->extras.sds = NULL;
+	srcp->extras.state = NULL;
+	srcp->extras.use_count = 0;
+	srcp->extras.bb_detection = false;
 
 	ret = pmemset_source_open_file(srcp, 0);
 	if (ret)
@@ -104,9 +119,9 @@ static inline
 #endif
 int
 pmemset_xsource_from_fileU(struct pmemset_source **src, const char *file,
-				unsigned flags)
+				uint64_t flags)
 {
-	LOG(3, "src %p file %s flags %u", src, file, flags);
+	LOG(3, "src %p file %s flags 0x%" PRIx64, src, file, flags);
 	PMEMSET_ERR_CLR();
 
 	*src = NULL;
@@ -117,7 +132,8 @@ pmemset_xsource_from_fileU(struct pmemset_source **src, const char *file,
 	}
 
 	if (flags & ~PMEMSET_SOURCE_FILE_CREATE_VALID_FLAGS) {
-		ERR("pmemset_xsource_from_fileU invalid flags 0x%x", flags);
+		ERR("pmemset_xsource_from_fileU invalid flags 0x%" PRIx64,
+			flags);
 		return PMEMSET_E_INVALID_SOURCE_FILE_CREATE_FLAGS;
 	}
 
@@ -126,13 +142,19 @@ pmemset_xsource_from_fileU(struct pmemset_source **src, const char *file,
 	if (ret)
 		return ret;
 
+	ASSERTne(srcp, NULL);
+
 	srcp->type = PMEMSET_SOURCE_FILE;
 	srcp->file.path = Strdup(file);
+	srcp->extras.sds = NULL;
+	srcp->extras.state = NULL;
+	srcp->extras.use_count = 0;
+	srcp->extras.bb_detection = false;
 
 	if (srcp->file.path == NULL) {
 		ERR("!strdup");
-		Free(srcp);
-		return PMEMSET_E_ERRNO;
+		ret = PMEMSET_E_ERRNO;
+		goto free_srcp;
 	}
 
 	ret = pmemset_source_open_file(srcp, flags);
@@ -140,6 +162,7 @@ pmemset_xsource_from_fileU(struct pmemset_source **src, const char *file,
 		goto free_srcp;
 
 	*src = srcp;
+	ASSERTne(*src, NULL);
 
 	return 0;
 
@@ -189,6 +212,10 @@ pmemset_source_from_temporaryU(struct pmemset_source **src, const char *dir)
 
 	srcp->type = PMEMSET_SOURCE_TEMP;
 	srcp->temp.dir = Strdup(dir);
+	srcp->extras.sds = NULL;
+	srcp->extras.state = NULL;
+	srcp->extras.use_count = 0;
+	srcp->extras.bb_detection = false;
 
 	if (srcp->temp.dir == NULL) {
 		ERR("!strdup");
@@ -226,7 +253,7 @@ pmemset_source_from_file(struct pmemset_source **src, const char *file)
  */
 int
 pmemset_xsource_from_file(struct pmemset_source **src, const char *file,
-			unsigned flags)
+			uint64_t flags)
 {
 	return pmemset_xsource_from_fileU(src, file, flags);
 }
@@ -281,7 +308,7 @@ pmemset_source_from_temporaryW(struct pmemset_source **src, const wchar_t *dir)
  */
 static int
 pmemset_source_create_file_from_file(struct pmemset_source *src,
-		struct pmemset_file **file, unsigned flags)
+		struct pmemset_file **file, uint64_t flags)
 {
 	return pmemset_file_from_file(file, src->file.path, flags);
 }
@@ -292,8 +319,11 @@ pmemset_source_create_file_from_file(struct pmemset_source *src,
  */
 static int
 pmemset_source_create_file_from_pmem2(struct pmemset_source *src,
-		struct pmemset_file **file, unsigned flags)
+		struct pmemset_file **file, uint64_t flags)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(flags);
+
 	return pmemset_file_from_pmem2(file, src->pmem2.src);
 }
 
@@ -303,8 +333,11 @@ pmemset_source_create_file_from_pmem2(struct pmemset_source *src,
  */
 static int
 pmemset_source_create_file_from_temp(struct pmemset_source *src,
-		struct pmemset_file **file, unsigned flags)
+		struct pmemset_file **file, uint64_t flags)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(flags);
+
 	return pmemset_file_from_dir(file, src->temp.dir);
 }
 
@@ -314,7 +347,8 @@ pmemset_source_create_file_from_temp(struct pmemset_source *src,
 static void
 pmemset_source_empty_destroy(struct pmemset_source **src)
 {
-	;
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(src);
 }
 
 /*
@@ -363,7 +397,7 @@ pmemset_source_pmem2_validate(const struct pmemset_source *src)
 
 static const struct {
 	int (*create_file)(struct pmemset_source *src,
-			struct pmemset_file **file, unsigned flags);
+			struct pmemset_file **file, uint64_t flags);
 	void (*destroy)(struct pmemset_source **src);
 	int (*validate)(const struct pmemset_source *src);
 } pmemset_source_ops[MAX_PMEMSET_SOURCE_TYPE] = {
@@ -395,13 +429,20 @@ pmemset_source_delete(struct pmemset_source **src)
 	if (*src == NULL)
 		return 0;
 
-	enum pmemset_source_type type = (*src)->type;
+	struct pmemset_source *source = *src;
+
+	enum pmemset_source_type type = source->type;
 	ASSERTne(type, PMEMSET_SOURCE_UNSPECIFIED);
 
-	struct pmemset_file *f = pmemset_source_get_set_file(*src);
+	struct pmemset_file *f = pmemset_source_get_set_file(source);
 	pmemset_file_delete(&f);
 
 	pmemset_source_ops[type].destroy(src);
+
+	if (source->extras.sds) {
+		int ret = pmemset_sds_delete(&source->extras.sds);
+		ASSERTeq(ret, 0);
+	}
 
 	Free(*src);
 	*src = NULL;
@@ -426,7 +467,7 @@ pmemset_source_validate(const struct pmemset_source *src)
  */
 int
 pmemset_source_create_pmemset_file(struct pmemset_source *src,
-		struct pmemset_file **file, unsigned flags)
+		struct pmemset_file **file, uint64_t flags)
 {
 	enum pmemset_source_type type = src->type;
 	ASSERTne(type, PMEMSET_SOURCE_UNSPECIFIED);
@@ -442,4 +483,193 @@ struct pmemset_file *
 pmemset_source_get_set_file(struct pmemset_source *src)
 {
 	return src->file_set;
+}
+
+/*
+ * pmemset_source_set_sds -- sets SDS in the source structure
+ */
+int
+pmemset_source_set_sds(struct pmemset_source *src, struct pmemset_sds *sds,
+		enum pmemset_part_state *state_ptr)
+{
+	LOG(3, "src %p sds %p state %p", src, sds, state_ptr);
+
+	if (src->extras.sds) {
+		ERR("sds %p is already set in the source %p", sds, src);
+		return PMEMSET_E_SDS_ALREADY_SET;
+	}
+
+	struct pmemset_sds *sds_copy = NULL;
+	int ret = pmemset_sds_duplicate(&sds_copy, sds);
+	if (ret)
+		return ret;
+
+	src->extras.sds = sds_copy;
+	src->extras.state = state_ptr;
+
+	return 0;
+}
+
+/*
+ * pmemset_source_get_sds -- gets SDS from the source structure
+ */
+struct pmemset_sds *
+pmemset_source_get_sds(struct pmemset_source *src)
+{
+	return src->extras.sds;
+}
+
+/*
+ * pmemset_source_set_badblock_detection -- sets badblock detection on the
+ *                                          source on/off
+ */
+void
+pmemset_source_set_badblock_detection(struct pmemset_source *src, bool value)
+{
+	LOG(3, "src %p value %d", src, value);
+
+	src->extras.bb_detection = value;
+}
+
+/*
+ * pmemset_source_get_badblock_detection -- gets badblock detection value from
+ *                                          the source
+ */
+bool
+pmemset_source_get_badblock_detection(struct pmemset_source *src)
+{
+	return src->extras.bb_detection;
+}
+
+/*
+ * pmemset_source_get_use_count -- retrieve current use count (number of parts
+ *                                 mapped from this source currently in use)
+ */
+int
+pmemset_source_get_use_count(struct pmemset_source *src)
+{
+	return src->extras.use_count;
+}
+
+/*
+ * pmemset_source_increment_use_count -- increment source use count by 1
+ */
+void
+pmemset_source_increment_use_count(struct pmemset_source *src)
+{
+	src->extras.use_count++;
+}
+
+/*
+ * pmemset_source_decrement_use_count -- decrement source use count by 1
+ */
+void
+pmemset_source_decrement_use_count(struct pmemset_source *src)
+{
+	ASSERTne(src->extras.use_count, 0);
+	src->extras.use_count--;
+}
+
+/*
+ * pmemset_source_get_state_ptr -- gets part state pointer from the source
+ *                                 structure
+ */
+enum pmemset_part_state *
+pmemset_source_get_part_state_ptr(struct pmemset_source *src)
+{
+	return src->extras.state;
+}
+
+/*
+ * pmemset_source_pread_mcsafe -- read from the source in a safe manner
+ *                                (detect badblocks)
+ */
+int
+pmemset_source_pread_mcsafe(struct pmemset_source *src, void *buf,
+		size_t size, size_t offset)
+{
+	LOG(3, "source %p buf %p size %zu offset %zu", src, buf, size, offset);
+	PMEMSET_ERR_CLR();
+
+	struct pmem2_source *p2src =
+			pmemset_file_get_pmem2_source(src->file_set);
+
+	int ret = pmem2_source_pread_mcsafe(p2src, buf, size, offset);
+	if (ret) {
+		ERR("!pmem2_source_pread_mcsafe");
+		switch (ret) {
+			case PMEM2_E_SOURCE_TYPE_NOT_SUPPORTED:
+				/*
+				 * unreachable, libpmemset sources always use
+				 * libpmem2 sources from fd/handle underneath
+				 */
+				ASSERT(0);
+			case PMEM2_E_LENGTH_OUT_OF_RANGE:
+				return PMEMSET_E_LENGTH_OUT_OF_RANGE;
+			case PMEM2_E_IO_FAIL:
+				return PMEMSET_E_IO_FAIL;
+			default:
+				return ret;
+		}
+	}
+
+	return 0;
+}
+
+/*
+ * pmemset_source_pwrite_mcsafe -- write from the source in a safe manner
+ *                                 (detect badblocks)
+ */
+int
+pmemset_source_pwrite_mcsafe(struct pmemset_source *src, void *buf,
+		size_t size, size_t offset)
+{
+	LOG(3, "source %p buf %p size %zu offset %zu", src, buf, size, offset);
+	PMEMSET_ERR_CLR();
+
+	struct pmem2_source *p2src =
+			pmemset_file_get_pmem2_source(src->file_set);
+
+	int ret = pmem2_source_pwrite_mcsafe(p2src, buf, size, offset);
+	if (ret) {
+		ERR("!pmem2_source_pwrite_mcsafe");
+		switch (ret) {
+			case PMEM2_E_SOURCE_TYPE_NOT_SUPPORTED:
+				/*
+				 * unreachable, libpmemset sources always use
+				 * libpmem2 sources from fd/handle underneath
+				 */
+				ASSERT(0);
+			case PMEM2_E_LENGTH_OUT_OF_RANGE:
+				return PMEMSET_E_LENGTH_OUT_OF_RANGE;
+			case PMEM2_E_IO_FAIL:
+				return PMEMSET_E_IO_FAIL;
+			default:
+				return ret;
+		}
+	}
+
+	return 0;
+}
+
+/*
+ * pmemset_source_alignment -- get alignment of the pmem2 source file stored
+ * in the provided pmemset_source
+ */
+int
+pmemset_source_alignment(struct pmemset_source *src, size_t *alignment)
+{
+	LOG(3, "src %p", src);
+	PMEMSET_ERR_CLR();
+
+	struct pmem2_source *p2src =
+			pmemset_file_get_pmem2_source(src->file_set);
+
+	int ret = pmem2_source_alignment(p2src, alignment);
+	if (ret) {
+		ERR("!pmem2_source_alignment");
+		return PMEMSET_E_INVALID_ALIGNMENT_VALUE;
+	}
+
+	return 0;
 }

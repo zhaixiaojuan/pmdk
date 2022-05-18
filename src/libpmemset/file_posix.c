@@ -19,11 +19,14 @@
  */
 int
 pmemset_file_create_pmem2_src(struct pmem2_source **pmem2_src, char *path,
-		unsigned flags)
+		uint64_t flags)
 {
 	/* Init open arguments */
 	int access = O_RDWR;
+	/* default mode */
 	mode_t mode = (S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+	/* user requested mode */
+	mode_t flag_mode = FILE_CREATE_MODE_FROM_FLAG(flags);
 
 	/* Check create disposition flags */
 	if (flags & PMEMSET_SOURCE_FILE_CREATE_ALWAYS)
@@ -31,6 +34,8 @@ pmemset_file_create_pmem2_src(struct pmem2_source **pmem2_src, char *path,
 	else if (flags & PMEMSET_SOURCE_FILE_CREATE_IF_NEEDED)
 		access |= (O_CREAT);
 
+	if (flag_mode)
+		mode = flag_mode;
 	int fd = os_open(path, access, mode);
 	if (fd < 0) {
 		ERR("!open %s", path);
@@ -108,10 +113,10 @@ pmemset_file_dispose_pmem2_src(struct pmem2_source **pmem2_src)
 }
 
 /*
- * pmemset_file_truncate -- truncate file from pmemset_file to a specified len
+ * pmemset_file_grow -- grow file from pmemset_file to a specified len
  */
 int
-pmemset_file_truncate(struct pmemset_file *file, size_t len)
+pmemset_file_grow(struct pmemset_file *file, size_t len)
 {
 	int fd = pmemset_file_get_fd(file);
 	int ret = os_ftruncate(fd, (os_off_t)len);

@@ -310,7 +310,7 @@ test_src_from_file_invalid_flags(const struct test_case *tc, int argc,
 
 	const char *file = argv[0];
 	struct pmemset_source *src;
-	unsigned flags = 0;
+	uint64_t flags = 0;
 
 	flags = PMEMSET_SOURCE_FILE_CREATE_VALID_FLAGS + 1;
 	int ret = pmemset_xsource_from_file(&src, file, flags);
@@ -398,15 +398,15 @@ test_src_from_temporary_no_del(const struct test_case *tc, int argc,
 }
 
 /*
- * test_src_from_file_with_truncate - test source creation with
- * PMEMSET_SOURCE_FILE_TRUNCATE_IF_NEEDED flag.
+ * test_src_from_file_with_do_not_grow - test source creation with
+ * PMEMSET_SOURCE_FILE_DO_NOT_GROW flag.
  */
 static int
-test_src_from_file_with_truncate(const struct test_case *tc, int argc,
+test_src_from_file_with_do_not_grow(const struct test_case *tc, int argc,
 		char *argv[])
 {
 	if (argc < 1)
-		UT_FATAL("usage: test_src_from_file_with_truncate "
+		UT_FATAL("usage: test_src_from_file_with_do_not_grow "
 			"<path>");
 
 	const char *file = argv[0];
@@ -416,7 +416,7 @@ test_src_from_file_with_truncate(const struct test_case *tc, int argc,
 	os_stat_t st;
 
 	flags = PMEMSET_SOURCE_FILE_CREATE_IF_NEEDED | \
-		PMEMSET_SOURCE_FILE_TRUNCATE_IF_NEEDED;
+		PMEMSET_SOURCE_FILE_DO_NOT_GROW;
 	int ret = pmemset_xsource_from_file(&src, file, flags);
 	UT_PMEMSET_EXPECT_RETURN(ret, 0);
 	UT_ASSERTne(src, NULL);
@@ -428,6 +428,535 @@ test_src_from_file_with_truncate(const struct test_case *tc, int argc,
 	UT_ASSERTeq(ret, 0);
 	size = st.st_size;
 	UT_ASSERT(size == 0);
+
+	ret = pmemset_source_delete(&src);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTeq(src, NULL);
+
+	return 1;
+}
+
+/*
+ * test_src_from_file_with_rusr_mode - test source creation with
+ * PMEMSET_SOURCE_FILE_CREATE_ALWAYS_MODE flags.
+ */
+static int
+test_src_from_file_with_rusr_mode(const struct test_case *tc, int argc,
+		char *argv[])
+{
+	if (argc < 1)
+		UT_FATAL("usage: test_src_from_file_with_rusr_mode <path>");
+
+	const char *file = argv[0];
+	struct pmemset_source *src;
+	uint64_t flags = 0;
+	int ret = 0;
+
+	flags = PMEMSET_SOURCE_FILE_CREATE_ALWAYS | \
+	PMEMSET_SOURCE_FILE_CREATE_ALWAYS_MODE(PMEMSET_SOURCE_FILE_RUSR_MODE);
+	ret = pmemset_xsource_from_file(&src, file, flags);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTne(src, NULL);
+
+	ret = os_access(file, F_OK | R_OK | W_OK | X_OK);
+	UT_ASSERTeq(ret, -1);
+
+	ret = os_access(file, F_OK | R_OK);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmemset_source_delete(&src);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTeq(src, NULL);
+
+	return 1;
+}
+
+/*
+ * test_src_from_file_with_rwxu_mode - test source creation with
+ * PMEMSET_SOURCE_FILE_CREATE_ALWAYS_MODE flags.
+ */
+static int
+test_src_from_file_with_rwxu_mode(const struct test_case *tc, int argc,
+		char *argv[])
+{
+	if (argc < 1)
+		UT_FATAL("usage: test_src_from_file_with_rwxu_mode <path>");
+
+	const char *file = argv[0];
+	struct pmemset_source *src;
+	uint64_t flags = 0;
+	int ret = 0;
+
+	flags = PMEMSET_SOURCE_FILE_CREATE_ALWAYS | \
+	PMEMSET_SOURCE_FILE_CREATE_ALWAYS_MODE(PMEMSET_SOURCE_FILE_RWXU_MODE);
+	ret = pmemset_xsource_from_file(&src, file, flags);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTne(src, NULL);
+
+	ret = os_access(file, F_OK | R_OK | W_OK | X_OK);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmemset_source_delete(&src);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTeq(src, NULL);
+
+	return 1;
+}
+
+/*
+ * test_src_from_file_with_num_mode - test source creation with
+ * number mode value in PMEMSET_SOURCE_FILE_CREATE_ALWAYS_MODE.
+ */
+static int
+test_src_from_file_with_num_mode(const struct test_case *tc, int argc,
+		char *argv[])
+{
+	if (argc < 1)
+		UT_FATAL("usage: test_src_from_file_with_num_mode <path>");
+
+	const char *file = argv[0];
+	struct pmemset_source *src;
+	uint64_t flags = 0;
+	int ret = 0;
+
+	flags = PMEMSET_SOURCE_FILE_CREATE_ALWAYS | \
+	PMEMSET_SOURCE_FILE_CREATE_ALWAYS_MODE(00700);
+	ret = pmemset_xsource_from_file(&src, file, flags);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTne(src, NULL);
+
+	ret = os_access(file, F_OK | R_OK | W_OK | X_OK);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmemset_source_delete(&src);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTeq(src, NULL);
+
+	return 1;
+}
+
+/*
+ * test_src_from_file_with_inval_mode - test source creation with
+ * invalid mode value in PMEMSET_SOURCE_FILE_CREATE_ALWAYS_MODE.
+ */
+static int
+test_src_from_file_with_inval_mode(const struct test_case *tc, int argc,
+		char *argv[])
+{
+	if (argc < 1)
+		UT_FATAL("usage: test_src_from_file_with_inval_mode <path>");
+
+	const char *file = argv[0];
+	struct pmemset_source *src;
+	uint64_t flags = 0;
+	int ret = 0;
+
+	flags = PMEMSET_SOURCE_FILE_CREATE_ALWAYS | \
+		PMEMSET_SOURCE_FILE_CREATE_MODE(90180);
+	ret = pmemset_xsource_from_file(&src, file, flags);
+	UT_PMEMSET_EXPECT_RETURN(ret,
+		PMEMSET_E_INVALID_SOURCE_FILE_CREATE_FLAGS);
+	UT_ASSERTeq(src, NULL);
+
+	ret = pmemset_source_delete(&src);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTeq(src, NULL);
+
+	return 1;
+}
+
+/*
+ * test_src_from_file_only_mode - test source creation with
+ * only mode value in flag param.
+ */
+static int
+test_src_from_file_only_mode(const struct test_case *tc, int argc,
+		char *argv[])
+{
+	if (argc < 1)
+		UT_FATAL("usage: test_src_from_file_only_mode <path>");
+
+	const char *file = argv[0];
+	struct pmemset_source *src;
+	uint64_t flags = 0;
+	int ret = 0;
+/* just to compile test on Windows */
+#ifndef S_IXUSR
+#define S_IXUSR 00100
+#endif
+	flags = PMEMSET_SOURCE_FILE_CREATE_ALWAYS_MODE(S_IXUSR);
+	ret = pmemset_xsource_from_file(&src, file, flags);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTne(src, NULL);
+
+	ret = os_access(file, F_OK | R_OK | X_OK);
+	UT_ASSERTeq(ret, -1);
+
+	ret = os_access(file, F_OK | X_OK);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmemset_source_delete(&src);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTeq(src, NULL);
+
+	return 1;
+}
+
+/*
+ * test_src_from_file_with_inval_win_mode - test source creation with
+ * invalid mode value on Windows in PMEMSET_SOURCE_FILE_CREATE_ALWAYS_MODE.
+ */
+static int
+test_src_from_file_with_inval_win_mode(const struct test_case *tc, int argc,
+	char *argv[])
+{
+	if (argc < 1)
+		UT_FATAL(
+			"usage: test_src_from_file_with_inval_win_mode <path>");
+
+	const char *file = argv[0];
+	struct pmemset_source *src;
+	uint64_t flags = 0;
+	int ret = 0;
+
+	/* "random" flag does not work */
+	flags = PMEMSET_SOURCE_FILE_CREATE_ALWAYS_MODE(00100);
+	ret = pmemset_xsource_from_file(&src, file, flags);
+	UT_PMEMSET_EXPECT_RETURN(ret,
+		PMEMSET_E_INVALID_SOURCE_FILE_CREATE_FLAGS);
+	UT_ASSERTeq(src, NULL);
+
+	/* PMEMSET flag works but do nothing internally */
+	flags = PMEMSET_SOURCE_FILE_CREATE_ALWAYS_MODE(
+			PMEMSET_SOURCE_FILE_RWXU_MODE);
+	ret = pmemset_xsource_from_file(&src, file, flags);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTne(src, NULL);
+
+	ret = pmemset_source_delete(&src);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTeq(src, NULL);
+
+	return 1;
+}
+
+/*
+ * test_src_from_file_with_rusr_mode_if_needed - test source creation with
+ * PMEMSET_SOURCE_FILE_CREATE_IF_NEEDED flag.
+ */
+static int
+test_src_from_file_with_rusr_mode_if_needed(const struct test_case *tc,
+		int argc, char *argv[])
+{
+	if (argc < 1)
+		UT_FATAL(
+			"usage: test_src_from_file_with_rusr_mode_if_needed <path>");
+
+	const char *file = argv[0];
+	struct pmemset_source *src;
+	uint64_t flags = 0;
+	int ret = 0;
+
+	flags = PMEMSET_SOURCE_FILE_CREATE_IF_NEEDED | \
+	PMEMSET_SOURCE_FILE_CREATE_MODE(PMEMSET_SOURCE_FILE_RUSR_MODE);
+	ret = pmemset_xsource_from_file(&src, file, flags);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTne(src, NULL);
+
+	ret = os_access(file, F_OK | R_OK | W_OK | X_OK);
+	UT_ASSERTeq(ret, -1);
+
+	ret = os_access(file, F_OK | R_OK);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmemset_source_delete(&src);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTeq(src, NULL);
+
+	return 1;
+}
+
+/*
+ * test_src_from_file_with_rwxu_mode_if_needed_created - test source creation
+ * with PMEMSET_SOURCE_FILE_CREATE_IF_NEEDED flag with already creaded file.
+ */
+static int
+test_src_from_file_with_rwxu_mode_if_needed_created(const struct test_case *tc,
+		int argc, char *argv[])
+{
+	if (argc < 1)
+		UT_FATAL(
+			"usage: test_src_from_file_with_rwxu_mode_if_needed_created <path>");
+
+	const char *file = argv[0];
+	struct pmemset_source *src;
+	uint64_t flags = 0;
+	int ret = 0;
+
+	flags = PMEMSET_SOURCE_FILE_CREATE_IF_NEEDED | \
+	PMEMSET_SOURCE_FILE_CREATE_MODE(PMEMSET_SOURCE_FILE_RWXU_MODE);
+	ret = pmemset_xsource_from_file(&src, file, flags);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTne(src, NULL);
+
+	/* file is already created - default mode has not changed */
+	ret = os_access(file, F_OK | R_OK | W_OK | X_OK);
+	UT_ASSERTeq(ret, -1);
+
+	ret = os_access(file, F_OK | R_OK);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmemset_source_delete(&src);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTeq(src, NULL);
+
+	return 1;
+}
+
+/*
+ * set_content_mcsafe_read -- set file content for
+ *                            test_src_file_and_pmem2_mcsafe_read
+ */
+static void
+set_content_mcsafe_read(char *file, char *writebuf)
+{
+	/* set file content */
+	struct pmem2_config *p2cfg;
+	struct pmem2_map *p2map;
+	struct pmem2_source *p2src;
+
+	int fd = OPEN(file, O_RDWR);
+	UT_ASSERTne(fd, -1);
+
+	int ret = pmem2_source_from_fd(&p2src, fd);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmem2_config_new(&p2cfg);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmem2_config_set_required_store_granularity(p2cfg,
+			PMEM2_GRANULARITY_PAGE);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmem2_map_new(&p2map, p2cfg, p2src);
+	UT_ASSERTeq(ret, 0);
+
+	void *addr = pmem2_map_get_address(p2map);
+	pmem2_memcpy_fn memcpy_fn = pmem2_get_memcpy_fn(p2map);
+
+	size_t bufsize = strlen(writebuf);
+	memcpy_fn(addr, writebuf, bufsize, 0);
+
+	ret = pmem2_map_delete(&p2map);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmem2_config_delete(&p2cfg);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmem2_source_delete(&p2src);
+	UT_ASSERTeq(ret, 0);
+	CLOSE(fd);
+}
+
+/*
+ * verify_content_mcsafe_read -- verify file content for
+ *                               test_src_file_and_pmem2_mcsafe_read
+ */
+static void
+verify_content_mcsafe_read(struct pmemset_source *src, char *verifybuf)
+{
+	size_t bufsize = strlen(verifybuf);
+
+	/* verify read content */
+	char *readbuf = MALLOC(bufsize);
+	int ret = pmemset_source_pread_mcsafe(src, readbuf, bufsize, 0);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+
+	ret = strncmp(verifybuf, readbuf, bufsize);
+	ASSERTeq(ret, 0);
+
+	FREE(readbuf);
+}
+
+/*
+ * set_content_mcsafe_write -- set file content for
+ *                             test_src_file_and_pmem2_mcsafe_write
+ */
+static void
+set_content_mcsafe_write(struct pmemset_source *src, char *writebuf)
+{
+	/* set file content */
+	size_t bufsize = strlen(writebuf);
+
+	int ret = pmemset_source_pwrite_mcsafe(src, writebuf, bufsize, 0);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+}
+
+/*
+ * verify_content_mcsafe_write -- verify file content for
+ *                                test_src_file_and_pmem2_mcsafe_write
+ */
+static void
+verify_content_mcsafe_write(char *file, char *verifybuf)
+{
+	/* verify read content */
+	struct pmem2_config *p2cfg;
+	struct pmem2_map *p2map;
+	struct pmem2_source *p2src;
+
+	size_t bufsize = strlen(verifybuf);
+
+	int fd = OPEN(file, O_RDWR);
+	UT_ASSERTne(fd, -1);
+
+	int ret = pmem2_source_from_fd(&p2src, fd);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmem2_config_new(&p2cfg);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmem2_config_set_required_store_granularity(p2cfg,
+			PMEM2_GRANULARITY_PAGE);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmem2_map_new(&p2map, p2cfg, p2src);
+	UT_ASSERTeq(ret, 0);
+
+	void *addr = pmem2_map_get_address(p2map);
+	pmem2_memcpy_fn memcpy_fn = pmem2_get_memcpy_fn(p2map);
+
+	char *readbuf = MALLOC(bufsize);
+	memcpy_fn(readbuf, addr, bufsize, 0);
+
+	ret = pmem2_map_delete(&p2map);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmem2_config_delete(&p2cfg);
+	UT_ASSERTeq(ret, 0);
+
+	pmem2_source_delete(&p2src);
+	CLOSE(fd);
+
+	ret = strncmp(verifybuf, readbuf, bufsize);
+	ASSERTeq(ret, 0);
+
+	FREE(readbuf);
+}
+
+/*
+ * test_src_file_and_pmem2_mcsafe_read -- test mcsafe read operation for
+ *                                        file and pmem2 sources
+ */
+static int
+test_src_file_and_pmem2_mcsafe_read(const struct test_case *tc, int argc,
+		char *argv[])
+{
+	if (argc < 1)
+		UT_FATAL("usage: test_src_file_and_pmem2_mcsafe_read <file>");
+
+	char *file = argv[0];
+	struct pmem2_source *p2src;
+	struct pmemset_source *src;
+
+	set_content_mcsafe_read(file, "Write content");
+
+	/* source from file */
+	int ret = pmemset_source_from_file(&src, file);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+
+	verify_content_mcsafe_read(src, "Write content");
+
+	ret = pmemset_source_delete(&src);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+
+	/* source from pmem2 */
+	int fd = OPEN(file, O_RDWR);
+	ret = pmem2_source_from_fd(&p2src, fd);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmemset_source_from_pmem2(&src, p2src);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+
+	verify_content_mcsafe_read(src, "Write content");
+
+	ret = pmem2_source_delete(&p2src);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmemset_source_delete(&src);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+
+	CLOSE(fd);
+
+	return 1;
+}
+
+/*
+ * test_src_file_and_pmem2_mcsafe_write -- test mcsafe write operation for
+ *                                         file and pmem2 sources
+ */
+static int
+test_src_file_and_pmem2_mcsafe_write(const struct test_case *tc, int argc,
+		char *argv[])
+{
+	if (argc < 1)
+		UT_FATAL("usage: test_src_file_and_pmem2_mcsafe_write <file>");
+
+	char *file = argv[0];
+	struct pmem2_source *p2src;
+	struct pmemset_source *src;
+
+	/* source from file */
+	int ret = pmemset_source_from_file(&src, file);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+
+	set_content_mcsafe_write(src, "Write content");
+
+	pmemset_source_delete(&src);
+
+	verify_content_mcsafe_write(file, "Write content");
+
+	/* source from pmem2 */
+	int fd = OPEN(file, O_RDWR);
+	ret = pmem2_source_from_fd(&p2src, fd);
+	UT_ASSERTeq(ret, 0);
+
+	ret = pmemset_source_from_pmem2(&src, p2src);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+
+	set_content_mcsafe_write(src, "Write content2");
+
+	pmem2_source_delete(&p2src);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+
+	pmemset_source_delete(&src);
+
+	CLOSE(fd);
+
+	verify_content_mcsafe_write(file, "Write content2");
+
+	return 1;
+}
+
+/*
+ * test_src_alignment -- test read alignment operation
+ */
+static int
+test_src_alignment(const struct test_case *tc, int argc, char *argv[])
+{
+	if (argc < 1)
+		UT_FATAL("usage: test_src_alignment <file>");
+
+	const char *file = argv[0];
+	struct pmemset_source *src;
+
+	int ret = pmemset_source_from_file(&src, file);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTne(src, NULL);
+
+	size_t alignment = 0;
+	ret = pmemset_source_alignment(src, &alignment);
+	UT_PMEMSET_EXPECT_RETURN(ret, 0);
+	UT_ASSERTne(alignment, 0);
 
 	ret = pmemset_source_delete(&src);
 	UT_PMEMSET_EXPECT_RETURN(ret, 0);
@@ -453,7 +982,18 @@ static struct test_case test_cases[] = {
 	TEST_CASE(test_src_from_temporary_valid),
 	TEST_CASE(test_src_from_temporary_inval_dir),
 	TEST_CASE(test_src_from_temporary_no_del),
-	TEST_CASE(test_src_from_file_with_truncate),
+	TEST_CASE(test_src_from_file_with_do_not_grow),
+	TEST_CASE(test_src_from_file_with_rusr_mode),
+	TEST_CASE(test_src_from_file_with_rwxu_mode),
+	TEST_CASE(test_src_from_file_with_num_mode),
+	TEST_CASE(test_src_from_file_with_inval_mode),
+	TEST_CASE(test_src_from_file_with_inval_win_mode),
+	TEST_CASE(test_src_from_file_only_mode),
+	TEST_CASE(test_src_from_file_with_rusr_mode_if_needed),
+	TEST_CASE(test_src_from_file_with_rwxu_mode_if_needed_created),
+	TEST_CASE(test_src_file_and_pmem2_mcsafe_read),
+	TEST_CASE(test_src_file_and_pmem2_mcsafe_write),
+	TEST_CASE(test_src_alignment),
 };
 
 #define NTESTS (sizeof(test_cases) / sizeof(test_cases[0]))

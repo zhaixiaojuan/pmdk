@@ -111,6 +111,9 @@ memblock_header_compact_get_extra(const struct memory_block *m)
 static uint64_t
 memblock_header_none_get_extra(const struct memory_block *m)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(m);
+
 	return 0;
 }
 
@@ -145,6 +148,9 @@ memblock_header_compact_get_flags(const struct memory_block *m)
 static uint16_t
 memblock_header_none_get_flags(const struct memory_block *m)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(m);
+
 	return 0;
 }
 
@@ -224,6 +230,9 @@ static void
 memblock_header_none_write(const struct memory_block *m,
 	size_t size, uint64_t extra, uint16_t flags)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(m, size, extra, flags);
+
 	/* NOP */
 }
 
@@ -256,6 +265,9 @@ memblock_header_compact_invalidate(const struct memory_block *m)
 static void
 memblock_header_none_invalidate(const struct memory_block *m)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(m);
+
 	/* NOP */
 }
 
@@ -293,6 +305,9 @@ memblock_header_compact_reinit(const struct memory_block *m)
 static void
 memblock_header_none_reinit(const struct memory_block *m)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(m);
+
 	/* NOP */
 }
 
@@ -355,6 +370,9 @@ static unsigned
 memblock_run_default_nallocs(uint32_t *size_idx, uint16_t flags,
 	uint64_t unit_size, uint64_t alignment)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(flags);
+
 	unsigned nallocs = (unsigned)
 		(RUN_DEFAULT_SIZE_BYTES(*size_idx) / unit_size);
 
@@ -491,6 +509,9 @@ run_get_bitmap(const struct memory_block *m, struct run_bitmap *b)
 static size_t
 huge_block_size(const struct memory_block *m)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(m);
+
 	return CHUNKSIZE;
 }
 
@@ -716,6 +737,9 @@ run_prep_operation_hdr(const struct memory_block *m, enum memblock_state op,
 static os_mutex_t *
 huge_get_lock(const struct memory_block *m)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(m);
+
 	return NULL;
 }
 
@@ -800,6 +824,9 @@ static void
 run_ensure_header_type(const struct memory_block *m,
 	enum header_type t)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(m, t);
+
 #ifdef DEBUG
 	struct chunk_header *hdr = heap_get_chunk_hdr(m->heap, m);
 	ASSERTeq(hdr->type, CHUNK_TYPE_RUN);
@@ -1126,6 +1153,9 @@ run_vg_init(const struct memory_block *m, int objects,
 static void
 run_reinit_chunk(const struct memory_block *m)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(m);
+
 	/* noop */
 }
 
@@ -1215,6 +1245,9 @@ run_calc_free(const struct memory_block *m,
 static unsigned
 huge_fill_pct(const struct memory_block *m)
 {
+	/* suppress unused-parameter errors */
+	SUPPRESS_UNUSED(m);
+
 	return 100;
 }
 

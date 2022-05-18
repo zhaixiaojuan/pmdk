@@ -8,15 +8,18 @@
 #include <stdbool.h>
 
 #include "alloc.h"
+#include "badblock.h"
 #include "config.h"
 #include "file.h"
 #include "libpmem2.h"
 #include "libpmemset.h"
+#include "map_config.h"
 #include "part.h"
 #include "pmemset.h"
 #include "pmemset_utils.h"
 #include "ravl_interval.h"
 #include "ravl.h"
+#include "sds.h"
 #include "sys_util.h"
 
 /*
@@ -39,6 +42,8 @@ struct pmemset {
 		struct ravl_interval *part_map_tree;
 		struct pmemset_part_map *previous_pmap;
 	} shared_state;
+
+	struct pmemset_sds_state *sds_state;
 };
 
 static char *granularity_name[3] = {
@@ -97,7 +102,8 @@ pmemset_new_init(struct pmemset *set, struct pmemset_config *config)
 
 	if (set->shared_state.part_map_tree == NULL) {
 		ERR("ravl tree initialization failed");
-		return PMEMSET_E_ERRNO;
+		ret = PMEMSET_E_ERRNO;
+		goto err_config_delete;
 	}
 
 	set->effective_granularity_valid = false;
@@ -114,7 +120,17 @@ pmemset_new_init(struct pmemset *set, struct pmemset_config *config)
 
 	util_rwlock_init(&set->shared_state.lock);
 
+	ret = pmemset_sds_state_new(&set->sds_state);
+	if (ret)
+		goto err_ravl_interval_delete;
+
 	return 0;
+
+err_ravl_interval_delete:
+	ravl_interval_delete(set->shared_state.part_map_tree);
+err_config_delete:
+	pmemset_config_delete(&set->set_config);
+	return ret;
 }
 
 /*
@@ -167,7 +183,7 @@ pmemset_adjust_reservation_to_contents(
 	size_t rsv_addr = (size_t)pmem2_vm_reservation_get_address(p2rsv);
 	size_t rsv_size = pmem2_vm_reservation_get_size(p2rsv);
 
-	struct pmem2_map *p2map;
+	struct pmem2_map *p2map = NULL;
 	/* find first pmem2 mapping in the vm reservation */
 	pmem2_vm_reservation_map_find_first(p2rsv, &p2map);
 
@@ -188,7 +204,8 @@ pmemset_adjust_reservation_to_contents(
 		}
 
 		/* find last pmem2 mapping in the vm reservation */
-		ret = pmem2_vm_reservation_map_find_last(p2rsv, &p2map);
+		pmem2_vm_reservation_map_find_last(p2rsv, &p2map);
+		ASSERTne(p2map, NULL);
 
 		p2map_offset = (size_t)pmem2_map_get_address(p2map) - rsv_addr;
 		p2map_size = pmem2_map_get_size(p2map);
@@ -255,7 +272,7 @@ pmemset_delete(struct pmemset **set)
 	if (*set == NULL)
 		return 0;
 
-	struct pmemset_config *cfg = pmemset_get_pmemset_config(*set);
+	struct pmemset_config *cfg = (*set)->set_config;
 	struct pmem2_vm_reservation *rsv = pmemset_config_get_reservation(cfg);
 
 	/* reservation that was set in pmemset should not be adjusted */
@@ -274,8 +291,10 @@ pmemset_delete(struct pmemset **set)
 
 	util_rwlock_destroy(&(*set)->shared_state.lock);
 
-	Free(*set);
+	int ret = pmemset_sds_state_delete(&(*set)->sds_state);
+	ASSERTeq(ret, 0);
 
+	Free(*set);
 	*set = NULL;
 
 	return 0;
@@ -515,40 +534,80 @@ pmemset_find_reservation_empty_range(struct pmem2_vm_reservation *p2rsv,
 }
 
 /*
- * pmemset_part_map -- map a part to the set
+ * pmemset_map -- map a part to the set
  */
 int
-pmemset_part_map(struct pmemset_part **part_ptr, struct pmemset_extras *extra,
+pmemset_map(struct pmemset *set,
+		struct pmemset_source *src,
+		struct pmemset_map_config *map_cfg,
 		struct pmemset_part_descriptor *desc)
 {
-	LOG(3, "part %p extra %p desc %p", part_ptr, extra, desc);
+	LOG(3, "set %p src %p map_cfg %p desc %p", set, src, map_cfg, desc);
 	PMEMSET_ERR_CLR();
 
-	struct pmemset_part *part = *part_ptr;
-	struct pmemset *set = pmemset_part_get_pmemset(part);
-	struct pmemset_config *set_config = pmemset_get_pmemset_config(set);
+	int ret = 0;
+	size_t part_size = 0;
+	size_t part_offset = 0;
+	struct pmemset_config *set_config = set->set_config;
 	enum pmem2_granularity mapping_gran;
 	enum pmem2_granularity config_gran =
 			pmemset_get_config_granularity(set_config);
 
-	size_t part_offset = pmemset_part_get_offset(part);
-	struct pmemset_file *part_file = pmemset_part_get_file(part);
+	if (!src) {
+		ERR("invalid pmemset source %p", src);
+		return PMEMSET_E_INVALID_SOURCE_TYPE;
+	}
+
+	if (map_cfg) {
+		part_size = pmemset_map_config_get_length(map_cfg);
+		part_offset = pmemset_map_config_get_offset(map_cfg);
+	}
+
+	struct pmemset_file *part_file = pmemset_source_get_set_file(src);
 	struct pmem2_source *pmem2_src =
 			pmemset_file_get_pmem2_source(part_file);
+	struct pmemset_sds *sds = pmemset_source_get_sds(src);
+	bool bb_detection = pmemset_source_get_badblock_detection(src);
 
-	size_t part_size = pmemset_part_get_size(part);
+	if (sds != NULL) {
+		enum pmemset_part_state *out_state =
+				pmemset_source_get_part_state_ptr(src);
+
+		enum pmemset_part_state sds_state;
+		ret = pmemset_sds_check_and_possible_refresh(src, &sds_state);
+		if (ret)
+			return ret;
+
+		if (out_state)
+			*out_state = sds_state;
+
+		ret = pmemset_config_validate_state(set_config, sds_state);
+		if (ret)
+			return ret;
+	}
+
+	if (bb_detection) {
+		ret = pmemset_badblock_detect_check_if_cleared(set, src);
+		if (ret)
+			return ret;
+	}
+
 	size_t source_size;
-	int ret = pmem2_source_size(pmem2_src, &source_size);
+	ret = pmem2_source_size(pmem2_src, &source_size);
 	if (ret)
 		return ret;
+
+	if (part_size == 0 && source_size == 0) {
+		ERR("both map length and file size equals 0");
+		return PMEMSET_E_MAP_LENGTH_UNSET;
+	}
 
 	if (part_size == 0)
 		part_size = source_size;
 
-	ret = pmemset_part_file_try_ensure_size(part, source_size);
+	ret = pmemset_part_file_try_ensure_size(part_file, part_size,
+			part_offset, source_size);
 	if (ret) {
-		ERR("cannot truncate source file from the part %p", part);
-		ret = PMEMSET_E_CANNOT_TRUNCATE_SOURCE_FILE;
 		return ret;
 	}
 
@@ -622,8 +681,9 @@ pmemset_part_map(struct pmemset_part **part_ptr, struct pmemset_extras *extra,
 			if (ret)
 				break;
 
-			ret = pmemset_part_map_new(&pmap, pmem2_reserv,
-					map_reserv_offset, part_size);
+			ret = pmemset_part_map_new(&pmap, set, src,
+					pmem2_reserv, map_reserv_offset,
+					part_size);
 			if (ret)
 				goto err_adjust_vm_reserv;
 
@@ -662,6 +722,8 @@ pmemset_part_map(struct pmemset_part **part_ptr, struct pmemset_extras *extra,
 		ret = PMEMSET_E_INVALID_PMEM2_MAP;
 		goto err_pmap_revert;
 	}
+
+	ASSERTne(pmem2_map, NULL);
 
 	/*
 	 * effective granularity is only set once and
@@ -703,12 +765,11 @@ pmemset_part_map(struct pmemset_part **part_ptr, struct pmemset_extras *extra,
 	if (desc)
 		*desc = pmap->desc;
 
-	/* consume the part */
-	ret = pmemset_part_delete(part_ptr);
-	ASSERTeq(ret, 0);
 	/* delete temporary pmem2 config */
 	ret = pmem2_config_delete(&pmem2_cfg);
 	ASSERTeq(ret, 0);
+
+	pmemset_source_increment_use_count(src);
 
 	util_rwlock_unlock(&set->shared_state.lock);
 
@@ -722,6 +783,15 @@ pmemset_part_map(struct pmemset_part **part_ptr, struct pmemset_extras *extra,
 	ctx.data.part_add = event;
 
 	pmemset_config_event_callback(set_config, set, &ctx);
+
+	if (sds != NULL) {
+		ret = pmemset_sds_register_record(sds, set, src, pmem2_map);
+		ASSERTeq(ret, 0);
+
+		ret = pmemset_sds_fire_sds_update_event(sds, set, set_config,
+				src);
+		ASSERTeq(ret, 0);
+	}
 
 	return 0;
 
@@ -763,15 +833,15 @@ pmemset_update_previous_part_map(struct pmemset *set,
 }
 
 /*
- * pmemset_remove_part_map -- unmaps the part and removes it from the set
+ * pmemset_remove_part_map_no_lock -- unmaps the part and removes it from the
+ *                                    set, doesn't acquire a lock
  */
-int
-pmemset_remove_part_map(struct pmemset *set, struct pmemset_part_map **pmap_ptr)
+static int
+pmemset_remove_part_map_no_lock(struct pmemset *set,
+		struct pmemset_part_map **pmap_ptr)
 {
-	LOG(3, "set %p part map %p", set, pmap_ptr);
-	PMEMSET_ERR_CLR();
-
 	struct pmemset_part_map *pmap = *pmap_ptr;
+	struct pmemset_source *src = pmap->src;
 
 	if (pmap->refcount > 1) {
 		ERR(
@@ -781,12 +851,10 @@ pmemset_remove_part_map(struct pmemset *set, struct pmemset_part_map **pmap_ptr)
 		return PMEMSET_E_PART_MAP_POSSIBLE_USE_AFTER_DROP;
 	}
 
-	util_rwlock_wrlock(&set->shared_state.lock);
-
 	struct pmem2_vm_reservation *pmem2_reserv = pmap->pmem2_reserv;
 	int ret = pmemset_unregister_part_map(set, pmap);
 	if (ret)
-		goto err_lock_unlock;
+		return ret;
 
 	/*
 	 * if the part mapping to be removed is the same as the one being stored
@@ -795,15 +863,25 @@ pmemset_remove_part_map(struct pmemset *set, struct pmemset_part_map **pmap_ptr)
 	if (set->shared_state.previous_pmap == pmap)
 		pmemset_update_previous_part_map(set, pmap);
 
-	size_t pmap_size = pmemset_descriptor_part_map(pmap).size;
+	struct pmemset_part_descriptor desc = pmemset_descriptor_part_map(pmap);
+
+	struct pmemset_event_part_remove event;
+	event.addr = desc.addr;
+	event.len = desc.size;
+
+	struct pmemset_event_context ctx;
+	ctx.type = PMEMSET_EVENT_PART_REMOVE;
+	ctx.data.part_remove = event;
+
+	pmemset_config_event_callback(set->set_config, set, &ctx);
+
 	/* delete all pmem2 maps contained in the part map */
-	ret = pmemset_part_map_remove_range(pmap, 0, pmap_size, NULL, NULL);
+	ret = pmemset_part_map_remove_range(pmap, 0, desc.size, NULL, NULL);
 	if (ret)
 		goto err_insert_pmap;
 
 	ret = pmemset_part_map_delete(pmap_ptr);
-	if (ret)
-		goto err_insert_pmap;
+	ASSERTeq(ret, 0);
 
 	/* reservation provided by the user should not be modified */
 	if (pmemset_config_get_reservation(set->set_config) == NULL) {
@@ -811,14 +889,33 @@ pmemset_remove_part_map(struct pmemset *set, struct pmemset_part_map **pmap_ptr)
 		ASSERTeq(ret, 0);
 	}
 
-	util_rwlock_unlock(&set->shared_state.lock);
+	pmemset_source_decrement_use_count(src);
 
 	return 0;
 
 err_insert_pmap:
 	pmemset_insert_part_map(set, pmap);
-err_lock_unlock:
+	return ret;
+}
+
+/*
+ * pmemset_remove_part_map -- unmaps the part and removes it from the set
+ */
+int
+pmemset_remove_part_map(struct pmemset *set, struct pmemset_part_map **pmap_ptr)
+{
+	LOG(3, "set %p part map %p", set, pmap_ptr);
+	PMEMSET_ERR_CLR();
+
+	struct pmemset_part_map *pmap = *pmap_ptr;
+	void *addr = pmap->desc.addr;
+	size_t len = pmap->desc.size;
+	pmemset_deep_flush(set, addr, len);
+
+	util_rwlock_wrlock(&set->shared_state.lock);
+	int ret = pmemset_remove_part_map_no_lock(set, pmap_ptr);
 	util_rwlock_unlock(&set->shared_state.lock);
+
 	return ret;
 }
 
@@ -889,14 +986,34 @@ pmemset_remove_part_map_range_cb(struct pmemset *set,
 		return PMEMSET_E_PART_MAP_POSSIBLE_USE_AFTER_DROP;
 	}
 
+	int ret;
 	struct pmap_remove_range_arg *rarg =
 			(struct pmap_remove_range_arg *)arg;
 	size_t rm_addr = rarg->addr;
 	size_t rm_size = rarg->size;
 
+	struct pmem2_vm_reservation *pmem2_reserv = pmap->pmem2_reserv;
 	size_t pmap_addr = (size_t)pmap->desc.addr;
 	size_t pmap_size = pmap->desc.size;
-	struct pmem2_vm_reservation *pmem2_reserv = pmap->pmem2_reserv;
+
+	struct pmem2_map *first_p2map = NULL;
+	struct pmem2_map *last_p2map = NULL;
+	ret = pmemset_part_map_find(pmap, 0, 1, &first_p2map);
+	ASSERTne(first_p2map, NULL);
+	ASSERTeq(ret, 0);
+
+	ret = pmemset_part_map_find(pmap, pmap_size - 1, 1, &last_p2map);
+	ASSERTne(last_p2map, NULL);
+	ASSERTeq(ret, 0);
+
+	size_t first_p2map_end_addr = (size_t)pmem2_map_get_address(first_p2map)
+			+ pmem2_map_get_size(first_p2map);
+	size_t last_p2map_addr = (size_t)pmem2_map_get_address(last_p2map);
+
+	/* range covers pmem2 maps at the start and the end of part map */
+	if (rm_addr < first_p2map_end_addr &&
+			rm_addr + rm_size > last_p2map_addr)
+		return pmemset_remove_part_map_no_lock(set, &pmap);
 
 	/*
 	 * If the remove range starting address is earlier than the part mapping
@@ -909,21 +1026,12 @@ pmemset_remove_part_map_range_cb(struct pmemset *set,
 
 	size_t true_rm_offset;
 	size_t true_rm_size;
-	int ret = pmemset_part_map_remove_range(pmap, rm_offset,
-			rm_size_adjusted, &true_rm_offset, &true_rm_size);
+	ret = pmemset_part_map_remove_range(pmap, rm_offset, rm_size_adjusted,
+			&true_rm_offset, &true_rm_size);
 	if (ret)
 		return ret;
 
-	/* none of those functions should fail */
-	if (true_rm_offset == 0 && true_rm_size == pmap_size) {
-		if (set->shared_state.previous_pmap == pmap)
-			pmemset_update_previous_part_map(set, pmap);
-
-		ret = pmemset_unregister_part_map(set, pmap);
-		ASSERTeq(ret, 0);
-		ret = pmemset_part_map_delete(&pmap);
-		ASSERTeq(ret, 0);
-	} else if (true_rm_offset == 0) {
+	if (true_rm_offset == 0) {
 		pmap->desc.addr = (char *)pmap->desc.addr + true_rm_size;
 		pmap->desc.size -= true_rm_size;
 	} else if (true_rm_offset + true_rm_size == pmap_size) {
@@ -940,8 +1048,8 @@ pmemset_remove_part_map_range_cb(struct pmemset *set,
 
 		struct pmemset_part_map *new_pmap;
 		/* part map was severed into two part maps */
-		ret = pmemset_part_map_new(&new_pmap, pmem2_reserv,
-				new_pmap_offset, new_pmap_size);
+		ret = pmemset_part_map_new(&new_pmap, set, pmap->src,
+				pmem2_reserv, new_pmap_offset, new_pmap_size);
 		if (ret)
 			return ret;
 
@@ -951,7 +1059,7 @@ pmemset_remove_part_map_range_cb(struct pmemset *set,
 		ASSERTeq(ret, 0);
 	}
 
-	struct pmemset_config *cfg = pmemset_get_pmemset_config(set);
+	struct pmemset_config *cfg = set->set_config;
 	/* reservation provided by the user should not be modified */
 	if (pmemset_config_get_reservation(cfg) == NULL) {
 		ret = pmemset_adjust_reservation_to_contents(&pmem2_reserv);
@@ -971,9 +1079,21 @@ pmemset_remove_range(struct pmemset *set, void *addr, size_t len)
 	LOG(3, "set %p addr %p len %zu", set, addr, len);
 	PMEMSET_ERR_CLR();
 
+	struct pmemset_event_remove_range event;
+	event.addr = addr;
+	event.len = len;
+
+	struct pmemset_event_context ctx;
+	ctx.type = PMEMSET_EVENT_REMOVE_RANGE;
+	ctx.data.remove_range = event;
+
+	pmemset_config_event_callback(set->set_config, set, &ctx);
+
 	struct pmap_remove_range_arg arg;
 	arg.addr = (size_t)addr;
 	arg.size = len;
+
+	pmemset_deep_flush(set, addr, len);
 
 	util_rwlock_wrlock(&set->shared_state.lock);
 	int ret = pmemset_iterate(set, addr, len,
@@ -1214,6 +1334,25 @@ deep_flush_pmem2_maps_from_rsv(struct pmem2_vm_reservation *rsv,
 }
 
 /*
+ * pmemset_part_map_access -- gains access to the part mapping
+ */
+static void
+pmemset_part_map_access(struct pmemset_part_map *pmap)
+{
+	pmap->refcount += 1;
+}
+
+/*
+ * pmemset_part_map_access_drop -- drops the access to the part mapping
+ */
+static void
+pmemset_part_map_access_drop(struct pmemset_part_map *pmap)
+{
+	pmap->refcount -= 1;
+	ASSERT(pmap->refcount >= 0);
+}
+
+/*
  * pmemset_deep_flush -- perform deep flush operation
  */
 int
@@ -1251,10 +1390,14 @@ pmemset_deep_flush(struct pmemset *set, void *ptr, size_t size)
 
 		ret = deep_flush_pmem2_maps_from_rsv(rsv, (char *)ptr,
 				range_end, &end);
-		if (ret || end)
+		if (ret || end) {
+			pmemset_part_map_drop(&pmap);
 			break;
+		}
 
 		pmemset_next_part_map(set, pmap, &next_pmap);
+		pmemset_part_map_drop(&pmap);
+		pmap = next_pmap;
 		if (next_pmap == NULL)
 			break;
 
@@ -1262,35 +1405,6 @@ pmemset_deep_flush(struct pmemset *set, void *ptr, size_t size)
 	}
 
 	return ret;
-}
-
-/*
- * pmemset_get_pmemset_config -- get pmemset config
- */
-struct pmemset_config *
-pmemset_get_pmemset_config(struct pmemset *set)
-{
-	LOG(3, "%p", set);
-	return set->set_config;
-}
-
-/*
- * pmemset_part_map_access -- gains access to the part mapping
- */
-static void
-pmemset_part_map_access(struct pmemset_part_map *pmap)
-{
-	pmap->refcount += 1;
-}
-
-/*
- * pmemset_part_map_access_drop -- drops the access to the part mapping
- */
-static void
-pmemset_part_map_access_drop(struct pmemset_part_map *pmap)
-{
-	pmap->refcount -= 1;
-	ASSERT(pmap->refcount >= 0);
 }
 
 /*
@@ -1423,4 +1537,22 @@ pmemset_set_contiguous_part_coalescing(struct pmemset *set,
 	set->part_coalescing = value;
 
 	return 0;
+}
+
+/*
+ * pmemset_get_config -- retrieve config from pmemset
+ */
+struct pmemset_config *
+pmemset_get_config(struct pmemset *set)
+{
+	return set->set_config;
+}
+
+/*
+ * pmemset_get_sds_state -- retrieve sds state from pmemset
+ */
+struct pmemset_sds_state *
+pmemset_get_sds_state(struct pmemset *set)
+{
+	return set->sds_state;
 }

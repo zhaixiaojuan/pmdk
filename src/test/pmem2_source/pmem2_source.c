@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: BSD-3-Clause
-/* Copyright 2019-2020, Intel Corporation */
+/* Copyright 2019-2021, Intel Corporation */
 
 /*
  * pmem2_source.c -- pmem2_source unittests
  */
 #include "fault_injection.h"
+#include "file.h"
 #include "libpmem2.h"
 #include "unittest.h"
 #include "ut_pmem2_utils.h"
@@ -181,6 +182,218 @@ test_delete_null_config(const struct test_case *tc, int argc,
 	UT_ASSERTeq(src, NULL);
 
 	return 0;
+}
+
+/*
+ * test_pmem2_src_mcsafe_read -- test mcsafe read operation
+ */
+static int
+test_pmem2_src_mcsafe_read(const struct test_case *tc, int argc,
+		char *argv[])
+{
+	if (argc < 1)
+		UT_FATAL(
+			"usage: test_pmem2_src_mcsafe_read <file>");
+
+	char *file = argv[0];
+	int fd;
+	struct pmem2_config *cfg;
+	struct pmem2_map *map;
+	struct pmem2_source *src;
+
+	fd = OPEN(file, O_RDWR);
+	UT_ASSERTne(fd, -1);
+
+	int ret = pmem2_source_from_fd(&src, fd);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+
+	/* set file content */
+	ret = pmem2_config_new(&cfg);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+
+	ret = pmem2_config_set_required_store_granularity(cfg,
+			PMEM2_GRANULARITY_PAGE);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+
+	ret = pmem2_map_new(&map, cfg, src);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+
+	void *addr = pmem2_map_get_address(map);
+	pmem2_memcpy_fn memcpy_fn = pmem2_get_memcpy_fn(map);
+
+	char *writebuf = "Write content";
+	size_t bufsize = strlen(writebuf);
+	memcpy_fn(addr, writebuf, bufsize, 0);
+
+	ret = pmem2_map_delete(&map);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+
+	ret = pmem2_config_delete(&cfg);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+
+	/* verify read content */
+	char *readbuf = MALLOC(bufsize);
+	ret = pmem2_source_pread_mcsafe(src, readbuf, bufsize, 0);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+	ret = strncmp(writebuf, readbuf, bufsize);
+	ASSERTeq(ret, 0);
+
+	FREE(readbuf);
+	pmem2_source_delete(&src);
+	CLOSE(fd);
+
+	return 1;
+}
+
+/*
+ * test_pmem2_src_mcsafe_write -- test mcsafe write operation
+ */
+static int
+test_pmem2_src_mcsafe_write(const struct test_case *tc, int argc,
+		char *argv[])
+{
+	if (argc < 1)
+		UT_FATAL(
+			"usage: test_pmem2_src_mcsafe_write <file>");
+
+	char *file = argv[0];
+	int fd;
+	struct pmem2_config *cfg;
+	struct pmem2_map *map;
+	struct pmem2_source *src;
+
+	fd = OPEN(file, O_RDWR);
+	UT_ASSERTne(fd, -1);
+
+	int ret = pmem2_source_from_fd(&src, fd);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+
+	/* set file content */
+	char *writebuf = "Write content";
+	size_t bufsize = strlen(writebuf);
+	ret = pmem2_source_pwrite_mcsafe(src, writebuf, bufsize, 0);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+
+	/* verify read content */
+	ret = pmem2_config_new(&cfg);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+
+	ret = pmem2_config_set_required_store_granularity(cfg,
+			PMEM2_GRANULARITY_PAGE);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+
+	ret = pmem2_map_new(&map, cfg, src);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+
+	void *addr = pmem2_map_get_address(map);
+	pmem2_memcpy_fn memcpy_fn = pmem2_get_memcpy_fn(map);
+
+	char *readbuf = MALLOC(bufsize);
+	memcpy_fn(readbuf, addr, bufsize, 0);
+	ret = strncmp(writebuf, readbuf, bufsize);
+	ASSERTeq(ret, 0);
+
+	ret = pmem2_map_delete(&map);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+
+	ret = pmem2_config_delete(&cfg);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+
+	FREE(readbuf);
+	pmem2_source_delete(&src);
+	CLOSE(fd);
+
+	return 1;
+}
+
+/*
+ * test_pmem2_src_mcsafe_read_write_len_out_of_range -- test mcsafe read and
+ *                                                      write operations with
+ * length bigger than source size.
+ */
+static int
+test_pmem2_src_mcsafe_read_write_len_out_of_range(const struct test_case *tc,
+		int argc, char *argv[])
+{
+	if (argc < 1)
+		UT_FATAL(
+			"usage: test_pmem2_src_mcsafe_read_write_len_out_of_range <file>");
+
+	char *file = argv[0];
+	int fd;
+	struct pmem2_source *src;
+
+	fd = OPEN(file, O_RDWR);
+	UT_ASSERTne(fd, -1);
+
+	int ret = pmem2_source_from_fd(&src, fd);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+
+	size_t src_size;
+	ret = pmem2_source_size(src, &src_size);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+
+	size_t op_size = src_size + 1;
+
+	/* write to file */
+	char *writebuf = MALLOC(op_size);
+	memset(writebuf, '7', op_size);
+	ret = pmem2_source_pwrite_mcsafe(src, writebuf, op_size, 0);
+	UT_PMEM2_EXPECT_RETURN(ret, PMEM2_E_LENGTH_OUT_OF_RANGE);
+
+	/* read from file */
+	char *readbuf = MALLOC(op_size);
+	ret = pmem2_source_pread_mcsafe(src, readbuf, op_size, 0);
+	UT_PMEM2_EXPECT_RETURN(ret, PMEM2_E_LENGTH_OUT_OF_RANGE);
+
+	FREE(writebuf);
+	FREE(readbuf);
+	pmem2_source_delete(&src);
+	CLOSE(fd);
+
+	return 1;
+}
+
+/*
+ * test_pmem2_src_mcsafe_read_write_invalid_ftype -- test mcsafe read and write
+ *                                                   operations on source with
+ * invalid type.
+ */
+static int
+test_pmem2_src_mcsafe_read_write_invalid_ftype(const struct test_case *tc,
+		int argc, char *argv[])
+{
+	if (argc < 1)
+		UT_FATAL(
+			"usage: test_pmem2_src_mcsafe_read_write_invalid_ftype <file>");
+
+	char *file = argv[0];
+	int fd;
+	struct pmem2_source *src;
+
+	fd = OPEN(file, O_RDWR);
+	UT_ASSERTne(fd, -1);
+
+	/* write to file */
+	char *writebuf = "Write content";
+	size_t bufsize = strlen(writebuf);
+
+	int ret = pmem2_source_from_anon(&src, bufsize);
+	UT_PMEM2_EXPECT_RETURN(ret, 0);
+
+	ret = pmem2_source_pwrite_mcsafe(src, writebuf, bufsize, 0);
+	UT_PMEM2_EXPECT_RETURN(ret, PMEM2_E_SOURCE_TYPE_NOT_SUPPORTED);
+
+	/* read from file */
+	char *readbuf = MALLOC(bufsize);
+	ret = pmem2_source_pread_mcsafe(src, readbuf, bufsize, 0);
+	UT_PMEM2_EXPECT_RETURN(ret, PMEM2_E_SOURCE_TYPE_NOT_SUPPORTED);
+
+	FREE(readbuf);
+	pmem2_source_delete(&src);
+	CLOSE(fd);
+
+	return 1;
 }
 
 #ifdef WIN32
@@ -422,6 +635,10 @@ static struct test_case test_cases[] = {
 	TEST_CASE(test_set_wronly_fd),
 	TEST_CASE(test_alloc_src_enomem),
 	TEST_CASE(test_delete_null_config),
+	TEST_CASE(test_pmem2_src_mcsafe_read),
+	TEST_CASE(test_pmem2_src_mcsafe_write),
+	TEST_CASE(test_pmem2_src_mcsafe_read_write_invalid_ftype),
+	TEST_CASE(test_pmem2_src_mcsafe_read_write_len_out_of_range),
 #ifdef _WIN32
 	TEST_CASE(test_set_handle),
 	TEST_CASE(test_set_null_handle),
@@ -448,3 +665,8 @@ main(int argc, char **argv)
 
 	DONE(NULL);
 }
+
+#ifdef _MSC_VER
+MSVC_CONSTR(libpmem2_init)
+MSVC_DESTR(libpmem2_fini)
+#endif
