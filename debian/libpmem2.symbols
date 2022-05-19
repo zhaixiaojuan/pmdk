@@ -12,6 +12,7 @@ libpmem2.so.1 libpmem2 #MINVER#
  pmem2_config_set_protection@LIBPMEM2_1.0 1.10
  pmem2_config_set_required_store_granularity@LIBPMEM2_1.0 1.10
  pmem2_config_set_sharing@LIBPMEM2_1.0 1.10
+ pmem2_config_set_vdm@LIBPMEM2_1.0 1.12
  pmem2_config_set_vm_reservation@LIBPMEM2_1.0 1.10
  pmem2_deep_flush@LIBPMEM2_1.0 1.10
  pmem2_errormsg@LIBPMEM2_1.0 1.10
@@ -27,6 +28,9 @@ libpmem2.so.1 libpmem2 #MINVER#
  pmem2_map_get_size@LIBPMEM2_1.0 1.10
  pmem2_map_get_store_granularity@LIBPMEM2_1.0 1.10
  pmem2_map_new@LIBPMEM2_1.0 1.10
+ pmem2_memcpy_async@LIBPMEM2_1.0 1.12
+ pmem2_memmove_async@LIBPMEM2_1.0 1.12
+ pmem2_memset_async@LIBPMEM2_1.0 1.12
  pmem2_perror@LIBPMEM2_1.0 1.10
  pmem2_source_alignment@LIBPMEM2_1.0 1.10
  pmem2_source_delete@LIBPMEM2_1.0 1.10
@@ -36,6 +40,8 @@ libpmem2.so.1 libpmem2 #MINVER#
  pmem2_source_from_fd@LIBPMEM2_1.0 1.10
  pmem2_source_get_fd@LIBPMEM2_1.0 1.10
  pmem2_source_numa_node@LIBPMEM2_1.0 1.11
+ pmem2_source_pread_mcsafe@LIBPMEM2_1.0 1.12
+ pmem2_source_pwrite_mcsafe@LIBPMEM2_1.0 1.12
  pmem2_source_size@LIBPMEM2_1.0 1.10
  pmem2_vm_reservation_delete@LIBPMEM2_1.0 1.10
  pmem2_vm_reservation_extend@LIBPMEM2_1.0 1.11
