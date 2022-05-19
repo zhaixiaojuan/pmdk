@@ -1,2 +1,3 @@
 src/test/testconfig.sh
 .skip-doc
+src/deps/miniasync/build/
