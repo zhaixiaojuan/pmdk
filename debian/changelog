@@ -1,3 +1,12 @@
+pmdk (1.12.0~rc1-1) experimental; urgency=medium
+
+  * New upstream RC.
+  * Add Weronika's gpg key.
+  * B-Depend on cmake, ndctl.
+  * New symbols.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Thu, 19 May 2022 14:27:15 +0200
+
 pmdk (1.11.1-4) unstable; urgency=medium
 
   * B-Depend on valgrind-if-available.
