@@ -45,5 +45,9 @@ ifeq (,$(filter nocheck,$(DEB_BUILD_OPTIONS)))
 	rm -f src/test/obj_pool/TEST34
 	# binutils regression #964457
 	rm -rf src/test/scope/TESTS.py
+ifeq ($(DEB_BUILD_ARCH),ppc64el)
+	# https://github.com/pmem/pmdk/issues/5458
+	rm -f src/test/obj_ctl_arenas/TEST3 src/test/pmem2_future/TESTS.py
+endif
 	+$(MAKE) check pycheck $(BUILD_ARGS)
 endif
