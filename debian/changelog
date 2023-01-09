@@ -1,3 +1,10 @@
+pmdk (1.12.1-2) unstable; urgency=medium
+
+  * Fix the watch file wrt GitHub changes.
+  * Drop librpmemd -- removed upstream for 1.13
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 09 Jan 2023 10:32:36 +0100
+
 pmdk (1.12.1-1) unstable; urgency=medium
 
   * New upstream bugfix release.
