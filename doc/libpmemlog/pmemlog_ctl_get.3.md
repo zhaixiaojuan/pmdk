@@ -1,14 +1,15 @@
 ---
-layout: manual
-Content-Style: 'text/css'
-title: _MP(PMEMLOG_CTL_GET, 3)
-collection: libpmemlog
-header: PMDK
-date: pmemlog API version 1.1
-...
+draft: false
+slider_enable: true
+description: ""
+disclaimer: "The contents of this web site and the associated <a href=\"https://github.com/pmem\">GitHub repositories</a> are BSD-licensed open source."
+aliases: ["pmemlog_ctl_get.3.html"]
+title: "libpmemlog | PMDK"
+header: "pmemlog API version 1.1"
+---
 
 [comment]: <> (SPDX-License-Identifier: BSD-3-Clause)
-[comment]: <> (Copyright 2018-2019, Intel Corporation)
+[comment]: <> (Copyright 2018-2023, Intel Corporation)
 
 [comment]: <> (pmemlog_ctl_get.3 -- man page for libpmemlog CTL)
 
@@ -21,10 +22,10 @@ date: pmemlog API version 1.1
 
 # NAME #
 
-_UW(pmemlog_ctl_get),
-_UW(pmemlog_ctl_set),
-_UW(pmemlog_ctl_exec)
-- Query and modify libpmemlog internal behavior (EXPERIMENTAL)
+_UW(pmemlog_ctl_get)(DEPRECATED),
+_UW(pmemlog_ctl_set)(DEPRECATED),
+_UW(pmemlog_ctl_exec)(DEPRECATED)
+- Query and modify libpmemlog internal behavior (DEPRECATED)
 
 # SYNOPSIS #
 

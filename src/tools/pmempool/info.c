@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-/* Copyright 2014-2020, Intel Corporation */
+/* Copyright 2014-2023, Intel Corporation */
 
 /*
  * info.c -- pmempool info command main source file
@@ -57,10 +57,10 @@ static const struct pmempool_info_args pmempool_info_args_default = {
 	.vdata		= VERBOSE_SILENT,
 	.vhdrdump	= VERBOSE_SILENT,
 	.vstats		= VERBOSE_SILENT,
-	.log		= {
+	.log		= { /* deprecated */
 		.walk		= 0,
 	},
-	.blk		= {
+	.blk		= { /* deprecated */
 		.vmap		= VERBOSE_SILENT,
 		.vflog		= VERBOSE_SILENT,
 		.vbackup	= VERBOSE_SILENT,
@@ -224,6 +224,7 @@ static const struct option_requirement option_requirements[] = {
  */
 static const char * const help_str =
 "Show information about pmem pool from specified file.\n"
+"NOTE: pmem blk and log pools are deprecated\n"
 "\n"
 "Common options:\n"
 "  -h, --help                      Print this help and exit.\n"
@@ -237,10 +238,10 @@ static const char * const help_str =
 "  -r, --range <range>             Range of blocks/chunks/objects.\n"
 "  -k, --bad-blocks=<yes|no>       Print bad blocks.\n"
 "\n"
-"Options for PMEMLOG:\n"
+"Options for PMEMLOG: (DEPRECATED)\n"
 "  -w, --walk <size>               Chunk size.\n"
 "\n"
-"Options for PMEMBLK:\n"
+"Options for PMEMBLK: (DEPRECATED)\n"
 "  -m, --map                       Print BTT Map entries.\n"
 "  -g, --flog                      Print BTT FLOG entries.\n"
 "  -B, --backup                    Print BTT Info header backup.\n"
@@ -290,6 +291,7 @@ print_usage(const char *appname)
 static void
 print_version(const char *appname)
 {
+	printf("NOTE: pmem blk and log pools are deprecated\n");
 	printf("%s %s\n", appname, SRCVERSION);
 }
 
@@ -637,17 +639,8 @@ static int
 pmempool_info_replica(struct pmem_info *pip, unsigned repn, int v)
 {
 	struct pool_replica *rep = pip->pfile->poolset->replica[repn];
-	outv(v, "Replica %u%s - %s", repn,
-		repn == 0 ? " (master)" : "",
-		rep->remote == NULL ? "local" : "remote");
-
-	if (rep->remote) {
-		outv(v, ":\n");
-		outv_field(v, "node", "%s", rep->remote->node_addr);
-		outv_field(v, "pool set", "%s", rep->remote->pool_desc);
-
-		return 0;
-	}
+	outv(v, "Replica %u%s - local", repn,
+		repn == 0 ? " (master)" : "");
 
 	outv(v, ", %u part(s):\n", rep->nparts);
 	for (unsigned p = 0; p < rep->nparts; ++p) {
@@ -863,8 +856,7 @@ pmempool_info_file(struct pmem_info *pip, const char *file_name)
 		if (pip->type != PMEM_POOL_TYPE_BTT) {
 			struct pool_set *ps = pip->pfile->poolset;
 			for (unsigned r = 0; r < ps->nreplicas; ++r) {
-				if (ps->replica[r]->remote == NULL &&
-					mprotect(ps->replica[r]->part[0].addr,
+				if (mprotect(ps->replica[r]->part[0].addr,
 					ps->replica[r]->repsize,
 					PROT_READ) < 0) {
 					outv_err(

@@ -1,14 +1,15 @@
 ---
-layout: manual
-Content-Style: 'text/css'
-title: _MP(PMEMBLK_SET_ZERO, 3)
-collection: libpmemblk
-header: PMDK
-date: pmemblk API version 1.1
-...
+draft: false
+slider_enable: true
+description: ""
+disclaimer: "The contents of this web site and the associated <a href=\"https://github.com/pmem\">GitHub repositories</a> are BSD-licensed open source."
+aliases: ["pmemblk_set_zero.3.html"]
+title: "libpmemblk | PMDK"
+header: "pmemblk API version 1.1"
+---
 
 [comment]: <> (SPDX-License-Identifier: BSD-3-Clause)
-[comment]: <> (Copyright 2017-2018, Intel Corporation)
+[comment]: <> (Copyright 2017-2023, Intel Corporation)
 
 [comment]: <> (pmemblk_set_zero.3 -- man page for block management functions)
 
@@ -20,7 +21,7 @@ date: pmemblk API version 1.1
 
 # NAME #
 
-**pmemblk_set_zero**(), **pmemblk_set_error**() - block management functions
+**pmemblk_set_zero**()(DEPRECATED), **pmemblk_set_error**()(DEPRECATED) - block management functions
 
 # SYNOPSIS #
 

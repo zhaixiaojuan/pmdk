@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2014-2022, Intel Corporation
+# Copyright 2014-2023, Intel Corporation
 #
 # src/Makefile.inc -- common Makefile rules for PMDK
 #
@@ -9,9 +9,6 @@ TOP := $(dir $(lastword $(MAKEFILE_LIST)))..
 include $(TOP)/src/common.inc
 
 INCLUDE = $(TOP)/src/include
-
-RPMEM_COMMON = $(TOP)/src/rpmem_common
-vpath %.c $(RPMEM_COMMON)
 
 COMMON = $(TOP)/src/common
 vpath %.c $(COMMON)
@@ -66,11 +63,6 @@ endif
 ifeq ($(WSTRINGOP_TRUNCATION_AVAILABLE), y)
 DEFAULT_CFLAGS += -DSTRINGOP_TRUNCATION_SUPPORTED
 endif
-
-# Librpmem is deprecated.
-# This flag allows to build tests, examples and benchmarks
-# using rpmem despite the deprecated state.
-DEFAULT_CFLAGS += -Wno-deprecated-declarations
 
 ifeq ($(DEBUG),1)
 # Undefine _FORTIFY_SOURCE in case it's set in system-default or
@@ -155,7 +147,7 @@ ifneq ($(TESTBUILD), 1)
 $(error "$(TESTCMD)" failed)
 endif
 
-ifeq ($(filter $(ARCH), x86_64 aarch64 ppc64 riscv64),)
+ifeq ($(filter $(ARCH), x86_64 aarch64 ppc64 riscv64 loongarch64),)
 $(error unsupported architecture: $(ARCH))
 endif
 
@@ -185,8 +177,7 @@ _OBJS = $(SOURCE:.c=.o)
 _OBJS_COMMON = $(patsubst $(COMMON)/%, %, $(_OBJS))
 _OBJS_CORE = $(patsubst $(CORE)/%, %, $(_OBJS_COMMON))
 _OBJS_PMEM2 = $(patsubst $(PMEM2)/%, %, $(_OBJS_CORE))
-_OBJS_RPMEM_COMMON = $(patsubst $(RPMEM_COMMON)/%, %, $(_OBJS_PMEM2))
-OBJS += $(addprefix $(objdir)/, $(_OBJS_RPMEM_COMMON))
+OBJS += $(addprefix $(objdir)/, $(_OBJS_PMEM2))
 endif
 
 ifneq ($(HEADERS),)

@@ -1,14 +1,15 @@
 ---
-layout: manual
-Content-Style: 'text/css'
-title: _MP(PMEMLOG_TELL, 3)
-collection: libpmemlog
-header: PMDK
-date: pmemlog API version 1.1
-...
+draft: false
+slider_enable: true
+description: ""
+disclaimer: "The contents of this web site and the associated <a href=\"https://github.com/pmem\">GitHub repositories</a> are BSD-licensed open source."
+aliases: ["pmemlog_tell.3.html"]
+title: "libpmemlog | PMDK"
+header: "pmemlog API version 1.1"
+---
 
 [comment]: <> (SPDX-License-Identifier: BSD-3-Clause)
-[comment]: <> (Copyright 2017-2018, Intel Corporation)
+[comment]: <> (Copyright 2017-2023, Intel Corporation)
 
 [comment]: <> (pmemlog_tell.3 -- man page for pmemlog_tell, pmemlog_rewind and pmemlog_walk functions)
 
@@ -20,8 +21,8 @@ date: pmemlog API version 1.1
 
 # NAME #
 
-**pmemlog_tell**(), **pmemlog_rewind**(),
-**pmemlog_walk**() - checks current write point for the log or walks through the log
+**pmemlog_tell**()(DEPRECATED), **pmemlog_rewind**()(DEPRECATED),
+**pmemlog_walk**()(DEPRECATED) - checks current write point for the log or walks through the log
 
 # SYNOPSIS #
 

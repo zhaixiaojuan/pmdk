@@ -1,14 +1,15 @@
 ---
-layout: manual
-Content-Style: 'text/css'
-title: _MP(LIBPMEMLOG, 7)
-collection: libpmemlog
-header: PMDK
-date: pmemlog API version 1.1
-...
+draft: false
+slider_enable: true
+description: ""
+disclaimer: "The contents of this web site and the associated <a href=\"https://github.com/pmem\">GitHub repositories</a> are BSD-licensed open source."
+aliases: ["libpmemlog.7.html"]
+title: "libpmemlog | PMDK"
+header: "pmemlog API version 1.1"
+---
 
 [comment]: <> (SPDX-License-Identifier: BSD-3-Clause)
-[comment]: <> (Copyright 2016-2018, Intel Corporation)
+[comment]: <> (Copyright 2016-2023, Intel Corporation)
 
 [comment]: <> (libpmemlog.7 -- man page for libpmemlog)
 
@@ -26,7 +27,11 @@ date: pmemlog API version 1.1
 
 # NAME #
 
-**libpmemlog** - persistent memory resident log file
+**libpmemlog** - persistent memory resident log file (DEPRECATED)
+
+>NOTE:
+Support for Windows and FreeBSD deprecated since PMDK 1.13.0 release
+and will be removed in the PMDK 1.14.0 release.
 
 # SYNOPSIS #
 
@@ -301,6 +306,12 @@ for more examples using the **libpmemlog** API.
 
 Unlike **libpmemobj**(7), data replication is not supported in **libpmemlog**.
 Thus, specifying replica sections in pool set files is not allowed.
+
+# NOTE #
+
+> NOTICE:
+The **libpmemlog** library is deprecated since PMDK 1.13.0 release
+and will be removed in the PMDK 1.14.0 release.
 
 # ACKNOWLEDGEMENTS #
 

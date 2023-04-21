@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-/* Copyright 2018-2021, Intel Corporation */
+/* Copyright 2018-2023, Intel Corporation */
 
 /*
  * feature.c -- implementation of pmempool_feature_(enable|disable|query)()
@@ -79,7 +79,6 @@ poolset_close(struct pool_set *set)
 {
 	for (unsigned r = 0; r < set->nreplicas; ++r) {
 		struct pool_replica *rep = REP(set, r);
-		ASSERT(!rep->remote);
 		for (unsigned p = 0; p < rep->nparts; ++p) {
 			util_unmap_hdr(PART(rep, p));
 		}
@@ -176,21 +175,17 @@ poolset_open(const char *path, int rdonly)
 		ERR("cannot open pool set -- '%s'", path);
 		goto err_poolset;
 	}
-	if (set->remote) {
-		ERR("poolsets with remote replicas are not supported");
-		errno = EINVAL;
-		goto err_open;
-	}
 
 	/* open a memory pool */
 	unsigned flags = get_pool_open_flags(set, rdonly);
-	if (util_pool_open_nocheck(set, flags))
+	if (util_pool_open_nocheck(set, flags)) {
+		set = NULL;
 		goto err_open;
+	}
 
 	/* map all headers and check features */
 	for (unsigned r = 0; r < set->nreplicas; ++r) {
 		struct pool_replica *rep = REP(set, r);
-		ASSERT(!rep->remote);
 
 		for (unsigned p = 0; p < rep->nparts; ++p) {
 			struct pool_set_part *part = PART(rep, p);
@@ -214,14 +209,14 @@ err_map_hdr:
 	/* unmap all headers */
 	for (unsigned r = 0; r < set->nreplicas; ++r) {
 		struct pool_replica *rep = REP(set, r);
-		ASSERT(!rep->remote);
 		for (unsigned p = 0; p < rep->nparts; ++p) {
 			util_unmap_hdr(PART(rep, p));
 		}
 	}
 err_open:
 	/* close the memory pool and release pool set structure */
-	util_poolset_close(set, DO_NOT_DELETE_PARTS);
+	if (set)
+		util_poolset_close(set, DO_NOT_DELETE_PARTS);
 err_poolset:
 	return NULL;
 }

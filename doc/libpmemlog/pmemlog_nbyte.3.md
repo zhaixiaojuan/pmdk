@@ -1,14 +1,15 @@
 ---
-layout: manual
-Content-Style: 'text/css'
-title: _MP(PMEMLOG_NBYTE, 3)
-collection: libpmemlog
-header: PMDK
-date: pmemlog API version 1.1
-...
+draft: false
+slider_enable: true
+description: ""
+disclaimer: "The contents of this web site and the associated <a href=\"https://github.com/pmem\">GitHub repositories</a> are BSD-licensed open source."
+aliases: ["pmemlog_nbyte.3.html"]
+title: "libpmemlog | PMDK"
+header: "pmemlog API version 1.1"
+---
 
 [comment]: <> (SPDX-License-Identifier: BSD-3-Clause)
-[comment]: <> (Copyright 2017-2018, Intel Corporation)
+[comment]: <> (Copyright 2017-2023, Intel Corporation)
 
 [comment]: <> (pmemlog_nbyte.3 -- man page for pmemlog_nbyte function)
 
@@ -20,7 +21,7 @@ date: pmemlog API version 1.1
 
 # NAME #
 
-**pmemlog_nbyte**() - checks the amount of usable space in the log pool.
+**pmemlog_nbyte**()(DEPRECATED) - checks the amount of usable space in the log pool.
 
 # SYNOPSIS #
 

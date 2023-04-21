@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2016-2022, Intel Corporation
+# Copyright 2016-2023, Intel Corporation
 
 #
 # build-CI.sh - runs a Docker container from a Docker image with environment
@@ -13,20 +13,6 @@ set -e
 
 source $(dirname $0)/set-ci-vars.sh
 source $(dirname $0)/set-vars.sh
-
-if [[ "$CI_EVENT_TYPE" != "cron" && "$CI_BRANCH" != "coverity_scan" \
-	&& "$COVERITY" -eq 1 ]]; then
-	echo "INFO: Skip Coverity scan job if build is triggered neither by " \
-		"'cron' nor by a push to 'coverity_scan' branch"
-	exit 0
-fi
-
-if [[ ( "$CI_EVENT_TYPE" == "cron" || "$CI_BRANCH" == "coverity_scan" )\
-	&& "$COVERITY" -ne 1 ]]; then
-	echo "INFO: Skip regular jobs if build is triggered either by 'cron'" \
-		" or by a push to 'coverity_scan' branch"
-	exit 0
-fi
 
 if [[ -z "$OS" || -z "$OS_VER" || -z "$IMG_VER" ]]; then
 	echo "ERROR: The variables OS, OS_VER and IMG_VER have to be set properly " \
@@ -49,27 +35,20 @@ containerName=pmdk-${OS}-${OS_VER}
 
 if [[ $MAKE_PKG -eq 0 ]] ; then command="./run-build.sh"; fi
 if [[ $MAKE_PKG -eq 1 ]] ; then command="./run-build-package.sh"; fi
-if [[ $COVERAGE -eq 1 ]] ; then command="./run-coverage.sh"; ci_env=`bash <(curl -s https://codecov.io/env)`; fi
+if [[ $COVERAGE -eq 1 ]] ; then command="./run-coverage.sh"; fi
 if [[ $BANDIT -eq 1 ]] ; then command="./run-bandit.sh"; fi
-
-if [[ ( "$CI_EVENT_TYPE" == "cron" || "$CI_BRANCH" == "coverity_scan" )\
-	&& "$COVERITY" -eq 1 ]]; then
-	command="./run-coverity.sh"
-fi
+if [[ "$COVERITY" -eq 1 ]]; then command="./run-coverity.sh"; fi
+if [[ $CHECK_PKGS -eq 1 ]] ; then command="./build-and-test-pmdk-packages.sh"; fi
 
 if [ -n "$DNS_SERVER" ]; then DNS_SETTING=" --dns=$DNS_SERVER "; fi
 if [[ -f $CI_FILE_SKIP_BUILD_PKG_CHECK ]]; then BUILD_PACKAGE_CHECK=n; else BUILD_PACKAGE_CHECK=y; fi
 if [ -z "$NDCTL_ENABLE" ]; then ndctl_enable=; else ndctl_enable="--env NDCTL_ENABLE=$NDCTL_ENABLE"; fi
-if [ -z "$PMEMSET_INSTALL" ]; then pmemset_install=; else pmemset_install="--env PMEMSET_INSTALL=$PMEMSET_INSTALL"; fi
 if [[ $UBSAN -eq 1 ]]; then for x in C CPP LD; do declare EXTRA_${x}FLAGS=-fsanitize=undefined; done; fi
-
-# XXX: Disable auto doc update to unblock builds until the script is updated
-# to push to the new website
-AUTO_DOC_UPDATE=0
 
 # Only run auto doc update on push events on "upstream" repo
 if [[ "${CI_EVENT_TYPE}" != "push" || "${CI_REPO_SLUG}" != "${GITHUB_REPO}" ]]; then
 	AUTO_DOC_UPDATE=0
+	echo "Skipping auto doc update"
 fi
 
 # Check if we are running on a CI (Travis or GitHub Actions)
@@ -106,7 +85,6 @@ SCRIPTSDIR=$WORKDIR/utils/docker
 docker run --rm --name=$containerName -i $TTY \
 	--cap-add=SYS_PTRACE --security-opt seccomp=unconfined \
 	$DNS_SETTING \
-	$ci_env \
 	--env http_proxy=$http_proxy \
 	--env https_proxy=$https_proxy \
 	--env AUTO_DOC_UPDATE=$AUTO_DOC_UPDATE \
@@ -116,7 +94,6 @@ docker run --rm --name=$containerName -i $TTY \
 	--env EXTRA_CFLAGS=$EXTRA_CFLAGS \
 	--env EXTRA_CXXFLAGS=$EXTRA_CXXFLAGS \
 	--env EXTRA_LDFLAGS=$EXTRA_LDFLAGS \
-	--env REMOTE_TESTS=$REMOTE_TESTS \
 	--env TEST_BUILD=$TEST_BUILD \
 	--env WORKDIR=$WORKDIR \
 	--env EXPERIMENTAL=$EXPERIMENTAL \
@@ -139,12 +116,12 @@ docker run --rm --name=$containerName -i $TTY \
 	--env GITHUB_REF=$GITHUB_REF \
 	--env GITHUB_RUN_ID=$GITHUB_RUN_ID \
 	--env GITHUB_SHA=$GITHUB_SHA \
+	--env GITHUB_SERVER_URL=$GITHUB_SERVER_URL \
 	--env CI_RUN=$CI_RUN \
 	--env SRC_CHECKERS=$SRC_CHECKERS \
 	--env BLACKLIST_FILE=$BLACKLIST_FILE \
 	--env BANDIT=$BANDIT \
 	$ndctl_enable \
-	$pmemset_install \
 	--tmpfs /tmp:rw,relatime,suid,dev,exec,size=6G \
 	-v $HOST_WORKDIR:$WORKDIR \
 	-v /etc/localtime:/etc/localtime \

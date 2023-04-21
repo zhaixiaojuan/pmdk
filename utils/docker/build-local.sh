@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2017-2021, Intel Corporation
+# Copyright 2017-2023, Intel Corporation
 
 #
 # build-local.sh - runs a Docker container from a Docker image with environment
@@ -26,7 +26,6 @@ set -e
 export KEEP_CONTAINER=${KEEP_CONTAINER:-0}
 export KEEP_TEST_CONFIG=${KEEP_TEST_CONFIG:-0}
 export TEST_BUILD=${TEST_BUILD:-all}
-export REMOTE_TESTS=${REMOTE_TESTS:-1}
 export MAKE_PKG=${MAKE_PKG:-0}
 export EXTRA_CFLAGS=${EXTRA_CFLAGS}
 export EXTRA_CXXFLAGS=${EXTRA_CXXFLAGS:-}
@@ -67,7 +66,6 @@ fi
 
 if [ -n "$DNS_SERVER" ]; then DNS_SETTING=" --dns=$DNS_SERVER "; fi
 if [ -z "$NDCTL_ENABLE" ]; then ndctl_enable=; else ndctl_enable="--env NDCTL_ENABLE=$NDCTL_ENABLE"; fi
-if [ -z "$PMEMSET_INSTALL" ]; then pmemset_install=; else pmemset_install="--env PMEMSET_INSTALL=$PMEMSET_INSTALL"; fi
 
 WORKDIR=/pmdk
 SCRIPTSDIR=$WORKDIR/utils/docker
@@ -100,7 +98,6 @@ docker run --name=$containerName -ti \
 	--env EXTRA_CFLAGS=$EXTRA_CFLAGS \
 	--env EXTRA_CXXFLAGS=$EXTRA_CXXFLAGS \
 	--env EXTRA_LDFLAGS=$EXTRA_LDFLAGS \
-	--env REMOTE_TESTS=$REMOTE_TESTS \
 	--env CONFIGURE_TESTS=$CONFIGURE_TESTS \
 	--env TEST_BUILD=$TEST_BUILD \
 	--env WORKDIR=$WORKDIR \
@@ -110,7 +107,6 @@ docker run --name=$containerName -ti \
 	--env CI_RUN=$CI_RUN \
 	--env BLACKLIST_FILE=$BLACKLIST_FILE \
 	$ndctl_enable \
-	$pmemset_install \
 	--tmpfs /tmp:rw,relatime,suid,dev,exec,size=6G \
 	-v $HOST_WORKDIR:$WORKDIR \
 	-v /etc/localtime:/etc/localtime \

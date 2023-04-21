@@ -7,7 +7,7 @@
 [![Coverage Status](https://codecov.io/github/pmem/pmdk/coverage.svg?branch=master)](https://codecov.io/gh/pmem/pmdk/branch/master)
 [![PMDK release version](https://img.shields.io/github/release/pmem/pmdk.svg?sort=semver)](https://github.com/pmem/pmdk/releases/latest)
 [![Packaging status](https://repology.org/badge/tiny-repos/pmdk.svg)](https://repology.org/project/pmdk/versions)
-[![Language grade: C/C++](https://img.shields.io/lgtm/grade/cpp/g/pmem/pmdk.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/pmem/pmdk/context:cpp)
+[![CodeQL status](https://github.com/pmem/pmemstream/actions/workflows/codeql.yml/badge.svg?branch=master)](https://github.com/pmem/pmemstream/actions/workflows/codeql.yml)
 [![Security: bandit](https://img.shields.io/badge/security-bandit-yellow.svg?branch=master)](https://github.com/pmem/pmdk/actions/workflows/bandit.yml)
 
 The **Persistent Memory Development Kit (PMDK)** is a collection of libraries and tools for System Administrators and Application Developers to simplify managing and accessing persistent memory devices. For more information, see https://pmem.io.
@@ -33,7 +33,6 @@ Bugs and feature requests for this repo are tracked in our [GitHub Issues Databa
 	* [Testing Libraries](#testing-libraries-on-windows)
 8. [Debugging](#debugging)
 9. [Experimental Packages](#experimental-packages)
-	* [librpmem and rpmemd packages](#the-librpmem-and-rpmemd-packages)
 	* [Experimental support for 64-bit ARM](#experimental-support-for-64-bit-arm)
 10. [Contact Us](#contact-us)
 
@@ -46,20 +45,30 @@ Libraries available in this repository:
 
 - [libpmem2](https://pmem.io/pmdk/libpmem2/):  provides low level persistent memory support, is a new version of libpmem.
 
+> NOTICE:
+Support for async functions is deprecated since PMDK 1.13.0 release
+and will be removed in the PMDK 1.14.0 release along with the miniasync dependency.
+
 - [libpmemobj](https://pmem.io/pmdk/libpmemobj/):  provides a transactional object store, providing memory allocation, transactions, and general facilities for persistent memory programming.
 
-- [libpmemblk](https://pmem.io/pmdk/libpmemblk/):  supports arrays of pmem-resident blocks, all the same size, that are atomically updated.
+- [libpmemblk](https://pmem.io/pmdk/libpmemblk/):  supports arrays of pmem-resident blocks, all the same size, that are atomically updated. (DEPRECATED)
 
-- [libpmemlog](https://pmem.io/pmdk/libpmemlog/):  provides a pmem-resident log file.
+> NOTICE:
+The **libpmemblk** library is deprecated since PMDK 1.13.0 release
+and will be removed in the PMDK 1.14.0 release.
+
+- [libpmemlog](https://pmem.io/pmdk/libpmemlog/):  provides a pmem-resident log file. (DEPRECATED)
+
+> NOTICE:
+The **libpmemlog** library is deprecated since PMDK 1.13.0 release
+and will be removed in the PMDK 1.14.0 release.
 
 - [libpmempool](https://pmem.io/pmdk/libpmempool/):  provides support for off-line pool management and diagnostics.
 
-- [libpmemset](https://pmem.io/pmdk/libpmemset/):  (**still in progress**) aims to provide the core functionality any persistent application should have. (EXPERIMENTAL)
+**Libpmemset** has been removed from PMDK repository.
 
-- [librpmem](https://pmem.io/pmdk/librpmem/)<sup>1</sup>:  provides low-level support for remote access to persistent memory utilizing RDMA-capable RNICs. (DEPRECATED)
-
-**Librpmem** library is deprecated. If you are interested in a remote persistent
-memory support please look at new library [rpma](https://github.com/pmem/rpma).
+**Librpmem** library has been removed from PMDK repository. If you are interested in a remote persistent
+memory support please look at new [librpma](https://github.com/pmem/rpma).
 
 If you're looking for *libvmem* and *libvmmalloc*, they have been moved to a
 [separate repository](https://github.com/pmem/vmem).
@@ -73,11 +82,15 @@ Available Utilities:
 Currently these libraries only work on 64-bit Linux, Windows<sup>2</sup>, and 64-bit FreeBSD 11+<sup>3</sup>.
 For information on how these libraries are licensed, see our [LICENSE](LICENSE) file.
 
+> NOTICE:
+Support for Windows and FreeBSD are deprecated since PMDK 1.13.0 release
+and will be removed in the PMDK 1.14.0 release.
+
 ><sup>1</sup> Not supported on Windows.
 >
 ><sup>2</sup> PMDK for Windows is feature complete, but not yet considered production quality.
 >
-><sup>3</sup> DAX and **libfabric** are not yet supported in FreeBSD, so at this time PMDK is available as a technical preview release for development purposes.
+><sup>3</sup> DAX is not yet supported in FreeBSD, so at this time PMDK is available as a technical preview release for development purposes.
 
 ## Getting Started
 
@@ -97,6 +110,10 @@ Additionally, we recommend reading [Introduction to Programming with Persistent 
 - **Stable Releases** use a _major.minor_ tag like `0.2`
 
 ## Pre-Built Packages for Windows
+
+> NOTICE:
+Support for Windows is deprecated since PMDK 1.13.0 release
+and will be removed in the PMDK 1.14.0 release.
 
 The recommended and easiest way to install PMDK on Windows is to use Microsoft vcpkg. Vcpkg is an open source tool and ecosystem created for library management.
 
@@ -141,8 +158,6 @@ You will need to install the following required packages on the build system:
 The following packages are required only by selected PMDK components
 or features:
 
-* **libfabric** (v1.4.2 or later) -- required by **librpmem**
-
 ><sup>1</sup> PMDK depends on libndctl to support RAS features. It is possible
 to disable this support by passing NDCTL_ENABLE=n to "make", but we strongly
 discourage users from doing that. Disabling NDCTL strips PMDK from ability to
@@ -152,6 +167,10 @@ see https://github.com/pmem/pmdk/issues/4207.
 
 ### Windows
 
+> NOTICE:
+Support for Windows is deprecated since PMDK 1.13.0 release
+and will be removed in the PMDK 1.14.0 release.
+
 * **MS Visual Studio 2022**
 * [Windows SDK 10.0.22000.0](https://developer.microsoft.com/en-us/windows/downloads/windows-sdk/)
 * **Windows, version >= 1803**
@@ -159,6 +178,10 @@ see https://github.com/pmem/pmdk/issues/4207.
 * **PowerShell 5**
 
 ### FreeBSD
+
+> NOTICE:
+Support for FreeBSD is deprecated since PMDK 1.13.0 release
+and will be removed in the PMDK 1.14.0 release.
 
 * **autoconf**
 * **bash**
@@ -173,6 +196,10 @@ see https://github.com/pmem/pmdk/issues/4207.
 ><sup>4</sup> The pkg version of ncurses is required for proper operation; the base version included in FreeBSD is not sufficient.
 
 ## Building PMDK on Linux or FreeBSD
+
+> NOTICE:
+Support for FreeBSD is deprecated since PMDK 1.13.0 release
+and will be removed in the PMDK 1.14.0 release.
 
 To build from source, clone this tree:
 ```
@@ -275,6 +302,13 @@ This requires **devscripts** to be installed.
 
 ### Testing Libraries on Linux and FreeBSD
 
+> NOTICE:
+Support for FreeBSD is deprecated since PMDK 1.13.0 release
+and will be removed in the PMDK 1.14.0 release.
+
+You will need to install the following package to run unit tests:
+* **ndctl**
+
 Before running the tests, you may need to prepare a test configuration file (src/test/testconfig.sh). Please see the available configuration settings in the example file [src/test/testconfig.sh.example](src/test/testconfig.sh.example).
 
 To build and run the **unit tests**:
@@ -315,6 +349,10 @@ and UndefinedBehaviorSanitizer, run:
 
 ## Building PMDK on Windows
 
+> NOTICE:
+Support for Windows is deprecated since PMDK 1.13.0 release
+and will be removed in the PMDK 1.14.0 release.
+
 Clone the PMDK tree and open the solution:
 ```
 	> git clone https://github.com/pmem/pmdk
@@ -326,6 +364,10 @@ Select the desired configuration (Debug or Release) and build the solution
 (i.e. by pressing Ctrl-Shift-B).
 
 ### Testing Libraries on Windows
+
+> NOTICE:
+Support for Windows is deprecated since PMDK 1.13.0 release
+and will be removed in the PMDK 1.14.0 release.
 
 Before running the tests, you may need to prepare a test configuration file (src/test/testconfig.ps1). Please see the available configuration settings in the example file [src/test/testconfig.ps1.example](src/test/testconfig.ps1.example).
 
@@ -395,8 +437,8 @@ and pass all tests.
 The on-media pool layout is tightly attached to the page size
 of 64KiB used by default on ppc64le, so it is not interchangeable with
 different page sizes, includes those on other architectures. For more
-information on this port, contact Tulio Magno Quites Machado Filho
-(tuliom@linux.ibm.com) or Lucas Magalhães (lucmaga@gmail.com).
+information on this port, contact Rajalakshmi Srinivasaraghavan
+(rajis@linux.ibm.com) or Lucas Magalhães (lucmaga@gmail.com).
 
 ## Contact Us
 

@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2014-2022, Intel Corporation
+# Copyright 2014-2023, Intel Corporation
 #
 # src/tools/Makefile.inc -- Makefile include for all tools
 #
@@ -191,18 +191,18 @@ LIBS += $(LIBDL)
 endif
 
 ifeq ($(TOOLS_COMMON), y)
-vpath %.c $(TOP)/src/tools/pmempool
-
-OBJS += common.o output.o
-
 CFLAGS += -I$(TOP)/src/core
 CFLAGS += -I$(TOP)/src/common
 CFLAGS += -I$(TOP)/src/libpmemlog
 CFLAGS += -I$(TOP)/src/libpmemblk
 CFLAGS += -I$(TOP)/src/libpmemobj
-CFLAGS += -I$(TOP)/src/tools/pmempool
 CFLAGS += $(UNIX98_CFLAGS)
+endif
 
+ifeq ($(TOOLS_PMEMPOOL_COMMON), y)
+vpath %.c $(TOP)/src/tools/pmempool
+CFLAGS += -I$(TOP)/src/tools/pmempool
+OBJS += common.o output.o
 endif
 
 ifneq ($(LIBPMEMLOG_PRIV),)
@@ -237,10 +237,8 @@ else
 all:
 endif
 
-SYNC_FILE=.synced
-
 clean:
-	$(RM) $(OBJS) $(CLEAN_FILES) $(SYNC_FILE) $(TMP_HEADERS)
+	$(RM) $(OBJS) $(CLEAN_FILES) $(TMP_HEADERS)
 
 clobber: clean
 ifneq ($(TARGET),)
@@ -322,17 +320,8 @@ objdir=.
 test check pcheck: all
 
 TESTCONFIG=$(TOP)/src/test/testconfig.sh
-DIR_SYNC=$(TOP)/src/test/.sync-dir
 
 $(TESTCONFIG):
-
-sync-remotes: all $(SYNC_FILE)
-
-$(SYNC_FILE): $(TARGET) $(TESTCONFIG)
-ifeq ($(SCP_TO_REMOTE_NODES), y)
-	cp $(TARGET) $(DIR_SYNC)
-	@touch $(SYNC_FILE)
-endif
 
 sparse:
 	$(if $(TARGET), $(sparse-c))

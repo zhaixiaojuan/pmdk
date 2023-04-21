@@ -1,14 +1,15 @@
 ---
-layout: manual
-Content-Style: 'text/css'
-title: _MP(LIBPMEMBLK, 7)
-collection: libpmemblk
-header: PMDK
-date: pmemblk API version 1.1
-...
+draft: false
+slider_enable: true
+description: ""
+disclaimer: "The contents of this web site and the associated <a href=\"https://github.com/pmem\">GitHub repositories</a> are BSD-licensed open source."
+aliases: ["libpmemblk.7.html"]
+title: "libpmemblk | PMDK"
+header: "pmemblk API version 1.1"
+---
 
 [comment]: <> (SPDX-License-Identifier: BSD-3-Clause)
-[comment]: <> (Copyright 2016-2018, Intel Corporation)
+[comment]: <> (Copyright 2016-2023, Intel Corporation)
 
 [comment]: <> (libpmemblk.7 -- man page for libpmemblk)
 
@@ -25,7 +26,11 @@ date: pmemblk API version 1.1
 
 # NAME #
 
-**libpmemblk** - persistent memory resident array of blocks
+**libpmemblk** - persistent memory resident array of blocks (DEPRECATED)
+
+>NOTE:
+Support for Windows and FreeBSD deprecated since PMDK 1.13.0 release
+and will be removed in the PMDK 1.14.0 release.
 
 # SYNOPSIS #
 
@@ -298,6 +303,12 @@ See <https://pmem.io/pmdk/libpmemblk> for more examples using the **libpmemblk**
 
 Unlike **libpmemobj**(7), data replication is not supported in **libpmemblk**.
 Thus, specifying replica sections in pool set files is not allowed.
+
+# NOTE #
+
+> NOTICE:
+The **libpmemblk** library is deprecated since PMDK 1.13.0 release
+and will be removed in the PMDK 1.14.0 release.
 
 # ACKNOWLEDGEMENTS #
 

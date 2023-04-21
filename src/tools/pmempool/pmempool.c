@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-/* Copyright 2014-2020, Intel Corporation */
+/* Copyright 2014-2023, Intel Corporation */
 
 /*
  * pmempool.c -- pmempool main source file
@@ -25,11 +25,6 @@
 #include "feature.h"
 #include "set.h"
 #include "pmemcommon.h"
-
-#ifndef _WIN32
-#include "rpmem_common.h"
-#include "rpmem_util.h"
-#endif
 
 #define APPNAME	"pmempool"
 
@@ -65,6 +60,7 @@ static const struct option long_options[] = {
 static void
 help_help(const char *appname)
 {
+	printf("NOTE: pmem blk and log pools are deprecated\n");
 	printf("Usage: %s help <command>\n", appname);
 }
 
@@ -168,6 +164,7 @@ static const struct command commands[] = {
 static void
 print_version(const char *appname)
 {
+	printf("NOTE: pmem blk and log pools are deprecated\n");
 	printf("%s %s\n", appname, SRCVERSION);
 }
 
@@ -245,11 +242,6 @@ main(int argc, char *argv[])
 			0 /* major version */,
 			0 /* minor version */);
 
-#ifndef _WIN32
-	util_remote_init();
-	rpmem_util_cmds_init();
-#endif
-
 	if (argc < 2) {
 		print_usage(APPNAME);
 		goto end;
@@ -283,11 +275,6 @@ main(int argc, char *argv[])
 	}
 
 end:
-
-#ifndef _WIN32
-	util_remote_fini();
-	rpmem_util_cmds_fini();
-#endif
 
 	common_fini();
 

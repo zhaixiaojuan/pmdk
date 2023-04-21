@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: BSD-3-Clause
-/* Copyright 2014-2021, Intel Corporation */
+/* Copyright 2014-2023, Intel Corporation */
 
 /*
  * common.c -- definitions of common functions
@@ -41,7 +41,7 @@
 
 #define REQ_BUFF_SIZE	2048U
 #define Q_BUFF_SIZE	8192
-typedef const char *(*enum_to_str_fn)(int);
+typedef const char *(*enum_to_str_fn)(enum chunk_type);
 
 /*
  * pmem_pool_type -- return pool type based on first two pages.
@@ -492,8 +492,7 @@ util_poolset_map(const char *fname, struct pool_set **poolset, int rdonly)
 	}
 
 	/*
-	 * Just use one thread - there is no need for multi-threaded access
-	 * to remote pool.
+	 * Just use one thread.
 	 */
 	unsigned nlanes = 1;
 
@@ -791,7 +790,7 @@ util_parse_enum(const char *str, int first, int max, uint64_t *bitmap,
 		enum_to_str_fn enum_to_str)
 {
 	for (int i = first; i < max; i++) {
-		if (strcmp(str, enum_to_str(i)) == 0) {
+		if (strcmp(str, enum_to_str((enum chunk_type)i)) == 0) {
 			*bitmap |= (uint64_t)1<<i;
 			return 0;
 		}
@@ -1305,11 +1304,6 @@ pool_set_file_set_replica(struct pool_set_file *file, size_t replica)
 	if (replica >= file->poolset->nreplicas)
 		return -1;
 
-	if (file->poolset->replica[replica]->remote) {
-		outv_err("reading from remote replica not supported");
-		return -1;
-	}
-
 	file->replica = replica;
 	file->addr = file->poolset->replica[replica]->part[0].addr;
 
@@ -1381,8 +1375,13 @@ util_pool_clear_badblocks(const char *path, int create)
 		outv_err("clearing bad blocks in the pool set failed -- '%s'",
 			path);
 		errno = EIO;
-		return -1;
+		ret = -1;
+		goto err;
 	}
 
-	return 0;
+	ret = 0;
+
+err:
+	util_poolset_free(setp);
+	return ret;
 }

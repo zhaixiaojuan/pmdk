@@ -1,11 +1,24 @@
 /* SPDX-License-Identifier: BSD-3-Clause */
-/* Copyright 2014-2020, Intel Corporation */
+/* Copyright 2014-2023, Intel Corporation */
 
 /*
  * info.h -- pmempool info command header file
  */
 
 #include "vec.h"
+
+#define BLK_DEPR_STR "Libpmemblk is deprecated."
+#define LOG_DEPR_STR "Libpmemlog is deprecated."
+#ifdef _WIN32
+#define PMEMBLK_DEPR_ATTR __declspec(deprecated(BLK_DEPR_STR))
+#define PMEMLOG_DEPR_ATTR __declspec(deprecated(LOG_DEPR_STR))
+
+#define WIN_DEPR_STR "Windows support is deprecated."
+#define WIN_DEPR_ATTR __declspec(deprecated(WIN_DEPR_STR))
+#else
+#define PMEMBLK_DEPR_ATTR __attribute__((deprecated(BLK_DEPR_STR)))
+#define PMEMLOG_DEPR_ATTR __attribute__((deprecated(LOG_DEPR_STR)))
+#endif
 
 /*
  * Verbose levels used in application:
@@ -57,7 +70,7 @@ struct pmempool_info_args {
 	int vstats;		/* verbosity level for statistics */
 	struct {
 		size_t walk;		/* data chunk size */
-	} log;
+	} log; /* deprecated */
 	struct {
 		int vmap;	/* verbosity level for BTT Map */
 		int vflog;	/* verbosity level for BTT FLOG */
@@ -65,7 +78,7 @@ struct pmempool_info_args {
 		bool skip_zeros; /* skip blocks marked with zero flag */
 		bool skip_error; /* skip blocks marked with error flag */
 		bool skip_no_flag; /* skip blocks not marked with any flag */
-	} blk;
+	} blk; /* deprecated */
 	struct {
 		int vlanes;		/* verbosity level for lanes */
 		int vroot;
@@ -88,7 +101,7 @@ struct pmempool_info_args {
 };
 
 /*
- * pmem_blk_stats -- structure with statistics for pmemblk
+ * pmem_blk_stats -- structure with statistics for pmemblk (DEPRECATED)
  */
 struct pmem_blk_stats {
 	uint32_t total;		/* number of processed blocks */
@@ -143,7 +156,7 @@ struct pmem_info {
 	struct pmem_pool_params params;
 	struct {
 		struct pmem_blk_stats stats;
-	} blk;
+	} blk; /* deprecated */
 	struct {
 		struct pmemobjpool *pop;
 		struct palloc_heap *heap;
@@ -155,12 +168,24 @@ struct pmem_info {
 	} obj;
 };
 
+#ifdef _WIN32
+WIN_DEPR_ATTR
+#endif
 int pmempool_info_func(const char *appname, int argc, char *argv[]);
+#ifdef _WIN32
+WIN_DEPR_ATTR
+#endif
 void pmempool_info_help(const char *appname);
 
+#ifdef _WIN32
+WIN_DEPR_ATTR
+#endif
 int pmempool_info_read(struct pmem_info *pip, void *buff,
 		size_t nbytes, uint64_t off);
-int pmempool_info_blk(struct pmem_info *pip);
-int pmempool_info_log(struct pmem_info *pip);
+PMEMBLK_DEPR_ATTR int pmempool_info_blk(struct pmem_info *pip);
+PMEMLOG_DEPR_ATTR int pmempool_info_log(struct pmem_info *pip);
+#ifdef _WIN32
+WIN_DEPR_ATTR
+#endif
 int pmempool_info_obj(struct pmem_info *pip);
-int pmempool_info_btt(struct pmem_info *pip);
+PMEMBLK_DEPR_ATTR int pmempool_info_btt(struct pmem_info *pip);

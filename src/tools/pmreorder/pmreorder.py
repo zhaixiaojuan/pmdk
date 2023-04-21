@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2018-2021, Intel Corporation
+# Copyright 2018-2023, Intel Corporation
 
 import argparse
 import statemachine
@@ -9,6 +9,11 @@ import loggingfacility
 import markerparser
 import sys
 import reorderengines
+import signal
+
+# Prevent printing python stacktrace on SIGINT. To achieve that throw
+# "SystemExit exception" instead of "KeyboardInterrupt exception".
+signal.signal(signal.SIGINT, lambda signum, frame: exit(signum))
 
 
 def main():
@@ -98,7 +103,8 @@ def main():
 
     # init and run the state machine
     a = statemachine.StateMachine(statemachine.InitState(context))
-    if a.run_all(context.extract_operations()) is False:
+    operations, operation_ids, markers = context.extract_operations()
+    if a.run_all(operations, operation_ids, markers) is False:
         sys.exit(1)
 
 

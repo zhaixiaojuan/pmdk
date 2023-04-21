@@ -1,14 +1,15 @@
 ---
-layout: manual
-Content-Style: 'text/css'
-title: _MP(PMEMBLK_CREATE, 3)
-collection: libpmemblk
-header: PMDK
-date: pmemblk API version 1.1
-...
+draft: false
+slider_enable: true
+description: ""
+disclaimer: "The contents of this web site and the associated <a href=\"https://github.com/pmem\">GitHub repositories</a> are BSD-licensed open source."
+aliases: ["pmemblk_create.3.html"]
+title: "libpmemblk | PMDK"
+header: "pmemblk API version 1.1"
+---
 
 [comment]: <> (SPDX-License-Identifier: BSD-3-Clause)
-[comment]: <> (Copyright 2017-2018, Intel Corporation)
+[comment]: <> (Copyright 2017-2023, Intel Corporation)
 
 [comment]: <> (pmemblk_create.3 -- man page for libpmemblk create, open, close and validate functions)
 
@@ -20,8 +21,8 @@ date: pmemblk API version 1.1
 
 # NAME #
 
-_UW(pmemblk_create), _UW(pmemblk_open),
-**pmemblk_close**(), _UW(pmemblk_check)
+_UW(pmemblk_create)(DEPRECATED), _UW(pmemblk_open)(DEPRECATED),
+**pmemblk_close**()(DEPRECATED), _UW(pmemblk_check)(DEPRECATED)
 - create, open, close and validate block pool
 
 # SYNOPSIS #

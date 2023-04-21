@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2014-2022, Intel Corporation
+# Copyright 2014-2023, Intel Corporation
 
 #
 # src/benchmarks/Makefile -- build all benchmarks
@@ -14,8 +14,6 @@ vpath %.c $(TOP)/src/examples/libpmemobj/hashmap
 
 vpath %.c $(TOP)/src/libpmemobj
 vpath %.c $(TOP)/src/common
-vpath %.c $(TOP)/src/librpmem
-vpath %.c $(TOP)/src/rpmem_common
 vpath %.c $(TOP)/src/libpmempool
 
 BENCHMARK = pmembench
@@ -102,10 +100,12 @@ CXXFLAGS += -I../libpmemobj
 CXXFLAGS += -I../common
 CXXFLAGS += -I../core
 CXXFLAGS += -I../examples/libpmemobj/map
-CXXFLAGS += -I../rpmem_common
-CXXFLAGS += -I../librpmem
 CXXFLAGS += $(OS_INCS)
 CXXFLAGS += -DSRCVERSION='"$(SRCVERSION)"'
+# Libpmemblk and libpmemlog are deprecated.
+# This flag allows to build tests, examples and benchmarks
+# using pmemblk/pmemlog despite the deprecated state.
+CXXFLAGS += -Wno-deprecated-declarations
 
 ifeq ($(OS_DIMM),ndctl)
 CXXFLAGS += -DSDS_ENABLED
@@ -120,19 +120,6 @@ endif
 ifneq ($(SANITIZE),)
 CXXFLAGS += -fsanitize=$(SANITIZE)
 LDFLAGS += -fsanitize=$(SANITIZE)
-endif
-
-ifeq ($(BUILD_RPMEM),y)
-SRC += rpmem.cpp
-LIBS += -lrpmem $(LIBFABRIC_LIBS)
-CONFIGS += pmembench_rpmem
-CXXFLAGS += -DRPMEM_AVAILABLE
-# Librpmem is deprecated.
-# This flag allows to build tests, examples and benchmarks
-# using rpmem despite the deprecated state.
-CXXFLAGS += -Wno-deprecated-declarations
-else
-$(info NOTE: Skipping librpmem benchmark because $(BUILD_RPMEM_INFO))
 endif
 
 ifeq ($(GLIB),y)

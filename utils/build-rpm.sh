@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2014-2020, Intel Corporation
+# Copyright 2014-2023, Intel Corporation
 
 #
 # build-rpm.sh - Script for building rpm packages
@@ -24,8 +24,7 @@ usage()
 	cat >&2 <<EOF
 Usage: $0 [ -h ] -t version-tag -s source-dir -w working-dir -o output-dir
 	[ -d distro ] [ -e build-experimental ] [ -c run-check ]
-	[ -r build-rpmem ] [ -n with-ndctl ] [ -f testconfig-file ]
-	[ -l build-libpmemset ]
+	[ -n with-ndctl ] [ -f testconfig-file ]
 
 -h			print this help message
 -t version-tag		source version tag
@@ -35,10 +34,8 @@ Usage: $0 [ -h ] -t version-tag -s source-dir -w working-dir -o output-dir
 -d distro		Linux distro name
 -e build-experimental	build experimental packages
 -c run-check		run package check
--r build-rpmem		build librpmem and rpmemd packages
 -n with-ndctl		build with libndctl
 -f testconfig-file	custom testconfig.sh
--l build-libpmemset	build libpmemset packages
 EOF
 	exit 1
 }
@@ -46,7 +43,7 @@ EOF
 #
 # command-line argument processing...
 #
-args=`getopt he:c:r:n:t:d:s:w:o:f:l: $*`
+args=`getopt he:c:n:t:d:s:w:o:f: $*`
 
 [ $? != 0 ] && usage
 set -- $args
@@ -65,10 +62,6 @@ do
 		;;
 	-f)
 		TEST_CONFIG_FILE="$2"
-		shift 2
-		;;
-	-r)
-		BUILD_RPMEM="$2"
 		shift 2
 		;;
 	-n)
@@ -93,10 +86,6 @@ do
 		;;
 	-d)
 		DISTRO="$2"
-		shift 2
-		;;
-	-l)
-		PMEMSET_INSTALL="$2"
 		shift 2
 		;;
 	--)
@@ -133,7 +122,6 @@ fi
 
 PMEM2_INSTALL="y"
 
-LIBFABRIC_MIN_VERSION=1.4.2
 NDCTL_MIN_VERSION=60.1
 
 RPMBUILD_OPTS=( )
@@ -195,7 +183,6 @@ sed -e "s/__VERSION__/$PACKAGE_VERSION/g" \
 	-e "s/__PKG_NAME_SUFFIX__/$RPM_PKG_NAME_SUFFIX/g" \
 	-e "s/__MAKE_FLAGS__/$RPM_MAKE_FLAGS/g" \
 	-e "s/__MAKE_INSTALL_FDUPES__/$RPM_MAKE_INSTALL/g" \
-	-e "s/__LIBFABRIC_MIN_VER__/$LIBFABRIC_MIN_VERSION/g" \
 	-e "s/__NDCTL_MIN_VER__/$NDCTL_MIN_VERSION/g" \
 	$OLDPWD/$SCRIPT_DIR/pmdk.spec.in > $RPM_SPEC_FILE
 
@@ -218,20 +205,6 @@ fi
 if [ "${PMEM2_INSTALL}" == "y" ]
 then
 	RPMBUILD_OPTS+=(--define "_pmem2_install 1")
-fi
-
-# libpmemset
-if [ "${PMEMSET_INSTALL}" == "y" ]
-then
-	RPMBUILD_OPTS+=(--define "_pmemset_install 1")
-fi
-
-# librpmem & rpmemd
-if [ "${BUILD_RPMEM}" = "y" ]
-then
-	RPMBUILD_OPTS+=(--with fabric)
-else
-	RPMBUILD_OPTS+=(--without fabric)
 fi
 
 # daxio & RAS

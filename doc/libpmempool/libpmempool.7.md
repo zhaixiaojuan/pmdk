@@ -1,11 +1,12 @@
 ---
-layout: manual
-Content-Style: 'text/css'
-title: _MP(LIBPMEMPOOL, 7)
-collection: libpmempool
-header: PMDK
-date: pmempool API version 1.3
-...
+draft: false
+slider_enable: true
+description: ""
+disclaimer: "The contents of this web site and the associated <a href=\"https://github.com/pmem\">GitHub repositories</a> are BSD-licensed open source."
+aliases: ["libpmempool.7.html"]
+title: "libpmempool | PMDK"
+header: "pmempool API version 1.3"
+---
 
 [comment]: <> (SPDX-License-Identifier: BSD-3-Clause)
 [comment]: <> (Copyright 2016-2018, Intel Corporation)
@@ -24,6 +25,10 @@ date: pmempool API version 1.3
 # NAME #
 
 **libpmempool** - persistent memory pool management library
+
+>NOTE:
+Support for Windows and FreeBSD deprecated since PMDK 1.13.0 release
+and will be removed in the PMDK 1.14.0 release.
 
 # SYNOPSIS #
 

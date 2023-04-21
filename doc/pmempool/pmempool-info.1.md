@@ -1,14 +1,15 @@
 ---
-layout: manual
-Content-Style: 'text/css'
-title: _MP(PMEMPOOL-INFO, 1)
-collection: pmempool
-header: PMDK
-date: pmem Tools version 1.4
-...
+draft: false
+slider_enable: true
+description: ""
+disclaimer: "The contents of this web site and the associated <a href=\"https://github.com/pmem\">GitHub repositories</a> are BSD-licensed open source."
+aliases: ["pmempool-info.1.html"]
+title: "pmempool | PMDK"
+header: "pmem Tools version 1.4"
+---
 
 [comment]: <> (SPDX-License-Identifier: BSD-3-Clause)
-[comment]: <> (Copyright 2016-2018, Intel Corporation)
+[comment]: <> (Copyright 2016-2023, Intel Corporation)
 
 [comment]: <> (pmempool-info.1 -- man page for pmempool-info)
 
@@ -29,6 +30,13 @@ date: pmem Tools version 1.4
 ```
 $ pmempool info [<options>] <file>
 ```
+
+# NOTE #
+
+> NOTICE:
+
+The **libpmemblk** and **libpmemlog** libraries are deprecated (this affects pool types
+**blk**, **btt** and **log**) since PMDK 1.13.0 release.
 
 # DESCRIPTION #
 
@@ -51,10 +59,6 @@ with error code and prints appropriate error message.
 Currently there is lack of interprocess synchronization for pool files,
 so the *info* command should be invoked off-line. Using **pmempool** on pool file which
 may be modified by another process may lead to unexpected errors in pool file.
-
-A poolset file passed to **pmempool info** may contain multiple replicas,
-also remote ones, but **pmempool** currently does not read any data from remote replicas.
-It prints only a remote node address and a remote replica descriptor.
 
 **pmempool info** opens pool file in *read-only* mode so the file
 will remain untouched after processing.

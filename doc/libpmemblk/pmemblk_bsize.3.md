@@ -1,14 +1,15 @@
 ---
-layout: manual
-Content-Style: 'text/css'
-title: _MP(PMEMBLK_BSIZE, 3)
-collection: libpmemblk
-header: PMDK
-date: pmemblk API version 1.1
-...
+draft: false
+slider_enable: true
+description: ""
+disclaimer: "The contents of this web site and the associated <a href=\"https://github.com/pmem\">GitHub repositories</a> are BSD-licensed open source."
+aliases: ["pmemblk_bsize.3.html"]
+title: "libpmemblk | PMDK"
+header: "pmemblk API version 1.1"
+---
 
 [comment]: <> (SPDX-License-Identifier: BSD-3-Clause)
-[comment]: <> (Copyright 2017-2018, Intel Corporation)
+[comment]: <> (Copyright 2017-2023, Intel Corporation)
 
 [comment]: <> (pmemblk_bsize.3 -- man page for functions that check number of available blocks or usable space in block memory pool)
 
@@ -20,7 +21,7 @@ date: pmemblk API version 1.1
 
 # NAME #
 
-**pmemblk_bsize**(), **pmemblk_nblock**() - check number of available blocks or
+**pmemblk_bsize**()(DEPRECATED), **pmemblk_nblock**()(DEPRECATED) - check number of available blocks or
 usable space in block memory pool
 
 # SYNOPSIS #

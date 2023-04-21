@@ -1,14 +1,15 @@
 ---
-layout: manual
-Content-Style: 'text/css'
-title: _MP(PMEMPOOL-CONVERT, 1)
-collection: pmempool
-header: PMDK
-date: pmem Tools version 1.4
-...
+draft: false
+slider_enable: true
+description: ""
+disclaimer: "The contents of this web site and the associated <a href=\"https://github.com/pmem\">GitHub repositories</a> are BSD-licensed open source."
+aliases: ["pmempool-convert.1.html"]
+title: "pmempool | PMDK"
+header: "pmem Tools version 1.4"
+---
 
 [comment]: <> (SPDX-License-Identifier: BSD-3-Clause)
-[comment]: <> (Copyright 2016-2018, Intel Corporation)
+[comment]: <> (Copyright 2016-2023, Intel Corporation)
 
 [comment]: <> (pmempool-convert.1 -- man page for pmempool-convert)
 
@@ -22,6 +23,11 @@ date: pmem Tools version 1.4
 
 **pmempool-convert** - this is a wrapper around pmdk-convert tool. More information
 can be found in **pmdk-convert**(1) man page.
+
+# NOTE #
+
+> NOTICE:
+The **libpmemblk** and **libpmemlog** libraries are deprecated since PMDK 1.13.0 release.
 
 # SEE ALSO #
 

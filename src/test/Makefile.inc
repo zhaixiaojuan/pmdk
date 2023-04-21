@@ -1,5 +1,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
-# Copyright 2014-2022, Intel Corporation
+# Copyright 2014-2023, Intel Corporation
 #
 
 #
@@ -23,7 +23,6 @@ EX_LIBPMEM2=$(EXAMPLES_DIR)/libpmem2
 EX_LIBPMEMBLK=$(EXAMPLES_DIR)/libpmemblk
 EX_LIBPMEMLOG=$(EXAMPLES_DIR)/libpmemlog
 EX_LIBPMEMOBJ=$(EXAMPLES_DIR)/libpmemobj
-EX_LIBPMEMSET=$(EXAMPLES_DIR)/libpmemset
 EX_PMREORDER=$(EXAMPLES_DIR)/pmreorder
 
 UT = ../unittest/libut.a
@@ -121,53 +120,6 @@ OBJS +=	$(TOP)/src/nondebug/libpmemobj/alloc_class.o\
 	$(TOP)/src/nondebug/libpmemobj/stats.o
 
 INCS += -I$(TOP)/src/libpmemobj
-endif
-
-ifeq ($(LIBPMEMSET), y)
-LIBPMEM2=y
-DYNAMIC_LIBS += -lpmemset
-STATIC_DEBUG_LIBS += $(LIBS_DIR)/debug/libpmemset.a
-STATIC_NONDEBUG_LIBS += $(LIBS_DIR)/nondebug/libpmemset.a
-endif
-
-ifeq ($(LIBPMEMSET), internal-debug)
-LIBPMEM2=y
-LIBPMEMCORE=internal-debug
-OBJS +=\
-	$(TOP)/src/debug/libpmemset/badblock.o\
-	$(TOP)/src/debug/libpmemset/config.o\
-	$(TOP)/src/debug/libpmemset/errormsg.o\
-	$(TOP)/src/debug/libpmemset/file.o\
-	$(TOP)/src/debug/libpmemset/file_posix.o\
-	$(TOP)/src/debug/libpmemset/libpmemset.o\
-	$(TOP)/src/debug/libpmemset/map_config.o\
-	$(TOP)/src/debug/libpmemset/part.o\
-	$(TOP)/src/debug/libpmemset/pmemset.o\
-	$(TOP)/src/debug/libpmemset/pmemset_utils.o\
-	$(TOP)/src/debug/libpmemset/sds.o\
-	$(TOP)/src/debug/libpmemset/source.o
-
-INCS += -I$(TOP)/src/libpmemset
-endif
-
-ifeq ($(LIBPMEMSET), internal-nondebug)
-LIBPMEM2=y
-LIBPMEMCORE=internal-nondebug
-OBJS +=\
-	$(TOP)/src/nondebug/libpmemset/badblock.o\
-	$(TOP)/src/nondebug/libpmemset/config.o\
-	$(TOP)/src/nondebug/libpmemset/errormsg.o\
-	$(TOP)/src/nondebug/libpmemset/file.o\
-	$(TOP)/src/nondebug/libpmemset/file_posix.o\
-	$(TOP)/src/nondebug/libpmemset/libpmemset.o\
-	$(TOP)/src/nondebug/libpmemset/map_config.o\
-	$(TOP)/src/nondebug/libpmemset/part.o\
-	$(TOP)/src/nondebug/libpmemset/pmemset.o\
-	$(TOP)/src/nondebug/libpmemset/pmemset_utils.o\
-	$(TOP)/src/nondebug/libpmemset/sds.o
-	$(TOP)/src/nondebug/libpmemset/source.o
-
-INCS += -I$(TOP)/src/libpmemset
 endif
 
 ifeq ($(LIBPMEM), internal-nondebug)
@@ -494,13 +446,7 @@ STATIC_DEBUG_LIBS += $(LIBS_DIR)/debug/libpmem.a
 STATIC_NONDEBUG_LIBS += $(LIBS_DIR)/nondebug/libpmem.a
 endif
 
-ifeq ($(LIBRPMEM),y)
-DYNAMIC_LIBS += -lrpmem
-STATIC_DEBUG_LIBS += $(LIBS_DIR)/debug/librpmem.a
-STATIC_NONDEBUG_LIBS += $(LIBS_DIR)/nondebug/librpmem.a
-endif
-
-ifneq ($(LIBPMEMCOMMON)$(LIBPMEM)$(LIBPMEM2)$(LIBPMEMPOOL)$(LIBPMEMBLK)$(LIBPMEMLOG)$(LIBPMEMOBJ)$(LIBRPMEM),)
+ifneq ($(LIBPMEMCOMMON)$(LIBPMEM)$(LIBPMEM2)$(LIBPMEMPOOL)$(LIBPMEMBLK)$(LIBPMEMLOG)$(LIBPMEMOBJ),)
 LIBS += -pthread
 endif
 
@@ -618,8 +564,6 @@ SUFFIX_STATIC_DEBUG=static-debug
 SUFFIX_STATIC_NONDEBUG=static-nondebug
 
 ifneq ($(TARGET),)
-SCP_TARGET=$(TARGET)
-SCP_SRC_DIR=.
 #
 # By default debug and non-debug static versions are built.
 # It can be changed by setting BUILD_STATIC_DEBUG, BUILD_STATIC_NONDEBUG
@@ -628,18 +572,15 @@ SCP_SRC_DIR=.
 ifneq ($(BUILD_STATIC),n)
 ifneq ($(BUILD_STATIC_DEBUG),n)
 TARGET_STATIC_DEBUG=$(TARGET).$(SUFFIX_STATIC_DEBUG)
-SCP_TARGET_STATIC_DEBUG=$(SCP_SRC_DIR)/$(SCP_TARGET).$(SUFFIX_STATIC_DEBUG)
 endif
 ifneq ($(BUILD_STATIC_NONDEBUG),n)
 ifneq ($(DEBUG),1)
 TARGET_STATIC_NONDEBUG=$(TARGET).$(SUFFIX_STATIC_NONDEBUG)
-SCP_TARGET_STATIC_NONDEBUG=$(SCP_SRC_DIR)/$(SCP_TARGET).$(SUFFIX_STATIC_NONDEBUG)
 endif
 endif
 endif
 endif
 
-SCP=../sync-remotes/copy-to-remote-nodes.sh
 TESTCONFIG=../testconfig.sh
 SYNC_FILE=.synced
 
@@ -693,22 +634,6 @@ clobber: clean
 	$(RM) -r __pycache__
 
 $(TESTCONFIG):
-
-$(SYNC_FILE): $(TARGET) $(TESTCONFIG)
-ifeq ($(SCP_TO_REMOTE_NODES), y)
-ifeq ($(SCP_TARGET),)
-	$(SCP) test
-else
-ifeq ($(SCP_SRC_DIR),)
-$(error SCP_SRC_DIR is not set)
-endif
-	$(SCP) common
-	$(SCP) test $(SCP_SRC_DIR)/$(SCP_TARGET) $(SCP_TARGET_STATIC_DEBUG) $(SCP_TARGET_STATIC_NONDEBUG)
-endif
-	@touch $(SYNC_FILE)
-endif
-
-sync-test: all $(SYNC_FILE) $(TESTCONFIG)
 
 TST=$(shell basename `pwd`)
 TSTCHECKS=$(shell ls -1 TEST* 2> /dev/null | grep '^TEST[0-9]\+$$' | sort -V)
