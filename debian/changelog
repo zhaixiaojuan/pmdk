@@ -1,3 +1,14 @@
+pmdk (1.13.0~rc1-1) experimental; urgency=medium
+
+  * New upstream RC.
+  * Add luke's gpg key.
+  * Enable loong64 -- completely untested.
+  * Let the watch file find -rc tags.
+  * Temporarily disable checking upstream gpg.
+  * Drop autopkgtests for deprecated libpmem{blk,log}.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Sat, 22 Apr 2023 21:12:44 +0200
+
 pmdk (1.12.1-2) unstable; urgency=medium
 
   * Fix the watch file wrt GitHub changes.
