@@ -24,7 +24,7 @@ Vcs-Git: https://github.com/kilobyte/pmdk -b debian
 Vcs-Browser: https://github.com/kilobyte/pmdk/tree/debian
 
 Package: libpmem1
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory low level support library, v1 runtime
@@ -39,7 +39,7 @@ Description: Persistent Memory low level support library, v1 runtime
  This package provides binary runtime for version 1 of the API.
 
 Package: libpmem1-debug
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory low level support library — debug build
@@ -53,7 +53,7 @@ Description: Persistent Memory low level support library — debug build
 
 Package: libpmem-dev
 Section: libdevel
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: libpmem1 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory low level support library, v1 headers
@@ -65,7 +65,7 @@ Description: Persistent Memory low level support library, v1 headers
  against libpmem.
 
 Package: libpmem2
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory low level support library, v2 runtime
@@ -78,7 +78,7 @@ Description: Persistent Memory low level support library, v2 runtime
  level libraries like libpmemobj to be much more convenient.
 
 Package: libpmem2-debug
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory low level support library — debug build
@@ -92,7 +92,7 @@ Description: Persistent Memory low level support library — debug build
 
 Package: libpmem2-dev
 Section: libdevel
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: libpmem2 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory low level support library, v2 headers
@@ -105,7 +105,7 @@ Description: Persistent Memory low level support library, v2 headers
  libpmem1.
 
 Package: libpmemblk1
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: libpmem1 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory block array support library
@@ -118,7 +118,7 @@ Description: Persistent Memory block array support library
  libpmemobj to be more generally useful.
 
 Package: libpmemblk1-debug
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: libpmem1-debug (= ${binary:Version}),
          ${misc:Depends},
@@ -138,7 +138,7 @@ Description: Persistent Memory block array support library — debug build
 
 Package: libpmemblk-dev
 Section: libdevel
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: libpmem-dev (= ${binary:Version}),
          libpmemblk1 (= ${binary:Version}),
@@ -155,7 +155,7 @@ Description: development files for libpmemblk1
  against libpmemblk.
 
 Package: libpmemlog1
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: libpmem1 (=${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory log file support library
@@ -166,7 +166,7 @@ Description: Persistent Memory log file support library
  libpmemobj to be more generally useful.
 
 Package: libpmemlog1-debug
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: libpmem1-debug (= ${binary:Version}),
          ${misc:Depends},
@@ -184,7 +184,7 @@ Description: Persistent Memory log file support library — debug build
 
 Package: libpmemlog-dev
 Section: libdevel
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: libpmem-dev (= ${binary:Version}),
          libpmemlog1 (= ${binary:Version}),
@@ -199,7 +199,7 @@ Description: development files for libpmemlog1
  against libpmemlog.
 
 Package: libpmemobj1
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: libpmem1 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory object store support library
@@ -208,7 +208,7 @@ Description: Persistent Memory object store support library
  other features.
 
 Package: libpmemobj1-debug
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: libpmem1-debug (= ${binary:Version}),
          ${misc:Depends},
@@ -224,7 +224,7 @@ Description: Persistent Memory object store support library — debug build
 
 Package: libpmemobj-dev
 Section: libdevel
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: libpmem-dev (= ${binary:Version}),
          libpmemobj1 (= ${binary:Version}),
@@ -241,7 +241,7 @@ Description: development files for libpmemobj1
  against libpmemobj.
 
 Package: libpmempool1
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: libpmem1 (= ${binary:Version}), ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory pool management support library
@@ -253,7 +253,7 @@ Description: Persistent Memory pool management support library
  also.
 
 Package: libpmempool1-debug
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: libpmem1-debug (= ${binary:Version}),
          ${misc:Depends},
@@ -272,7 +272,7 @@ Description: Persistent Memory pool management support library — debug build
 
 Package: libpmempool-dev
 Section: libdevel
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: same
 Depends: libpmem-dev (= ${binary:Version}),
          libpmempool1 (= ${binary:Version}),
@@ -289,7 +289,7 @@ Description: development files for libpmempool1
 
 Package: pmdk-tools
 Section: misc
-Architecture: amd64 arm64 ppc64el riscv64
+Architecture: amd64 arm64 ppc64el riscv64 loong64
 Multi-Arch: foreign
 Depends: ${misc:Depends}, ${shlibs:Depends}
 Description: Persistent Memory management tools
