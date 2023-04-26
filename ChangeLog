@@ -1,6 +1,6 @@
-Fri Apr 21 2023 Łukasz Stolarczuk <lukasz.stolarczuk@intel.com>
+Wed Apr 26 2023 Łukasz Stolarczuk <lukasz.stolarczuk@intel.com>
 
-	* Version 1.13.0-rc1
+	* Version 1.13.0
 
 	This release:
 	- Removes (previously deprecated) librpmem. Those interested
@@ -12,7 +12,7 @@ Fri Apr 21 2023 Łukasz Stolarczuk <lukasz.stolarczuk@intel.com>
 	- Sets btt support as deprecated, to be removed in the next release.
 	- Sets async as deprecated, to be removed in the next release.
 	- Sets FreeBSD support as deprecated, to be removed in the next release.
-	- Sets Windows support as depracated, to be removed in the next release.
+	- Sets Windows support as deprecated, to be removed in the next release.
 
 	Deprecations and removals are done accordingly to the support strategy
 	outlined in the blog post:
@@ -26,6 +26,12 @@ Fri Apr 21 2023 Łukasz Stolarczuk <lukasz.stolarczuk@intel.com>
 	- examples: fix potential buffer overflow in pmemobjfs example (#5472)
 	- several fixes to support ppc64le architecture
 	- several fixes for issues found by Coverity tool
+
+	Known issues:
+	- The latest validation cycle exposed previously unknown persistency issues
+	related to pmem2 async functions (DEPRECATED) and miniasync (EXPERIMENTAL):
+	#5596 and #5597. Both will be removed in the PMDK 1.14 release. These issues
+	do NOT affect any other PMDK library.
 
 Tue Aug 25 2022 Łukasz Plewa <lukasz.plewa@intel.com>
 
