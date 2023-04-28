@@ -1,3 +1,10 @@
+pmdk (1.13.0-1) experimental; urgency=medium
+
+  * New upstream release.
+  * A watch file that uses the Github API -- with working .asc.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Fri, 28 Apr 2023 15:42:14 +0200
+
 pmdk (1.13.0~rc1-1) experimental; urgency=medium
 
   * New upstream RC.
