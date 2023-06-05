@@ -1,3 +1,10 @@
+pmdk (1.13.1-1) unstable; urgency=medium
+
+  * New upstream release.
+  * Replace the old team's gpg keys by Oksana's.
+
+ -- Adam Borowski <kilobyte@angband.pl>  Mon, 05 Jun 2023 11:32:46 +0200
+
 pmdk (1.13.1~rc2-1) experimental; urgency=medium
 
   * New upstream RC.
