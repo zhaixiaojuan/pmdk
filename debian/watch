@@ -1,4 +1,4 @@
 version=4
 opts=pgpmode=auto,searchmode=plain,uversionmangle=s/-rc/~rc/ \
   https://api.github.com/repos/pmem/@PACKAGE@/releases \
-  https://github.com/pmem/@PACKAGE@/releases/download/(?:\d[\d.]*(?:-rc\d*))/@PACKAGE@@ANY_VERSION@@ARCHIVE_EXT@
+  https://github.com/pmem/@PACKAGE@/releases/download/(?:\d[\d.]*(?:-rc\d*)?)/@PACKAGE@@ANY_VERSION@@ARCHIVE_EXT@
