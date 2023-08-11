@@ -95,7 +95,7 @@ check-license:
 	@echo Done.
 
 check-doc: doc
-	./utils/check-manpages
+	-./utils/check-manpages
 
 sparse:
 	$(MAKE) -C src sparse

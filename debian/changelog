@@ -1,3 +1,11 @@
+pmdk (1.13.1-1.1) unstable; urgency=low
+
+  * Non-maintainer upload.
+  * Ignore check-manpages failure until Pandoc creates manpages
+    that are accepted by the latest groff. (Closes: #1042252)
+
+ -- Adrian Bunk <bunk@debian.org>  Fri, 11 Aug 2023 13:28:04 +0300
+
 pmdk (1.13.1-1) unstable; urgency=medium
 
   * New upstream release.
