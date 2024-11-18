@@ -12,7 +12,7 @@
  * memory_barrier -- (internal) issue the fence instruction
  */
 static void
-loongarch_memory_fence(void)
+memory_barrier(void)
 {
 	LOG(15, NULL);
 	loongarch_store_memory_barrier();
@@ -36,6 +36,6 @@ pmem2_arch_init(struct pmem2_arch_info *info)
 {
 	LOG(3, NULL);
 
-	info->fence = loongarch_fence;
+	info->fence = memory_barrier;
 	info->flush = loongarch_flush;
 }

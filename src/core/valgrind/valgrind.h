@@ -122,6 +122,7 @@
 #undef PLAT_s390x_linux
 #undef PLAT_mips32_linux
 #undef PLAT_mips64_linux
+#undef PLAT_loongarch64_linux
 #undef PLAT_x86_solaris
 #undef PLAT_amd64_solaris
 
@@ -159,6 +160,8 @@
 #  define PLAT_mips64_linux 1
 #elif defined(__linux__) && defined(__mips__) && (__mips!=64)
 #  define PLAT_mips32_linux 1
+#elif defined(__linux__) && defined(__loongarch64)
+#  define PLAT_loongarch64_linux 1
 #elif defined(__sun) && defined(__i386__)
 #  define PLAT_x86_solaris 1
 #elif defined(__sun) && defined(__x86_64__)

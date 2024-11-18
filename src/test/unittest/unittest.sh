@@ -962,6 +962,20 @@ function exclude_ppc64() {
 }
 
 #
+# require_loongarch64 -- Skip tests if the running platform is not loongarch64
+#
+function require_loongarch64() {
+	require_arch "loongarch64"
+}
+
+#
+# exclude_loongarch64 -- Skip tests if the running platform is loongarch64
+#
+function exclude_loongarch64() {
+	exclude_arch "loongarch64"
+}
+
+#
 # require_test_type -- only allow script to continue for a certain test type
 #
 function require_test_type() {

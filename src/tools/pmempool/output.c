@@ -728,6 +728,8 @@ out_get_arch_machine_str(uint16_t machine)
 		return "PPC64";
 	case PMDK_MACHINE_RISCV64:
 		return "RISCV";
+	case PMDK_MACHINE_LOONGARCH64:
+		return "LOONGARCH64";
 	default:
 		break;
 	}

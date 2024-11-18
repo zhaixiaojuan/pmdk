@@ -87,12 +87,15 @@ const wchar_t *pmemblk_check_versionW(unsigned major_required,
 
 #ifndef _WIN32
 #if defined(__x86_64__) || defined(__M_X64__) || defined(__aarch64__) || \
-	defined(__riscv) || defined(__loongarch64)
+	defined(__riscv)
 /* minimum pool size: 16MiB + 4KiB (minimum BTT size + mmap alignment) */
 #define PMEMBLK_MIN_POOL ((size_t)((1u << 20) * 16 + (1u << 10) * 8))
 #elif defined(__PPC64__)
 /* minimum pool size: 16MiB + 128KiB (minimum BTT size + mmap alignment) */
 #define PMEMBLK_MIN_POOL ((size_t)((1u << 20) * 16 + (1u << 10) * 128))
+#elif defined(__loongarch64)
+/* minimum pool size: 16MiB + 16KiB (minimum BTT size + mmap alignment) */
+#define PMEMBLK_MIN_POOL ((size_t)((1u << 20) * 16 + (1u << 10) * 32))
 #else
 #error unable to recognize ISA at compile time
 #endif
