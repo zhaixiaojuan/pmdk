@@ -8,6 +8,7 @@
 
 . ../unittest/unittest.sh
 exclude_ppc64
+exclude_loongarch64
 
 require_test_type medium
 

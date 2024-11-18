@@ -2,6 +2,7 @@ log_basic$(nW)TEST2: START: log_basic
  $(nW)log_basic$(nW) $(nW)testfile1 c v n t w r t w l h
 appendv
 $(OPT)usable size: 2088960
+$(OPT)usable size: 2064384
 $(OPX)usable size: 1966080
 tell 144
 1st test string

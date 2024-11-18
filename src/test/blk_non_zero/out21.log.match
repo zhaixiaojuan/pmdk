@@ -1,0 +1,12 @@
+blk_non_zero$(nW)TEST21: START: blk_non_zero
+ $(nW)blk_non_zero$(nW) 512 $(nW)testfile1 c $(N)$(S) r:0 r:1 r:32264 r:32265 z:0 z:1 r:0
+512 block size 512 usable blocks 32265
+is zeroed:	1
+read      lba 0: {0}
+read      lba 1: {0}
+read      lba 32264: {0}
+read      lba 32265: Invalid argument
+set_zero  lba 0
+set_zero  lba 1
+read      lba 0: {0}
+blk_non_zero$(nW)TEST21: DONE

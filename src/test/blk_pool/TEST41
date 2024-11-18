@@ -1,0 +1,30 @@
+#!/usr/bin/env bash
+# SPDX-License-Identifier: BSD-3-Clause
+# Copyright 2015-2019, Intel Corporation
+
+#
+# src/test/blk_pool/TEST41 -- unit test for pmemblk_create
+#
+# Copy of TEST0 for loongarch64
+#
+
+. ../unittest/unittest.sh
+
+require_test_type medium
+require_loongarch64
+
+setup
+umask 0
+
+#
+# TEST41 non-existing file, poolsize > 0
+#
+expect_normal_exit ./blk_pool$EXESUFFIX f $DIR/testfile 4096 20 0600
+
+expect_normal_exit ./blk_pool$EXESUFFIX c $DIR/testfile 4096 20 0600
+
+check_files $DIR/testfile
+
+check
+
+pass

@@ -11,6 +11,7 @@
 
 require_test_type medium
 exclude_ppc64
+exclude_loongarch64
 
 setup
 umask 0

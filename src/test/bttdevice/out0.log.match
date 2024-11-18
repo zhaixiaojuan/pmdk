@@ -16,19 +16,24 @@ Major                    : 1
 Minor                    : 1
 External LBA size        : 1024
 $(OPT)External LBA count       : 20112
+$(OPT)External LBA count       : 20100
 $(OPX)External LBA count       : 20052
 Internal LBA size        : 1024
 $(OPT)Internal LBA count       : 20368
+$(OPT)Internal LBA count       : 20356
 $(OPX)Internal LBA count       : 20308
 Free blocks              : 256
 Info block size          : 4096
 Next arena offset        : 0x0
 Arena data offset        : 0x1000
 $(OPT)Area map offset          : 0x13e6000
+$(OPT)Area map offset          : 0x13e3000
 $(OPX)Area map offset          : 0x13d7000
 $(OPT)Area flog offset         : 0x13fa000
+$(OPT)Area flog offset         : 0x13f7000
 $(OPX)Area flog offset         : 0x13eb000
 $(OPT)Info block backup offset : 0x13fe000
+$(OPT)Info block backup offset : 0x13fb000
 $(OPX)Info block backup offset : 0x13ef000
 Checksum                 : $(XX) [OK]
 
@@ -50,18 +55,23 @@ Major                    : 1
 Minor                    : 1
 External LBA size        : 2048
 $(OPT)External LBA count       : 20168
+$(OPT)External LBA count       : 20162
 $(OPX)External LBA count       : 20138
 Internal LBA size        : 2048
 $(OPT)Internal LBA count       : 20424
+$(OPT)Internal LBA count       : 20418
 $(OPX)Internal LBA count       : 20394
 Free blocks              : 256
 Info block size          : 4096
 Next arena offset        : 0x0
 Arena data offset        : 0x1000
 $(OPT)Area map offset          : 0x27e6000
+$(OPT)Area map offset          : 0x27e3000
 $(OPX)Area map offset          : 0x27d7000
 $(OPT)Area flog offset         : 0x27fa000
+$(OPT)Area flog offset         : 0x27f7000
 $(OPX)Area flog offset         : 0x27eb000
 $(OPT)Info block backup offset : 0x27fe000
+$(OPT)Info block backup offset : 0x27fb000
 $(OPX)Info block backup offset : 0x27ef000
 Checksum                 : $(XX) [OK]

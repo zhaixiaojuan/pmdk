@@ -13,6 +13,7 @@ append   str[4] 5th test string
 append   str[5] 6th test string
 
 $(OPT)usable size: 2088960
+$(OPT)usable size: 2064384
 $(OPX)usable size: 1966080
 tell 96
 1st test string
@@ -43,6 +44,7 @@ walk all at once
 walk by 16
 appendv
 $(OPT)usable size: 2088960
+$(OPT)usable size: 2064384
 $(OPX)usable size: 1966080
 tell 144
 1st test string

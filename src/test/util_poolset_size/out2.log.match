@@ -1,0 +1,7 @@
+util_poolset_size$(nW)TEST2: START: util_poolset_size
+ $(nW)util_poolset_size$(nW) $(*)pool.set1 $(*)pool.set2 $(*)pool.set3 $(*)pool.set4
+util_poolset_size($(*)pool.set1): 32768
+util_poolset_size($(*)pool.set2): 33570816
+util_poolset_size($(*)pool.set3): 67092480
+util_poolset_size($(*)pool.set4): 67092480
+util_poolset_size$(nW)TEST2: DONE

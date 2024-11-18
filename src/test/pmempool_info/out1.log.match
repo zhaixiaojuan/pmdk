@@ -25,7 +25,9 @@ Checksum                 : $(*) [OK]
 
 PMEM LOG Header:
 $(OPT)Start offset             : 0x2000
+$(OPT)Start offset             : 0x8000
 $(OPX)Start offset             : 0x20000
 $(OPT)Write offset             : 0x2000 [OK]
+$(OPT)Write offset             : 0x8000 [OK]
 $(OPX)Write offset             : 0x20000 [OK]
 End offset               : $(*)

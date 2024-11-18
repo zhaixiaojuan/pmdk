@@ -35,6 +35,7 @@ checking pmemlog header
 invalid pmemlog.start_offset: 0x0
 invalid pmemlog.end_offset: 0x0
 $(OPT)setting pmemlog.start_offset to 0x2000
+$(OPT)setting pmemlog.start_offset to 0x8000
 $(OPX)setting pmemlog.start_offset to 0x20000
 setting pmemlog.end_offset to 0x200000
 $(nW): repaired
